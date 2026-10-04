@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Homework Hero</title>
+  <meta name="description" content="A fun nightly homework and on-time-for-school tracker for kids." />
+  <meta name="theme-color" content="#4fb3ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Homework Hero" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="sky" aria-hidden="true">
+    <span class="cloud c1">☁️</span><span class="cloud c2">☁️</span><span class="cloud c3">☁️</span>
+  </div>
+
+  <header class="topbar">
+    <button class="avatar-btn" id="avatarBtn" aria-label="Pick your buddy"><span id="avatar">🦖</span></button>
+    <div class="hello">
+      <div class="hello-small" id="helloSmall">Hi there!</div>
+      <div class="hello-big" id="helloBig">Homework Hero</div>
+    </div>
+    <div class="star-pill" aria-label="Stars"><span>⭐</span><b id="starCount">0</b></div>
+  </header>
+
+  <main id="app">
+    <section id="view-homework" class="view active" aria-label="Homework"></section>
+    <section id="view-stars" class="view" aria-label="My stars"></section>
+    <section id="view-school" class="view" aria-label="School"></section>
+    <section id="view-grownups" class="view" aria-label="Grown-ups"></section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="homework"><span class="tab-ico">📝</span><span>Homework</span></button>
+    <button class="tab" data-view="stars"><span class="tab-ico">🏆</span><span>My Stars</span></button>
+    <button class="tab" data-view="school"><span class="tab-ico">🏫</span><span>School</span></button>
+    <button class="tab" data-view="grownups"><span class="tab-ico">🔒</span><span>Grown-ups</span></button>
+  </nav>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+
+  <div id="confetti" aria-hidden="true"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

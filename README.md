@@ -1,0 +1,63 @@
+# Homework Hero 🦸⭐
+
+A fun phone app for a 7-year-old to check off nightly homework and track whether he gets to school on time.
+
+## What it does
+
+**📝 Homework (Monday–Thursday)**
+- Three big buttons to tap: **🔢 Math**, **📚 Reading (20 minutes)** and **🦉 Wit & Wisdom**.
+- A rocket flies toward the moon as he checks each one off, with confetti and sounds.
+- A built-in **20-minute reading timer** checks off Reading on its own when time is up. It keeps counting if the phone is locked or the app is closed.
+- When all three are done, a big "HOMEWORK HERO!" celebration plays.
+- Fridays and weekends show a "No homework, go play!" screen.
+- Grown-ups can mark a night as "no homework" (holiday, sick day) so it doesn't break the streak.
+- The ◀ ▶ arrows let you go back and fix a night you forgot to log.
+
+**🏆 My Stars**
+- 1 ⭐ per assignment, plus a bonus ⭐ for finishing all three (4 stars per night).
+- A 🔥 streak of nights in a row, total "hero nights", this week at a glance and a monthly calendar.
+- 15 badges to unlock (Bookworm, Math Whiz, Wise Owl, Full Week, Early Bird…).
+- An optional **prize goal** a grown-up sets (e.g. "Ice cream trip, 25 ⭐"), with a progress bar.
+
+**🏫 School**
+- Each school day (Mon–Fri): tap **⏰ On time!** or **🐢 A little late** (or "No school today").
+- Shows his on-time streak, on-time percentage, this week at a glance and a monthly calendar.
+
+**🔒 Grown-ups** (locked behind a multiplication question)
+- Child's name and buddy avatar, sound on/off.
+- Set the prize, and mark it as given (this spends the stars).
+- Download or restore a backup file, or erase all progress.
+
+## Putting it on the phone
+
+The app is a plain web app (HTML/CSS/JS, nothing to build). You can add it to the home screen and it works offline.
+
+1. **Host it.** The easiest free option is GitHub Pages: in the repo, go to *Settings → Pages*, pick this branch and the `/ (root)` folder, and save. After a minute it's live at `https://<your-username>.github.io/<repo>/`. Any static host (Netlify, Cloudflare Pages, …) also works.
+2. **Open that link on the phone** in Safari (iPhone/iPad) or Chrome (Android).
+3. **Add to Home Screen:**
+   - iPhone: tap the Share button → *Add to Home Screen*.
+   - Android: tap ⋮ → *Install app* / *Add to Home screen*.
+
+After that it opens full-screen with its own icon, like a regular app.
+
+### About saved data
+Progress is saved **only on that phone**, in the browser's storage. There's no account and nothing is sent anywhere. Use *Grown-ups → Download backup* every so often. The same backup file can be restored on another phone.
+
+## Trying it on a computer
+
+```sh
+npx http-server -p 8080 .
+# then open http://localhost:8080 (use your browser's device mode to see it at phone size)
+```
+
+## Changing the homework
+
+The assignments, homework days and school days are set at the top of `app.js`:
+
+```js
+const TASKS = [ { id: 'math', name: 'Math', emoji: '🔢', ... }, ... ];
+const HOMEWORK_DAYS = [1, 2, 3, 4]; // Mon–Thu (0 = Sunday)
+const SCHOOL_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
+```
+
+If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g. `homework-hero-v2`) so phones pick up the new version.
