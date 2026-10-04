@@ -5,11 +5,12 @@
 
   // ---------- Config ----------
   const TASKS = [
-    { id: 'math', name: 'Math', emoji: '🔢', blurb: 'Finish your math page', color: '#4f9dff', dark: '#2f78d6', tint: '#e5f0ff' },
-    { id: 'reading', name: 'Reading', emoji: '📚', blurb: 'Read for 20 minutes', color: '#ff8a3d', dark: '#d8692a', tint: '#fff0e5' },
-    { id: 'ww', name: 'Wit & Wisdom', emoji: '🦉', blurb: 'Do your Wit & Wisdom work', color: '#9b5cff', dark: '#7a3ee0', tint: '#f1e9ff' },
+    // days: 0 = Sunday … 6 = Saturday. ('ww' is the saved-data id for Word Study; kept so old progress still counts.)
+    { id: 'math', name: 'Math', emoji: '🔢', blurb: 'Finish your math page', days: [1, 2, 3, 4], color: '#4f9dff', dark: '#2f78d6', tint: '#e5f0ff' },
+    { id: 'reading', name: 'Reading', emoji: '📚', blurb: 'Read for 20 minutes', days: [1, 2, 3, 4, 5], color: '#ff8a3d', dark: '#d8692a', tint: '#fff0e5' },
+    { id: 'ww', name: 'Word Study', emoji: '🔤', blurb: 'Do your Word Study work', days: [1, 2, 3, 4], color: '#9b5cff', dark: '#7a3ee0', tint: '#f1e9ff' },
   ];
-  const HOMEWORK_DAYS = [1, 2, 3, 4]; // Mon–Thu
+  const HOMEWORK_DAYS = [1, 2, 3, 4, 5]; // Mon–Thu: all three, Fri: reading only
   const SCHOOL_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
   const READING_MS = 20 * 60 * 1000;
   const STORE_KEY = 'homework-hero-v1';
@@ -18,18 +19,19 @@
 
   const BADGES = [
     { id: 'first', emoji: '🌱', name: 'First Night', desc: 'All homework done 1 night', test: s => s.fullNights >= 1 },
-    { id: 'week', emoji: '🗓️', name: 'Full Week', desc: '4 nights in a row', test: s => s.bestStreak >= 4 },
+    { id: 'week', emoji: '🗓️', name: 'Full Week', desc: '5 nights in a row', test: s => s.bestStreak >= 5 },
     { id: 'n10', emoji: '🚀', name: 'Rocket Kid', desc: '10 full nights', test: s => s.fullNights >= 10 },
-    { id: 'fire', emoji: '🔥', name: 'On Fire', desc: '8 nights in a row', test: s => s.bestStreak >= 8 },
+    { id: 'fire', emoji: '🔥', name: 'On Fire', desc: '10 nights in a row', test: s => s.bestStreak >= 10 },
     { id: 'math10', emoji: '🧮', name: 'Math Whiz', desc: '10 math pages', test: s => s.counts.math >= 10 },
     { id: 'read10', emoji: '🐛', name: 'Bookworm', desc: 'Read 10 nights', test: s => s.counts.reading >= 10 },
-    { id: 'ww10', emoji: '🦉', name: 'Wise Owl', desc: '10 Wit & Wisdom nights', test: s => s.counts.ww >= 10 },
+    { id: 'ww10', emoji: '🐝', name: 'Spelling Bee', desc: '10 Word Study nights', test: s => s.counts.ww >= 10 },
     { id: 'n25', emoji: '🏆', name: 'Champion', desc: '25 full nights', test: s => s.fullNights >= 25 },
     { id: 'stars100', emoji: '🌟', name: 'Superstar', desc: 'Earn 100 stars', test: s => s.totalStars >= 100 },
     { id: 'read50', emoji: '🧙', name: 'Reading Wizard', desc: 'Read 50 nights', test: s => s.counts.reading >= 50 },
     { id: 'n50', emoji: '👑', name: 'Homework King', desc: '50 full nights', test: s => s.fullNights >= 50 },
-    { id: 'm16', emoji: '🗺️', name: 'Marathon', desc: '16 nights in a row', test: s => s.bestStreak >= 16 },
+    { id: 'm16', emoji: '🗺️', name: 'Marathon', desc: '20 nights in a row', test: s => s.bestStreak >= 20 },
     { id: 'early5', emoji: '⏰', name: 'Early Bird', desc: 'On time 5 days in a row', test: s => s.bestSchoolStreak >= 5 },
+    { id: 'perfect1', emoji: '🌞', name: 'Perfect Week', desc: 'On time all 5 days', test: s => s.perfectWeeks >= 1 },
     { id: 'early20', emoji: '🐓', name: 'Rooster', desc: 'On time 20 days in a row', test: s => s.bestSchoolStreak >= 20 },
     { id: 'bus50', emoji: '🚌', name: 'Never Late', desc: 'On time 50 days', test: s => s.onTimeDays >= 50 },
   ];
@@ -37,7 +39,7 @@
   const CHEERS = ['Awesome!', 'You did it!', 'Super job!', 'Boom! 💥', 'High five! ✋', 'Way to go!', 'Nailed it!', 'Wow!', 'Amazing!'];
   const START_MSGS = [
     "Ready for homework? Let's blast off! 🚀",
-    "Three missions tonight. You've got this!",
+    "Homework missions tonight. You've got this!",
     "Homework time! Tap each one when it's done.",
     "Let's fly to the moon! One mission at a time.",
   ];
@@ -62,6 +64,10 @@
   const sameDay = (a, b) => keyOf(a) === keyOf(b);
   const isHomeworkDay = d => HOMEWORK_DAYS.includes(d.getDay());
   const isSchoolDay = d => SCHOOL_DAYS.includes(d.getDay());
+  const tasksFor = d => TASKS.filter(t => t.days.includes(d.getDay()));
+  // 1 star per assignment, plus a bonus star for finishing a night with more than one assignment.
+  const starsForNight = d => tasksFor(d).length + (tasksFor(d).length > 1 ? 1 : 0);
+  const mondayOf = d => addDays(d, -((d.getDay() + 6) % 7));
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const pick = arr => arr[Math.floor(Math.random() * arr.length)];
@@ -104,13 +110,13 @@
 
   // ---------- Homework stats ----------
   function hwEntry(key) { return state.homework[key] || {}; }
-  function hwDoneCount(key) { const e = hwEntry(key); return TASKS.filter(t => e[t.id]).length; }
+  function hwDoneCount(key) { const e = hwEntry(key); return tasksFor(fromKey(key)).filter(t => e[t.id]).length; }
   function hwStatus(key) {
     const e = state.homework[key];
     if (!e) return 'none';
     if (e.off) return 'off';
     const n = hwDoneCount(key);
-    return n === TASKS.length ? 'done' : n > 0 ? 'partial' : 'none';
+    return n === tasksFor(fromKey(key)).length ? 'done' : n > 0 ? 'partial' : 'none';
   }
 
   function earliestKey(obj) {
@@ -155,22 +161,40 @@
   const schoolGood = k => state.school[k] === 'ontime';
   const schoolSkip = k => state.school[k] === 'off';
 
+  // A perfect week: every school day Mon–Fri is logged on time ("no school" days don't count against it).
+  function weekDays(monday) { return SCHOOL_DAYS.map(dow => addDays(monday, dow - 1)); }
+  function isPerfectWeek(monday) {
+    const vals = weekDays(monday).map(d => state.school[keyOf(d)]);
+    return vals.every(v => v === 'ontime' || v === 'off') && vals.includes('ontime');
+  }
+
   function stats() {
     const counts = { math: 0, reading: 0, ww: 0 };
     let fullNights = 0, totalStars = 0;
+    let hwStars = 0;
     for (const [k, e] of Object.entries(state.homework)) {
-      if (e.off || !isHomeworkDay(fromKey(k))) continue;
+      const d = fromKey(k), tasks = tasksFor(d);
+      if (e.off || !tasks.length) continue;
       let n = 0;
-      for (const t of TASKS) if (e[t.id]) { counts[t.id]++; n++; }
-      totalStars += n;
-      if (n === TASKS.length) { fullNights++; totalStars += 1; } // bonus star for finishing everything
+      for (const t of tasks) if (e[t.id]) { counts[t.id]++; n++; }
+      hwStars += n;
+      if (n === tasks.length) { fullNights++; hwStars += starsForNight(d) - n; }
     }
     const hwStart = earliestKey(state.homework);
     const scStart = earliestKey(state.school);
     let onTimeDays = 0, lateDays = 0;
-    for (const v of Object.values(state.school)) { if (v === 'ontime') onTimeDays++; else if (v === 'late') lateDays++; }
+    const mondays = new Set();
+    for (const [k, v] of Object.entries(state.school)) {
+      if (!isSchoolDay(fromKey(k))) continue;
+      if (v === 'ontime') onTimeDays++; else if (v === 'late') lateDays++;
+      mondays.add(keyOf(mondayOf(fromKey(k))));
+    }
+    const perfectWeeks = [...mondays].filter(m => isPerfectWeek(fromKey(m))).length;
+    // School: 1 star per on-time day + 1 bonus star per week on time every school day.
+    const schoolStars = onTimeDays + perfectWeeks;
+    totalStars = hwStars + schoolStars;
     return {
-      counts, fullNights, totalStars,
+      counts, fullNights, totalStars, hwStars, schoolStars, perfectWeeks,
       streak: hwStart ? currentStreak(isHomeworkDay, hwGood, hwSkip, hwStart) : 0,
       bestStreak: bestStreak(isHomeworkDay, hwGood, hwSkip, hwStart),
       schoolStreak: scStart ? currentStreak(isSchoolDay, schoolGood, schoolSkip, scStart) : 0,
@@ -249,11 +273,11 @@
       <button class="big-btn" data-act="close">${btn}</button>`, () => checkNewBadges());
   }
 
-  // Grown-up check: a multiplication question a 7-year-old probably can't answer yet.
+  // Grown-up check: two-digit × one-digit, beyond the times tables a 7-year-old knows.
   let grownupUnlocked = false;
   function askGrownup(onPass) {
     if (grownupUnlocked) { onPass(); return; }
-    const a = 6 + Math.floor(Math.random() * 7), b = 6 + Math.floor(Math.random() * 7);
+    const a = 13 + Math.floor(Math.random() * 87), b = 6 + Math.floor(Math.random() * 4);
     openModal(`
       <div class="gate">
         <div style="font-size:54px">🔒</div>
@@ -335,11 +359,8 @@
     let html = dayNav(hwDate, 'hw');
 
     if (!isHomeworkDay(hwDate)) {
-      const dow = hwDate.getDay();
       const nxt = nextHomeworkDay(hwDate);
-      const [emoji, title] = dow === 5
-        ? ['🎉', 'It’s Friday! No homework!']
-        : ['🏖️', 'Weekend! No homework!'];
+      const [emoji, title] = ['🏖️', 'Weekend! No homework!'];
       html += `
         <div class="card free-night">
           <div class="huge">${emoji}</div>
@@ -370,16 +391,19 @@
       return;
     }
 
+    const tasks = tasksFor(hwDate);
     const n = hwDoneCount(key);
-    const msg = n === 0 ? pick(START_MSGS) : n < TASKS.length ? pick(MID_MSGS) : pick(DONE_MSGS);
-    const pct = n / TASKS.length;
+    const msg = n === tasks.length ? pick(DONE_MSGS)
+      : tasks.length === 1 ? `It's ${DAY_NAMES[hwDate.getDay()]}! Just ${tasks[0].name.toLowerCase()} tonight. ${tasks[0].emoji}`
+      : n === 0 ? pick(START_MSGS) : pick(MID_MSGS);
+    const pct = n / tasks.length;
 
     html += `
       <div class="buddy">
         <div class="buddy-face">${state.avatar}</div>
         <div class="bubble">${isTonight ? msg : `Fixing ${relLabel(hwDate).toLowerCase() === 'yesterday' ? 'yesterday' : 'an old night'}? Tap what was finished.`}</div>
       </div>
-      <div class="rocket-track" aria-label="${n} of ${TASKS.length} done">
+      <div class="rocket-track" aria-label="${n} of ${tasks.length} done">
         <div class="stars-bg"></div>
         <div class="rocket-fill" style="width:${8 + pct * 84}%"></div>
         <span class="rocket-label" style="${n ? 'display:none' : ''}">To the moon!</span>
@@ -387,16 +411,16 @@
         <span class="moon">🌙</span>
       </div>`;
 
-    if (n === TASKS.length) {
+    if (n === tasks.length) {
       html += `
         <div class="all-done-banner">
           <div class="huge">🦸⭐🦸</div>
           <h2>Homework Hero!</h2>
-          <div>You earned <b>${TASKS.length + 1} stars</b> ${isTonight ? 'tonight' : 'that night'}!</div>
+          <div>You earned <b>${starsForNight(hwDate)} ${starsForNight(hwDate) === 1 ? 'star' : 'stars'}</b> ${isTonight ? 'tonight' : 'that night'}!</div>
         </div>`;
     }
 
-    html += TASKS.map(t => taskCard(t, key)).join('');
+    html += tasks.map(t => taskCard(t, key)).join('');
 
     if (state.timer && state.timer.key === key && !hwEntry(key).reading) {
       html += timerCard();
@@ -460,11 +484,13 @@
       play('uncheck');
     }
     renderAll();
-    if (!was && hwDoneCount(key) === TASKS.length) {
+    const tasks = tasksFor(fromKey(key));
+    if (!was && hwDoneCount(key) === tasks.length) {
+      const stars = starsForNight(fromKey(key));
       setTimeout(() => {
         play('fanfare'); buzz([60, 40, 60]);
         confetti(140, ['⭐', '🌟', '🚀', '🎉']);
-        celebrate('🦸', 'HOMEWORK HERO!', `All ${TASKS.length} missions done! You earned ${TASKS.length + 1} stars! ⭐`, 'I did it! 🎉');
+        celebrate('🦸', 'HOMEWORK HERO!', `${tasks.length > 1 ? `All ${tasks.length} missions` : 'Homework'} done! You earned ${stars} ${stars === 1 ? 'star' : 'stars'}! ⭐`, 'I did it! 🎉');
       }, 450);
     } else if (!was && fromTimer) {
       setTimeout(() => celebrate('📚', '20 minutes!', 'Reading time is done. Great reading!', 'Yay! 📖'), 300);
@@ -528,7 +554,7 @@
   // ----- Shared week strip -----
   function weekStripCard() {
     const t = today();
-    const monday = addDays(t, -((t.getDay() + 6) % 7));
+    const monday = mondayOf(t);
     const cells = HOMEWORK_DAYS.map(dow => {
       const d = addDays(monday, dow - 1);
       const k = keyOf(d);
@@ -537,7 +563,7 @@
       const em = st === 'done' ? '⭐' : st === 'off' ? '🛋️' : st === 'partial' ? '🌗' : future ? '⬜' : sameDay(d, t) ? '⏳' : '➖';
       return `<div class="wk ${sameDay(d, t) ? 'today' : ''}"><div class="d">${DAY_NAMES[dow].slice(0, 3)}</div><div class="e">${em}</div></div>`;
     }).join('');
-    return `<div class="card"><h3>This week</h3><div class="week">${cells}</div></div>`;
+    return `<div class="card"><h3>This week</h3><div class="week ${HOMEWORK_DAYS.length === 5 ? 'five' : ''}">${cells}</div></div>`;
   }
 
   // ----- Calendar -----
@@ -595,6 +621,7 @@
       <div class="card hero-stars">
         <div class="count"><span>⭐</span> ${available}</div>
         <div class="muted" style="font-size:18px;margin-top:6px">${available === 1 ? 'star' : 'stars'} to spend · ${s.totalStars} earned ever</div>
+        <div class="muted" style="font-size:15px;margin-top:4px">📝 ${s.hwStars} from homework · 🏫 ${s.schoolStars} from school</div>
       </div>
       <div class="stat-grid">
         <div class="stat"><div class="ico">🔥</div><div class="num">${s.streak}</div><div class="lbl">nights in a row</div></div>
@@ -668,7 +695,7 @@
 
     // Weekly strip Mon–Fri
     const t = today();
-    const monday = addDays(t, -((t.getDay() + 6) % 7));
+    const monday = mondayOf(t);
     const week = SCHOOL_DAYS.map(dow => {
       const d = addDays(monday, dow - 1), v = state.school[keyOf(d)];
       const em = v === 'ontime' ? '⏰' : v === 'late' ? '🐢' : v === 'off' ? '🏠' : d > t ? '⬜' : '➖';
@@ -691,10 +718,11 @@
     html += `
       <div class="stat-grid" style="margin-top:6px">
         <div class="stat"><div class="ico">🔥</div><div class="num">${s.schoolStreak}</div><div class="lbl">on time in a row</div></div>
-        <div class="stat"><div class="ico">⏰</div><div class="num">${s.onTimeDays}</div><div class="lbl">on-time days</div></div>
+        <div class="stat"><div class="ico">⭐</div><div class="num">${s.schoolStars}</div><div class="lbl">school stars</div></div>
         <div class="stat"><div class="ico">💯</div><div class="num">${allTotal ? Math.round((s.onTimeDays / allTotal) * 100) : 0}%</div><div class="lbl">on time overall</div></div>
       </div>
-      <div class="card"><h3>This week</h3><div class="week five">${week}</div></div>
+      <div class="card"><h3>This week</h3><div class="week five">${week}</div>
+        <p class="center" style="margin:12px 0 0;font-weight:600">${weekBonusText(monday)}</p></div>
       <div class="card">
         ${calHeader(schoolMonth, 'scm')}
         <div class="muted">${mTotal ? `On time <b>${mOn}</b> of <b>${mTotal}</b> school days (${mPct}%)` : 'No days logged this month yet.'}</div>
@@ -711,13 +739,15 @@
     el.innerHTML = html;
     wireDayNav('sc', d => { schoolDate = d; renderSchool(); });
     const set = v => {
-      const before = stats().schoolStreak;
+      const before = stats();
       if (state.school[key] === v) delete state.school[key]; else state.school[key] = v;
       save();
       if (state.school[key] === 'ontime') {
         play('check'); buzz(30); confetti(60, ['⏰', '🌞', '⭐']);
-        const after = stats().schoolStreak;
-        if (after > before && after > 1 && after % 5 === 0) {
+        const afterStats = stats(), after = afterStats.schoolStreak;
+        if (afterStats.perfectWeeks > before.perfectWeeks) {
+          setTimeout(() => { play('fanfare'); confetti(120, ['🌞', '⭐']); celebrate('🌞', 'Perfect week!', 'On time every day this week! You earned a BONUS star! ⭐'); }, 400);
+        } else if (after > before.schoolStreak && after > 1 && after % 5 === 0) {
           setTimeout(() => { play('fanfare'); celebrate('🌞', `${after} days on time!`, 'You are an Early Bird superstar!'); }, 400);
         } else setTimeout(checkNewBadges, 500);
       } else if (state.school[key] === 'late') play('late');
@@ -730,6 +760,14 @@
     if ($('scUndo')) $('scUndo').onclick = () => { delete state.school[key]; save(); renderAll(); };
     $('scmPrev').onclick = () => { schoolMonth = new Date(schoolMonth.getFullYear(), schoolMonth.getMonth() - 1, 1); renderSchool(); };
     $('scmNext').onclick = () => { schoolMonth = new Date(schoolMonth.getFullYear(), schoolMonth.getMonth() + 1, 1); renderSchool(); };
+  }
+
+  function weekBonusText(monday) {
+    if (isPerfectWeek(monday)) return '🌞 Perfect week! Bonus ⭐ earned!';
+    const vals = weekDays(monday).map(d => state.school[keyOf(d)]);
+    if (vals.includes('late')) return 'Every on-time day earns a ⭐. Try for a perfect week next week!';
+    const left = vals.filter(v => !v).length;
+    return `Every on-time day = 1 ⭐. On time all week = bonus ⭐! (${left} ${left === 1 ? 'day' : 'days'} to go)`;
   }
 
   function wireDayNav(prefix, setDate) {
@@ -766,7 +804,7 @@
 
       <div class="card">
         <h2>🎯 Prize goal</h2>
-        <p class="muted" style="margin-top:0">Pick a reward. Each homework is 1 ⭐, plus a bonus ⭐ when all 3 are done (4 per night).</p>
+        <p class="muted" style="margin-top:0">Pick a reward. Homework: 1 ⭐ per assignment, plus a bonus ⭐ when all 3 are done (Friday reading is 1 ⭐). School: 1 ⭐ per on-time day, plus a bonus ⭐ for a week on time every day.</p>
         <div class="row2">
           <div class="field"><label for="gPrize">Prize</label><input id="gPrize" type="text" maxlength="40" placeholder="e.g. Ice cream trip" value="${esc(prize.name)}" /></div>
           <div class="field"><label for="gCost">Stars</label><input id="gCost" type="number" min="1" max="999" inputmode="numeric" value="${Number(prize.cost) || 25}" /></div>

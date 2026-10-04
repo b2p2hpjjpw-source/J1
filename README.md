@@ -4,26 +4,28 @@ A fun phone app for a 7-year-old to check off nightly homework and track whether
 
 ## What it does
 
-**📝 Homework (Monday–Thursday)**
-- Three big buttons to tap: **🔢 Math**, **📚 Reading (20 minutes)** and **🦉 Wit & Wisdom**.
+**📝 Homework (Monday–Friday)**
+- Monday–Thursday: three big buttons to tap: **🔢 Math**, **📚 Reading (20 minutes)** and **🔤 Word Study**.
+- Friday: just **📚 Reading (20 minutes)**.
 - A rocket flies toward the moon as he checks each one off, with confetti and sounds.
 - A built-in **20-minute reading timer** checks off Reading on its own when time is up. It keeps counting if the phone is locked or the app is closed.
 - When all three are done, a big "HOMEWORK HERO!" celebration plays.
-- Fridays and weekends show a "No homework, go play!" screen.
+- Weekends show a "No homework, go play!" screen.
 - Grown-ups can mark a night as "no homework" (holiday, sick day) so it doesn't break the streak.
 - The ◀ ▶ arrows let you go back and fix a night you forgot to log.
 
 **🏆 My Stars**
-- 1 ⭐ per assignment, plus a bonus ⭐ for finishing all three (4 stars per night).
+- Homework: 1 ⭐ per assignment, plus a bonus ⭐ for finishing all three (4 stars Mon–Thu, 1 star for Friday reading).
+- School: 1 ⭐ for every on-time day, plus a bonus ⭐ for a perfect week (on time every school day; "No school" days don't count against it).
 - A 🔥 streak of nights in a row, total "hero nights", this week at a glance and a monthly calendar.
-- 15 badges to unlock (Bookworm, Math Whiz, Wise Owl, Full Week, Early Bird…).
+- 16 badges to unlock (Bookworm, Math Whiz, Spelling Bee, Full Week, Perfect Week, Early Bird…).
 - An optional **prize goal** a grown-up sets (e.g. "Ice cream trip, 25 ⭐"), with a progress bar.
 
 **🏫 School**
 - Each school day (Mon–Fri): tap **⏰ On time!** or **🐢 A little late** (or "No school today").
 - Shows his on-time streak, on-time percentage, this week at a glance and a monthly calendar.
 
-**🔒 Grown-ups** (locked behind a multiplication question)
+**🔒 Grown-ups** (locked behind a two-digit × one-digit multiplication question, like 47 × 8)
 - Child's name and buddy avatar, sound on/off.
 - Set the prize, and mark it as given (this spends the stars).
 - Download or restore a backup file, or erase all progress.
@@ -55,9 +57,9 @@ npx http-server -p 8080 .
 The assignments, homework days and school days are set at the top of `app.js`:
 
 ```js
-const TASKS = [ { id: 'math', name: 'Math', emoji: '🔢', ... }, ... ];
-const HOMEWORK_DAYS = [1, 2, 3, 4]; // Mon–Thu (0 = Sunday)
+const TASKS = [ { id: 'math', name: 'Math', emoji: '🔢', days: [1, 2, 3, 4], ... }, ... ]; // days: 0 = Sunday
+const HOMEWORK_DAYS = [1, 2, 3, 4, 5]; // days with any homework
 const SCHOOL_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
 ```
 
-If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g. `homework-hero-v2`) so phones pick up the new version.
+If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g. `homework-hero-v3`) so phones pick up the new version.
