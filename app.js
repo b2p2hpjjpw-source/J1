@@ -728,7 +728,7 @@
         <div class="muted">${mTotal ? `On time <b>${mOn}</b> of <b>${mTotal}</b> school days (${mPct}%)` : 'No days logged this month yet.'}</div>
         <div class="meter green"><div style="width:${mPct}%"></div></div>
         ${calendar(schoolMonth, (d, k) => {
-          if (!isSchoolDay(d)) return { cls: 'weekend' };
+          if (!isSchoolDay(d)) return { em: '🏠', cls: 'weekend' };
           const v = state.school[k];
           return { em: v === 'ontime' ? '⏰' : v === 'late' ? '🐢' : v === 'off' ? '🏠' : '' };
         })}

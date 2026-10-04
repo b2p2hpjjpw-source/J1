@@ -62,4 +62,4 @@ const HOMEWORK_DAYS = [1, 2, 3, 4, 5]; // days with any homework
 const SCHOOL_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
 ```
 
-If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g. `homework-hero-v3`) so phones pick up the new version.
+If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g. `homework-hero-v4`) so phones pick up the new version.
