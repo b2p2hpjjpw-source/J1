@@ -20,6 +20,7 @@ A horse-and-farm themed phone app for Lucas (3) to track daily allergy immunothe
 - **Moved up a step!**: gives the bonus star with a celebration. There's also "Undo last move up", plus +/− to fix the step number or the total number of steps without giving a star.
 - **Prize:** name it, pick a picture or **take or choose a photo of the real prize**, and set how many stars it costs. Tap **Prize given!** to spend the stars and start the next prize.
 - **Calendar:** tap any past day to set Full, Half or None (for a forgotten day or a wrong tap).
+- **🎙️ Your voice:** record yourself saying each line the buddy says (OIT time, after a full/half dose, already done today, weekly bonus, step up, last step, prize, keep going). Lucas then hears you instead of the phone's voice. Lines you don't record use the phone's voice. Recordings stay on the phone and aren't in the backup file.
 - Child's name (set to Lucas), buddy animal, sounds and talking buddy on/off, backup download/restore, erase.
 
 ## Putting it on the phone

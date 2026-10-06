@@ -124,10 +124,16 @@
 
   // ---------- Sound, voice, buzz ----------
   let audioCtx = null;
+  function getCtx() {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+  // Phones only allow sound after a tap; wake the audio up on the first touch.
+  document.addEventListener('pointerdown', () => { try { const c = getCtx(); if (c.state === 'suspended') c.resume(); } catch (e) { /* no audio */ } }, true);
   function tone(freq, start, dur, type = 'sine', vol = 0.18) {
     if (!state.sound) return;
     try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      getCtx();
       const t0 = audioCtx.currentTime + start;
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = type; o.frequency.setValueAtTime(freq, t0);
@@ -150,7 +156,7 @@
   function neigh() {
     if (!state.sound) return;
     try {
-      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      getCtx();
       const t0 = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
       const lfo = audioCtx.createOscillator(), lfoGain = audioCtx.createGain();
       o.type = 'sawtooth';
@@ -196,8 +202,11 @@
       if (currentView === 'grownups' && grownupUnlocked && !$('gVoicePick')?.matches(':focus')) renderGrownups();
     });
   }
-  function say(text, force) {
-    if ((!state.voice && !force) || !('speechSynthesis' in window)) return;
+  // Speak a line. If a grown-up recorded their own voice for this line (slot), play that instead.
+  function say(text, slot, force) {
+    if (!state.voice && !force) return;
+    if (slot && playClip(slot)) return;
+    if (!('speechSynthesis' in window)) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, ''));
@@ -207,6 +216,134 @@
       speechSynthesis.speak(u);
     } catch (e) { /* no voice */ }
   }
+  // ---------- Grown-up's own voice ----------
+  // Each slot is a line the buddy says. Recordings live in IndexedDB on this phone (too big for localStorage).
+  const VOICE_SLOTS = [
+    { id: 'oit', label: 'OIT time', script: () => `"OIT time, ${state.name || 'buddy'}! Is it a full dose or a half dose?"` },
+    { id: 'full', label: 'After a FULL dose', script: () => '"Yee-haw! A full dose! You got a star!"' },
+    { id: 'half', label: 'After a HALF dose', script: () => '"Great job! A half dose! You got a star!"' },
+    { id: 'done', label: 'Already done today', script: () => `"You already did OIT today, ${state.name || 'buddy'}. I'm so proud of you!"` },
+    { id: 'week', label: 'Every day this week (bonus)', script: () => '"Bonus star! You did OIT every single day this week!"' },
+    { id: 'step', label: 'Moved up a step (bonus)', script: () => '"Giddy-up! You moved up a step! Bonus star!"' },
+    { id: 'barn', label: 'Reached the last step', script: () => '"You made it all the way to the barn! Yee-haw!"' },
+    { id: 'prize', label: 'Earned the prize', script: () => '"You earned your prize! Go show me!"' },
+    { id: 'keepgoing', label: 'Tapping the prize or trail', script: () => '"Keep going, cowboy! More stars to get your prize!"' },
+  ];
+  const clips = {}; // slot -> { buffer, start, end }
+  let clipPlaying = null;
+
+  function idb() {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) return reject(new Error('no indexedDB'));
+      const r = indexedDB.open('star-steps-voice', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('clips');
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  }
+  async function idbDo(mode, fn) {
+    const db = await idb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('clips', mode), req = fn(tx.objectStore('clips'));
+      tx.oncomplete = () => resolve(req && req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const clipSave = (id, blob) => idbDo('readwrite', st => st.put(blob, id));
+  const clipDelete = id => idbDo('readwrite', st => st.delete(id));
+  const clipClearAll = () => idbDo('readwrite', st => st.clear());
+
+  // Decode a recording and find where the talking starts and stops, so taps before/after don't add silence.
+  async function loadClip(id, blob) {
+    const buf = await new Promise((resolve, reject) => {
+      blob.arrayBuffer().then(ab => {
+        const p = getCtx().decodeAudioData(ab, resolve, reject);
+        if (p && p.then) p.then(resolve, reject);
+      }, reject);
+    });
+    const data = buf.getChannelData(0), rate = buf.sampleRate;
+    let peak = 0;
+    for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+    const th = Math.max(0.01, peak * 0.08);
+    let a = 0, b = data.length - 1;
+    while (a < b && Math.abs(data[a]) < th) a++;
+    while (b > a && Math.abs(data[b]) < th) b--;
+    clips[id] = { buffer: buf, start: Math.max(0, a / rate - 0.12), end: Math.min(buf.duration, b / rate + 0.25), gain: peak > 0 ? Math.min(4, 0.9 / peak) : 1 };
+  }
+  async function loadAllClips() {
+    try {
+      const keys = await idbDo('readonly', st => st.getAllKeys());
+      for (const id of keys || []) {
+        const blob = await idbDo('readonly', st => st.get(id));
+        if (blob) await loadClip(id, blob).catch(() => { /* unreadable clip; TTS fallback */ });
+      }
+    } catch (e) { /* no IndexedDB; TTS only */ }
+  }
+  function playClip(id) {
+    const c = clips[id];
+    if (!c) return false;
+    try {
+      const ctx = getCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      if (clipPlaying) { try { clipPlaying.stop(); } catch (e) { /* already stopped */ } }
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = c.buffer; g.gain.value = c.gain;
+      src.connect(g).connect(ctx.destination);
+      src.start(0, c.start, Math.max(0.1, c.end - c.start));
+      clipPlaying = src;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  async function recordSlot(slot) {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      toast('The microphone is blocked. Allow microphone access for this app in the phone\'s Settings, then try again.');
+      return;
+    }
+    const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+    const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    let secs = 10, timer = null, cancelled = false;
+    mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      clearInterval(timer);
+      stream.getTracks().forEach(t => t.stop());
+      if (cancelled || !chunks.length) return;
+      const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' });
+      try {
+        await loadClip(slot.id, blob);
+        await clipSave(slot.id, blob);
+        closeModal();
+        renderGrownups();
+        setTimeout(() => playClip(slot.id), 150);
+      } catch (e) {
+        toast('That recording could not be saved. Please try again.');
+      }
+    };
+    openModal(`
+      <div class="rec-dot"></div>
+      <h2>Recording…</h2>
+      <p class="muted">${esc(slot.label)}. Say something like:</p>
+      <p style="font-size:22px;font-weight:600">${esc(slot.script())}</p>
+      <p class="muted" id="recLeft">Stops by itself in 10 seconds</p>
+      <button class="big-btn pink" id="recStop">■ Done</button>
+      <button class="link-btn" id="recCancel">Cancel</button>`, () => { if (mr.state !== 'inactive') { cancelled = true; mr.stop(); } });
+    $('recStop').onclick = () => { if (mr.state !== 'inactive') mr.stop(); };
+    $('recCancel').onclick = () => closeModal();
+    mr.start();
+    timer = setInterval(() => {
+      secs--;
+      const el = $('recLeft');
+      if (el) el.textContent = `Stops by itself in ${secs} second${secs === 1 ? '' : 's'}`;
+      if (secs <= 0 && mr.state !== 'inactive') mr.stop();
+    }, 1000);
+  }
+
   const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ignore */ } };
 
   // ---------- Confetti & flying star ----------
@@ -267,7 +404,7 @@
     (c.sound || sfx.fanfare)();
     confetti(c.confetti || 50);
     buzz([60, 40, 120]);
-    say(c.speak || c.title);
+    say(c.speak || c.title, c.slot);
     openModal(`
       <div class="huge">${c.emoji}</div>
       <h2>${c.title}</h2>
@@ -315,7 +452,7 @@
     const out = [];
     const isFullWeek = fullWeekKeys().includes(keyOf(weekStartOf(fromKey(key))));
     if (isFullWeek && !wasFullWeek && type) {
-      out.push({ emoji: '🗓️🌟', title: 'Bonus star!', text: 'You did OIT <b>every day</b> this week!', speak: 'Bonus star! You did O.I.T. every day this week!' });
+      out.push({ emoji: '🗓️🌟', title: 'Bonus star!', text: 'You did OIT <b>every day</b> this week!', speak: 'Bonus star! You did O.I.T. every day this week!', slot: 'week' });
     }
     out.push(...prizeCheck(before));
     return out;
@@ -332,6 +469,7 @@
       title: 'You earned your prize!',
       text: `${esc(state.prize.name || 'Your prize')}! Go show a grown-up! 🎉`,
       speak: `You earned your prize! ${state.prize.name}! Go show a grown-up!`,
+      slot: 'prize',
       confetti: 90,
     }];
   }
@@ -342,7 +480,7 @@
     const extra = setDose(key, type);
     sfx.star(); buzz(80); confetti(30);
     flyStar(btn);
-    say(`${pick(CHEERS)} ${type === 'full' ? 'Full dose' : 'Half dose'}! You got a star!`);
+    say(`${pick(CHEERS)} ${type === 'full' ? 'Full dose' : 'Half dose'}! You got a star!`, type);
     renderToday(true);
     if (extra.length) setTimeout(() => celebrate(extra), 1500);
   }
@@ -358,7 +496,7 @@
   $('avatarBtn').onclick = () => {
     sfx.tap();
     const done = !!state.doses[keyOf(today())];
-    say(done ? `Hi ${state.name}! You already did O.I.T. today. Great job!` : `O.I.T. time, ${state.name}!`);
+    say(done ? `Hi ${state.name}! You already did O.I.T. today. Great job!` : `O.I.T. time, ${state.name}!`, done ? 'done' : 'oit');
   };
 
   // ---------- Today ----------
@@ -419,7 +557,7 @@
     if (act === 'dose') kidLogDose(t.dataset.type, t);
     if (act === 'speak') {
       const dose = state.doses[keyOf(today())];
-      say(dose ? 'You got your star for today! Great job!' : `O.I.T. time, ${state.name}! Did you take a full dose or a half dose? Tap one!`);
+      say(dose ? 'You got your star for today! Great job!' : `O.I.T. time, ${state.name}! Did you take a full dose or a half dose? Tap one!`, dose ? 'done' : 'oit');
     }
     if (act === 'go-steps') showView('steps');
     if (act === 'undo') askGrownup(() => { grownupUnlocked = false; doseChooser(keyOf(today())); });
@@ -489,7 +627,7 @@
     if (!t) return;
     if (t.dataset.act === 'say-prize') {
       const left = Math.max(0, state.prize.cost - stats().stars);
-      say(left ? `${left} more stars to get your ${state.prize.name || 'prize'}!` : `You earned your ${state.prize.name || 'prize'}!`);
+      say(left ? `${left} more stars to get your ${state.prize.name || 'prize'}!` : `You earned your ${state.prize.name || 'prize'}!`, left ? 'keepgoing' : 'prize');
     }
     calendarNav(t, renderJar);
   });
@@ -599,7 +737,7 @@
   $('view-steps').addEventListener('click', e => {
     if (e.target.closest('[data-act="say-step"]')) {
       const left = state.totalSteps - state.step;
-      say(left ? `You are on step ${state.step}! ${left} more steps to the barn! Giddy-up!` : 'Yee-haw! You made it to the barn!');
+      say(left ? `You are on step ${state.step}! ${left} more steps to the barn! Giddy-up!` : 'Yee-haw! You made it to the barn!', left ? 'keepgoing' : 'barn');
     }
   });
 
@@ -680,6 +818,20 @@
       </div>
 
       <div class="card">
+        <h3>🎙️ Your voice</h3>
+        <p class="hint" style="margin-top:0">Record yourself saying each line and ${esc(state.name || 'your child')} hears <b>you</b> instead of the phone's voice. Lines you skip use the phone's voice.</p>
+        ${canRecord() ? VOICE_SLOTS.map(v => `
+          <div class="voice-row">
+            <div class="voice-txt"><b>${clips[v.id] ? '✅' : '⚪'} ${esc(v.label)}</b><span>${esc(v.script())}</span></div>
+            <div class="voice-btns">
+              <button class="vbtn rec" data-rec="${v.id}" aria-label="Record">●</button>
+              ${clips[v.id] ? `<button class="vbtn" data-play="${v.id}" aria-label="Play">▶</button><button class="vbtn del" data-del="${v.id}" aria-label="Delete">🗑</button>` : ''}
+            </div>
+          </div>`).join('') : '<p>This phone\'s browser can\'t record audio. Try updating it, or open the app in Safari or Chrome.</p>'}
+        <p class="hint">Recordings stay on this phone (they aren't part of the backup file).</p>
+      </div>
+
+      <div class="card">
         <h3>💾 Backup</h3>
         <p class="hint" style="margin-top:0">Progress lives only on this phone. Save a backup now and then.</p>
         <div class="row"><button class="big-btn blue" id="gExport" style="font-size:18px">Download</button><button class="big-btn blue" id="gImportBtn" style="font-size:18px">Restore</button></div>
@@ -701,6 +853,7 @@
         title: top ? 'You made it to the barn!' : `Step ${state.step}!`,
         text: top ? 'You rode all the way! Bonus star!' : 'Giddy-up! You trotted up a step! <b>Bonus star!</b>',
         speak: top ? 'Yee-haw! You made it all the way to the barn! Bonus star!' : `Giddy-up! You trotted up to step ${state.step}! Bonus star!`,
+        slot: top ? 'barn' : 'step',
         confetti: 80,
       }, ...prizeCheck(before)]);
     };
@@ -733,8 +886,16 @@
     $('gAvatar').onclick = e => { const b = e.target.closest('[data-avatar]'); if (b) set(() => { state.avatar = b.dataset.avatar; })(); };
     $('gSound').onclick = set(() => { state.sound = !state.sound; });
     $('gVoice').onclick = set(() => { state.voice = !state.voice; if (!state.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); });
-    $('gVoicePick').onchange = e => { state.voiceName = e.target.value; save(); say(`Hi ${state.name}! OIT time! Giddy-up!`, true); };
-    $('gVoiceTest').onclick = () => say(`Hi ${state.name}! OIT time! Did you take a full dose or a half dose? Yee-haw, you got a star!`, true);
+    $('gVoicePick').onchange = e => { state.voiceName = e.target.value; save(); say(`Hi ${state.name}! OIT time! Giddy-up!`, null, true); };
+    $('gVoiceTest').onclick = () => say(`Hi ${state.name}! OIT time! Did you take a full dose or a half dose? Yee-haw, you got a star!`, null, true);
+
+    $('view-grownups').querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordSlot(VOICE_SLOTS.find(v => v.id === b.dataset.rec)));
+    $('view-grownups').querySelectorAll('[data-play]').forEach(b => b.onclick = () => playClip(b.dataset.play));
+    $('view-grownups').querySelectorAll('[data-del]').forEach(b => b.onclick = () => {
+      if (!confirm('Delete this recording? The phone\'s voice will say this line instead.')) return;
+      delete clips[b.dataset.del];
+      clipDelete(b.dataset.del).catch(() => { /* already gone */ }).then(renderGrownups);
+    });
 
     $('gExport').onclick = () => {
       const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' });
@@ -758,7 +919,7 @@
     };
     $('gReset').onclick = () => {
       if (confirm('Erase all stars, doses and settings on this phone? This cannot be undone.')) {
-        state = structuredClone(DEFAULT_STATE); save(); renderAll();
+        state = structuredClone(DEFAULT_STATE); save(); Object.keys(clips).forEach(k => delete clips[k]); clipClearAll().catch(() => { /* none */ }); renderAll();
       }
     };
     $('gLock').onclick = () => { grownupUnlocked = false; renderGrownups(); };
@@ -810,6 +971,7 @@
 
   renderTop();
   renderToday();
+  loadAllClips().then(() => { if (currentView === 'grownups') renderGrownups(); });
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     // If an update takes over while the app is open, reload once so the new version shows.

@@ -242,6 +242,18 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
 .history li { padding: 6px 0; border-top: 2px solid #f5eef9; }
 .hint { font-size: 14px; color: var(--ink-soft); margin: 6px 0 0; }
 
+/* ---------- Your voice ---------- */
+.voice-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 2px solid #f5eef9; }
+.voice-txt { flex: 1; min-width: 0; }
+.voice-txt b { display: block; font-size: 16px; }
+.voice-txt span { display: block; font-size: 14px; color: var(--ink-soft); }
+.voice-btns { display: flex; gap: 6px; flex: none; }
+.vbtn { width: 44px; height: 44px; border-radius: 50%; background: #e7f3ff; font-size: 18px; font-weight: 700; color: var(--blue-dark); }
+.vbtn.rec { background: #ffe3df; color: var(--red); font-size: 22px; }
+.vbtn.del { background: #f5f0f8; font-size: 18px; }
+.rec-dot { width: 70px; height: 70px; border-radius: 50%; background: var(--red); margin: 6px auto 4px; animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(.8); opacity: .6; } }
+
 /* ---------- Modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 20; background: rgba(58, 42, 74, .45); display: grid; place-items: center; padding: 20px; }
 .modal.hidden { display: none; }
