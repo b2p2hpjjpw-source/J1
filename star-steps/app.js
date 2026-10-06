@@ -33,6 +33,7 @@
     avatar: '🐴',
     sound: true,
     voice: true,
+    voiceName: '', // '' = pick the most natural-sounding voice on this phone automatically
     step: 7,
     totalSteps: 13,
     stepUps: [],  // [{ date: 'YYYY-MM-DD', to: 8 }] — each one is a bonus star
@@ -165,12 +166,44 @@
       o.start(t0); lfo.start(t0); o.stop(t0 + 1); lfo.stop(t0 + 1);
     } catch (e) { /* no audio */ }
   }
-  function say(text) {
-    if (!state.voice || !('speechSynthesis' in window)) return;
+  // ---------- Talking buddy ----------
+  // Phones ship many voices; the default is often a robotic one. Rank the English voices so the
+  // newer natural-sounding ones (Premium/Enhanced/Neural/Google) win and novelty voices lose.
+  const NOVELTY_VOICES = /albert|bad news|bahh|bells|boing|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|fred|junior|ralph|kathy|princess|grandma|grandpa|eddy|flo|reed|rocko|sandy|shelley|hysterical|deranged/i;
+  function voiceScore(v) {
+    let n = 0;
+    if (/premium/i.test(v.name)) n += 40;
+    if (/enhanced|neural|natural|wavenet|studio/i.test(v.name)) n += 30;
+    if (/siri/i.test(v.name)) n += 25;
+    if (/google/i.test(v.name)) n += 20;
+    if (/samantha|ava|allison|zoe|evan|nicky|aria|jenny|susan|karen|serena|moira|tessa|daniel/i.test(v.name)) n += 10;
+    if (/^en[-_]US/i.test(v.lang)) n += 6;
+    else if (/^en[-_](GB|AU|CA|IE|NZ)/i.test(v.lang)) n += 3;
+    if (NOVELTY_VOICES.test(v.name)) n -= 100;
+    return n;
+  }
+  function englishVoices() {
+    if (!('speechSynthesis' in window)) return [];
+    return speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)).sort((a, b) => voiceScore(b) - voiceScore(a));
+  }
+  function pickVoice() {
+    const list = englishVoices();
+    return list.find(v => v.name === state.voiceName) || list[0] || null;
+  }
+  if ('speechSynthesis' in window) {
+    speechSynthesis.getVoices(); // starts loading the list on some phones
+    speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', () => {
+      if (currentView === 'grownups' && grownupUnlocked && !$('gVoicePick')?.matches(':focus')) renderGrownups();
+    });
+  }
+  function say(text, force) {
+    if ((!state.voice && !force) || !('speechSynthesis' in window)) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, ''));
-      u.rate = 0.95; u.pitch = 1.25;
+      const v = pickVoice();
+      if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-US';
+      u.rate = 0.92; u.pitch = 1.05; // a touch slower and warmer for a little listener; high pitch sounds robotic
       speechSynthesis.speak(u);
     } catch (e) { /* no voice */ }
   }
@@ -634,6 +667,16 @@
         </div>
         <div class="toggle">Sounds <button class="switch ${state.sound ? 'on' : ''}" id="gSound" aria-label="Sounds"></button></div>
         <div class="toggle">Talking buddy <button class="switch ${state.voice ? 'on' : ''}" id="gVoice" aria-label="Talking buddy"></button></div>
+        <div class="field"><label>Buddy's voice</label>
+          <div>
+            <select id="gVoicePick">
+              <option value="">Best voice on this phone${pickVoice() ? ` (${esc(pickVoice().name)})` : ''}</option>
+              ${englishVoices().map(v => `<option value="${esc(v.name)}" ${v.name === state.voiceName ? 'selected' : ''}>${esc(v.name)} · ${esc(v.lang)}</option>`).join('')}
+            </select>
+            <button class="big-btn blue" id="gVoiceTest" style="font-size:18px">▶ Test the voice</button>
+          </div>
+          <p class="hint">For the most natural voice on iPhone: Settings → Accessibility → Spoken Content → Voices → English, download a voice marked <b>Enhanced</b> or <b>Premium</b> (Ava, Zoe or Evan sound great), then come back and pick it here. On Android, Google voices usually sound best.</p>
+        </div>
       </div>
 
       <div class="card">
@@ -690,6 +733,8 @@
     $('gAvatar').onclick = e => { const b = e.target.closest('[data-avatar]'); if (b) set(() => { state.avatar = b.dataset.avatar; })(); };
     $('gSound').onclick = set(() => { state.sound = !state.sound; });
     $('gVoice').onclick = set(() => { state.voice = !state.voice; if (!state.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); });
+    $('gVoicePick').onchange = e => { state.voiceName = e.target.value; save(); say(`Hi ${state.name}! OIT time! Giddy-up!`, true); };
+    $('gVoiceTest').onclick = () => say(`Hi ${state.name}! OIT time! Did you take a full dose or a half dose? Yee-haw, you got a star!`, true);
 
     $('gExport').onclick = () => {
       const blob = new Blob([JSON.stringify(state, null, 1)], { type: 'application/json' });

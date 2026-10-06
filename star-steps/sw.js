@@ -1,6 +1,6 @@
 // Offline support. Online: always fetch the latest files (so updates show up right away)
 // and keep a copy. Offline: serve the saved copy.
-const CACHE = 'star-steps-v5';
+const CACHE = 'star-steps-v6';
 const ASSETS = [
   './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
