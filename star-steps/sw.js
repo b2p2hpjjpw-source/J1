@@ -1,12 +1,17 @@
-// Offline support: serve the app from cache, refresh the cache in the background.
-const CACHE = 'star-steps-v4';
+// Offline support. Online: always fetch the latest files (so updates show up right away)
+// and keep a copy. Offline: serve the saved copy.
+const CACHE = 'star-steps-v5';
 const ASSETS = [
   './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', e => {
@@ -19,13 +24,18 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const sameOrigin = new URL(e.request.url).origin === self.location.origin;
   e.respondWith(
     caches.open(CACHE).then(async cache => {
-      const cached = await cache.match(e.request, { ignoreSearch: true });
-      const network = fetch(e.request)
-        .then(res => { if (res && (res.ok || res.type === 'opaque')) cache.put(e.request, res.clone()); return res; })
-        .catch(() => cached);
-      return cached || network;
+      try {
+        const res = await fetch(sameOrigin ? e.request.url : e.request, sameOrigin ? { cache: 'no-cache' } : undefined);
+        if (res && (res.ok || res.type === 'opaque')) cache.put(e.request, res.clone());
+        return res;
+      } catch (err) {
+        const cached = await cache.match(e.request, { ignoreSearch: true });
+        if (cached) return cached;
+        throw err;
+      }
     })
   );
 });

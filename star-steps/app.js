@@ -767,6 +767,17 @@
   renderToday();
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-    navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ });
+    // If an update takes over while the app is open, reload once so the new version shows.
+    const hadController = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !reloaded && modal.classList.contains('hidden')) { reloaded = true; location.reload(); }
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => {
+        reg.update();
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
+      })
+      .catch(() => { /* offline support is optional */ });
   }
 })();
