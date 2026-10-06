@@ -282,7 +282,7 @@
     const out = [];
     const isFullWeek = fullWeekKeys().includes(keyOf(weekStartOf(fromKey(key))));
     if (isFullWeek && !wasFullWeek && type) {
-      out.push({ emoji: '🗓️🌟', title: 'Bonus star!', text: 'You took your medicine <b>every day</b> this week!', speak: 'Bonus star! You took your medicine every day this week!' });
+      out.push({ emoji: '🗓️🌟', title: 'Bonus star!', text: 'You did OIT <b>every day</b> this week!', speak: 'Bonus star! You did O.I.T. every day this week!' });
     }
     out.push(...prizeCheck(before));
     return out;
@@ -325,7 +325,7 @@
   $('avatarBtn').onclick = () => {
     sfx.tap();
     const done = !!state.doses[keyOf(today())];
-    say(done ? `Hi ${state.name}! You already took your medicine today. Great job!` : `Hi ${state.name}! Time for your medicine!`);
+    say(done ? `Hi ${state.name}! You already did O.I.T. today. Great job!` : `O.I.T. time, ${state.name}!`);
   };
 
   // ---------- Today ----------
@@ -365,7 +365,7 @@
     $('view-today').innerHTML = `
       <div class="buddy-row">
         <div class="buddy-big">${state.avatar}</div>
-        <div class="bubble">${dose ? 'Star for today! ⭐' : `Medicine time${state.name ? ', ' + esc(state.name) : ''}! Tap one!`} <button class="speak-btn" data-act="speak" aria-label="Say it">🔊</button></div>
+        <div class="bubble">${dose ? 'Star for today! ⭐' : `OIT time${state.name ? ', ' + esc(state.name) : ''}!`} <button class="speak-btn" data-act="speak" aria-label="Say it">🔊</button></div>
       </div>
       ${top}
       <div class="card">
@@ -386,7 +386,7 @@
     if (act === 'dose') kidLogDose(t.dataset.type, t);
     if (act === 'speak') {
       const dose = state.doses[keyOf(today())];
-      say(dose ? 'You got your star for today! Great job!' : 'Medicine time! Did you take a full dose or a half dose? Tap one!');
+      say(dose ? 'You got your star for today! Great job!' : `O.I.T. time, ${state.name}! Did you take a full dose or a half dose? Tap one!`);
     }
     if (act === 'go-steps') showView('steps');
     if (act === 'undo') askGrownup(() => { grownupUnlocked = false; doseChooser(keyOf(today())); });
