@@ -63,3 +63,7 @@ const SCHOOL_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
 ```
 
 If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g. `homework-hero-v4`) so phones pick up the new version.
+
+---
+
+**Also in this repo:** [Star Steps](star-steps/), a daily allergy-medicine star chart for a 3-year-old. See [star-steps/README.md](star-steps/README.md).
