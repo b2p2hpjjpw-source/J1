@@ -6,9 +6,10 @@
   // ---------- Config ----------
   const STORE_KEY = 'star-steps-v1';
   const WEEK_START = 1; // 0 = Sunday, 1 = Monday. A "full week" bonus needs all 7 days from this day on.
-  const AVATARS = ['🦁', '🐶', '🐱', '🐻', '🐼', '🐯', '🐸', '🐵', '🐰', '🦊', '🐨', '🐷', '🦖', '🦕', '🦄', '🐳', '🐙', '🐢', '🚒', '🚂', '🚀', '🤖'];
-  const PRIZE_EMOJIS = ['🍦', '🧸', '🎈', '🚂', '🚗', '🦖', '🍩', '🎨', '🛝', '📚', '🍕', '🎁', '🧁', '🎠', '🦄', '⚽'];
-  const CHEERS = ['Yay!', 'You did it!', 'Super job!', 'Hooray!', 'High five!', 'So brave!', 'Wow!', 'Great job!'];
+  const AVATARS = ['🐴', '🐎', '🦄', '🐄', '🐷', '🐑', '🐐', '🐔', '🐓', '🐣', '🦆', '🐶', '🐱', '🐰', '🦊', '🐢', '🐸', '🐻', '🚜', '🦖', '🚂', '🚒'];
+  const PRIZE_EMOJIS = ['🍦', '🐴', '🎠', '🧸', '🚜', '🎈', '🍩', '🎨', '🛝', '📚', '🍕', '🎁', '🧁', '🍎', '🚂', '⚽'];
+  const CHEERS = ['Yee-haw!', 'Giddy-up!', 'You did it!', 'Super job!', 'Hooray!', 'High five!', 'So brave!', 'Great job, cowboy!'];
+  const FARM_BITS = ['⭐', '🌟', '🐴', '🌻', '🥕', '🍎', '✨', '💛'];
   const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -28,8 +29,8 @@
   // ---------- State ----------
   const DEFAULT_STATE = {
     version: 1,
-    name: '',
-    avatar: '🦁',
+    name: 'Lucas',
+    avatar: '🐴',
     sound: true,
     voice: true,
     step: 7,
@@ -50,6 +51,8 @@
       if (raw) {
         const s = Object.assign(structuredClone(DEFAULT_STATE), JSON.parse(raw));
         s.prize = Object.assign(structuredClone(DEFAULT_STATE.prize), s.prize);
+        if (!s.name) s.name = DEFAULT_STATE.name;
+        if (s.avatar === '🦁') s.avatar = DEFAULT_STATE.avatar; // old default buddy, before the farm theme
         return s;
       }
     } catch (e) { /* fall through to defaults */ }
@@ -136,10 +139,32 @@
   }
   const sfx = {
     tap: () => tone(660, 0, 0.08, 'triangle', 0.12),
-    star: () => [784, 988, 1175, 1568].forEach((f, i) => tone(f, i * 0.09, 0.25, 'triangle')),
-    fanfare: () => [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.13, i === 5 ? 0.6 : 0.2, 'square', 0.1)),
+    clop: () => [0, 0.14, 0.32, 0.46].forEach((t, i) => tone(i % 2 ? 620 : 880, t, 0.06, 'triangle', 0.22)),
+    star: () => { sfx.clop(); [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.6 + i * 0.09, 0.25, 'triangle')); },
+    neigh: () => neigh(),
+    fanfare: () => { neigh(); [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.13, i === 5 ? 0.6 : 0.2, 'square', 0.1)); },
     nope: () => tone(220, 0, 0.2, 'sawtooth', 0.08),
   };
+  // A little horse whinny: a wobbly pitch that rises then falls.
+  function neigh() {
+    if (!state.sound) return;
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      const lfo = audioCtx.createOscillator(), lfoGain = audioCtx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(600, t0);
+      o.frequency.linearRampToValueAtTime(1100, t0 + 0.25);
+      o.frequency.linearRampToValueAtTime(450, t0 + 0.9);
+      lfo.frequency.value = 14; lfoGain.gain.value = 60;
+      lfo.connect(lfoGain).connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.07, t0 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.95);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t0); lfo.start(t0); o.stop(t0 + 1); lfo.stop(t0 + 1);
+    } catch (e) { /* no audio */ }
+  }
   function say(text) {
     if (!state.voice || !('speechSynthesis' in window)) return;
     try {
@@ -152,7 +177,7 @@
   const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { /* ignore */ } };
 
   // ---------- Confetti & flying star ----------
-  function confetti(n = 40, bits = ['⭐', '🌟', '✨', '🎉', '🎈', '💛', '💖']) {
+  function confetti(n = 40, bits = FARM_BITS) {
     const box = $('confetti');
     for (let i = 0; i < n; i++) {
       const s = document.createElement('span');
@@ -340,7 +365,7 @@
     $('view-today').innerHTML = `
       <div class="buddy-row">
         <div class="buddy-big">${state.avatar}</div>
-        <div class="bubble">${dose ? 'Star for today! ⭐' : 'Medicine time! Tap one!'} <button class="speak-btn" data-act="speak" aria-label="Say it">🔊</button></div>
+        <div class="bubble">${dose ? 'Star for today! ⭐' : `Medicine time${state.name ? ', ' + esc(state.name) : ''}! Tap one!`} <button class="speak-btn" data-act="speak" aria-label="Say it">🔊</button></div>
       </div>
       ${top}
       <div class="card">
@@ -349,7 +374,7 @@
         <p class="hint center">Every day this week = bonus 🌟</p>
       </div>
       <div class="card" data-act="go-steps">
-        <div class="step-head"><h3>⛰️ My step</h3><b>${state.step} <span class="muted" style="font-size:18px">of ${state.totalSteps}</span></b></div>
+        <div class="step-head"><h3>🐎 My step</h3><b>${state.step} <span class="muted" style="font-size:18px">of ${state.totalSteps}</span></b></div>
         <div class="mini-steps">${miniSteps()}</div>
       </div>`;
   }
@@ -420,7 +445,7 @@
         <div class="tally">
           <div><div class="em">💊</div><b>${s.doses}</b><span>doses</span></div>
           <div><div class="em">🗓️</div><b>${s.fullWeeks}</b><span>full weeks</span></div>
-          <div><div class="em">⛰️</div><b>${s.stepUps}</b><span>steps up</span></div>
+          <div><div class="em">🐎</div><b>${s.stepUps}</b><span>steps up</span></div>
         </div>
       </div>
       ${calendarCard(false)}
@@ -451,27 +476,43 @@
       const d = new Date(y, m, day), k = keyOf(d), dose = state.doses[k];
       const future = d > now;
       cells += `<div class="d ${k === tk ? 'today' : ''} ${future ? 'future' : ''}" ${edit && !future ? `data-day="${k}"` : ''}>
-        ${dose ? doseSvg(dose.t) : `<span>${day}</span>`}${ups.has(k) ? '<span class="up">⛰️</span>' : ''}</div>`;
+        ${dose ? doseSvg(dose.t) : `<span>${day}</span>`}${ups.has(k) ? '<span class="up">🐎</span>' : ''}</div>`;
     }
     const atNow = y === now.getFullYear() && m === now.getMonth();
     return `<div class="card">
       <div class="cal-head"><button class="arrow" data-cal="-1" aria-label="Previous month">◀</button><b>${MONTHS[m]} ${y}</b><button class="arrow" data-cal="1" ${atNow ? 'disabled' : ''} aria-label="Next month">▶</button></div>
       <div class="cal ${edit ? 'edit' : ''}">${cells}</div>
-      ${edit ? '<p class="hint">Tap a day to fix it (full, half or none). ⛰️ = moved up a step that day.</p>' : ''}
+      ${edit ? '<p class="hint">Tap a day to fix it (full, half or none). 🐎 = moved up a step that day.</p>' : ''}
     </div>`;
   }
   function calendarNav(t, rerender) {
     if (t.dataset.cal) { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + Number(t.dataset.cal), 1); rerender(); }
   }
 
-  // ---------- Steps mountain ----------
+  // ---------- Steps trail (a horse ride up the hill to the barn) ----------
+  function barnSvg(x, y) {
+    return `<g transform="translate(${x - 45},${y})">
+      <rect x="4" y="44" width="82" height="56" fill="#d6453d"/>
+      <path d="M-4 48 L45 6 L94 48 Z" fill="#b8352e"/>
+      <path d="M-6 50 L45 4 L96 50" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+      <rect x="31" y="20" width="28" height="20" rx="3" fill="#fff"/><rect x="35" y="24" width="20" height="12" fill="#ffd98a"/>
+      <rect x="27" y="60" width="36" height="40" fill="#fff"/>
+      <path d="M31 64 L59 96 M59 64 L31 96" stroke="#d6453d" stroke-width="5"/>
+      <rect x="31" y="64" width="28" height="32" fill="none" stroke="#d6453d" stroke-width="4"/>
+    </g>`;
+  }
+  function fenceSvg(x1, x2, y) {
+    let posts = '';
+    for (let x = x1; x <= x2; x += 30) posts += `<rect x="${x}" y="${y - 22}" width="7" height="30" rx="2" fill="#fff"/>`;
+    return `<rect x="${x1}" y="${y - 16}" width="${x2 - x1 + 7}" height="5" fill="#fff"/><rect x="${x1}" y="${y - 4}" width="${x2 - x1 + 7}" height="5" fill="#fff"/>${posts}`;
+  }
   function renderSteps() {
     const n = state.totalSteps, cur = state.step;
-    const gap = 74, W = 320, top = 90, H = top + gap * (n - 1) + 70;
+    const gap = 72, W = 320, top = 190, H = top + gap * (n - 1) + 80;
     const pts = [];
     for (let i = 1; i <= n; i++) {
-      const y = H - 50 - (i - 1) * gap;
-      const x = W / 2 + Math.sin((i - 1) * 1.05) * 95;
+      const y = H - 56 - (i - 1) * gap;
+      const x = W / 2 + Math.sin((i - 1) * 1.05) * 90;
       pts.push([x, y]);
     }
     const path = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
@@ -479,26 +520,39 @@
     let stones = '';
     pts.forEach(([x, y], i) => {
       const step = i + 1, done = step < cur, now = step === cur;
-      const fill = done ? '#36c96b' : now ? '#ff6fa8' : '#ffffff';
-      const stroke = done ? '#23a052' : now ? '#e04786' : '#d9cde4';
+      const fill = done ? '#36c96b' : now ? '#e85a4f' : '#ffffff';
+      const stroke = done ? '#23a052' : now ? '#c23d33' : '#d8c7a8';
       stones += `<g ${now ? 'id="stoneNow"' : ''}>
         <circle cx="${x}" cy="${y}" r="27" fill="${fill}" stroke="${stroke}" stroke-width="5"/>
-        <text x="${x}" y="${y + 9}" text-anchor="middle" font-size="26" font-weight="700" fill="${done || now ? '#fff' : '#b5a6c4'}" font-family="Fredoka, sans-serif">${step}</text>
+        <text x="${x}" y="${y + 9}" text-anchor="middle" font-size="26" font-weight="700" fill="${done || now ? '#fff' : '#b39e7c'}" font-family="Fredoka, sans-serif">${step}</text>
         ${done ? `<text x="${x + 24}" y="${y - 16}" font-size="22" text-anchor="middle">⭐</text>` : ''}
-        ${now ? `<g class="stone-now"><text x="${x}" y="${y - 32}" font-size="46" text-anchor="middle">${state.avatar}</text></g>` : ''}
+        ${now && cur < n ? `<g class="stone-now"><text x="${x}" y="${y - 30}" font-size="50" text-anchor="middle">${state.avatar}</text></g>` : ''}
       </g>`;
+    });
+    // Flowers and farm friends scattered beside the trail.
+    const deco = ['🌻', '🐔', '🌼', '🐑', '🌻', '🥕', '🐄', '🌼', '🍎', '🐓'];
+    let decos = '';
+    pts.forEach(([x, y], i) => {
+      if (i % 2) return;
+      const dx = x > W / 2 ? -110 : 110;
+      decos += `<text x="${Math.min(W - 20, Math.max(20, x + dx))}" y="${y + 10}" font-size="28" text-anchor="middle" opacity=".9">${deco[(i / 2) % deco.length]}</text>`;
     });
     const atTop = cur >= n;
     $('view-steps').innerHTML = `
       <div class="card mountain-card">
-        <div class="mountain-title">${atTop ? '🏆 Top of the mountain! 🏆' : `Step ${cur} of ${n}`}</div>
-        <div class="mountain-sub">${atTop ? 'You climbed every step!' : `${n - cur} more to the top!`}</div>
+        <div class="mountain-title">${atTop ? '🏆 You made it to the barn! 🏆' : `Step ${cur} of ${n}`}</div>
+        <div class="mountain-sub">${atTop ? 'You rode all the way! Yee-haw!' : `${n - cur} more to the barn! Giddy-up!`}</div>
         <div class="mountain" data-act="say-step">
           <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Step ${cur} of ${n}">
-            <path d="M0 ${H} L${W / 2} ${top - 40} L${W} ${H} Z" fill="#c9ecd0"/>
-            <path d="M${W / 2 - 40} ${top + 8} L${W / 2} ${top - 40} L${W / 2 + 40} ${top + 8} Z" fill="#fff" opacity=".85"/>
-            <path d="${path}" fill="none" stroke="#b08a5a" stroke-width="12" stroke-dasharray="2 16" stroke-linecap="round" opacity=".55"/>
-            <text x="${tx}" y="${ty - (atTop ? 80 : 40)}" font-size="44" text-anchor="middle">🏆</text>
+            <circle cx="${W - 46}" cy="46" r="26" fill="#ffd23f"/>
+            <path d="M0 ${top + 10} Q${W * 0.25} ${top - 40} ${W / 2} ${top} T${W} ${top - 10} V${H} H0 Z" fill="#a8e07e"/>
+            <path d="M0 ${top + 120} Q${W * 0.3} ${top + 60} ${W * 0.65} ${top + 110} T${W} ${top + 90} V${H} H0 Z" fill="#8fd16a" opacity=".7"/>
+            ${fenceSvg(6, 110, top + 22)}
+            <path d="${path}" fill="none" stroke="#d9b27c" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" opacity=".75"/>
+            <path d="${path}" fill="none" stroke="#b8895a" stroke-width="6" stroke-dasharray="3 20" stroke-linecap="round" opacity=".6"/>
+            ${barnSvg(tx, ty - 150)}
+            ${atTop ? `<g class="stone-now"><text x="${tx}" y="${ty - 158}" font-size="50" text-anchor="middle">${state.avatar}</text></g>` : ''}
+            ${decos}
             ${stones}
           </svg>
         </div>
@@ -512,7 +566,7 @@
   $('view-steps').addEventListener('click', e => {
     if (e.target.closest('[data-act="say-step"]')) {
       const left = state.totalSteps - state.step;
-      say(left ? `You are on step ${state.step}! ${left} more steps to the top!` : 'You made it to the top of the mountain!');
+      say(left ? `You are on step ${state.step}! ${left} more steps to the barn! Giddy-up!` : 'Yee-haw! You made it to the barn!');
     }
   });
 
@@ -533,7 +587,7 @@
     const last = state.stepUps[state.stepUps.length - 1];
     $('view-grownups').innerHTML = `
       <div class="card">
-        <h3>⛰️ Immunotherapy step</h3>
+        <h3>🐎 Immunotherapy step</h3>
         <div class="stepper"><b>${state.step} / ${state.totalSteps}</b></div>
         <button class="big-btn pink" id="gUp" ${state.step >= state.totalSteps ? 'disabled' : ''}>⬆️ Moved up to step ${Math.min(state.step + 1, state.totalSteps)}!</button>
         ${last ? `<button class="link-btn" id="gUndoUp">Undo last move up (step ${last.to}, ${shortDate(fromKey(last.date))})</button>` : ''}
@@ -543,7 +597,7 @@
         <div class="field"><label>Total steps in his plan</label>
           <div class="stepper"><button id="gTotMinus" aria-label="Fewer total steps">−</button><b>${state.totalSteps}</b><button id="gTotPlus" aria-label="More total steps">+</button></div>
         </div>
-        ${state.stepUps.length ? `<ul class="history">${state.stepUps.slice().reverse().map(u => `<li>⛰️ Step ${u.to} · ${shortDate(fromKey(u.date))}</li>`).join('')}</ul>` : ''}
+        ${state.stepUps.length ? `<ul class="history">${state.stepUps.slice().reverse().map(u => `<li>🐎 Step ${u.to} · ${shortDate(fromKey(u.date))}</li>`).join('')}</ul>` : ''}
       </div>
 
       <div class="card">
@@ -600,10 +654,10 @@
       save();
       const top = state.step >= state.totalSteps;
       celebrate([{
-        emoji: top ? '🏆' : '⛰️🌟',
-        title: top ? 'Top of the mountain!' : `Step ${state.step}!`,
-        text: top ? 'You climbed every step! Bonus star!' : 'You climbed up a step! <b>Bonus star!</b>',
-        speak: top ? 'You made it to the top of the mountain! Bonus star!' : `You climbed up to step ${state.step}! Bonus star!`,
+        emoji: top ? '🐴🏆' : '🐎🌟',
+        title: top ? 'You made it to the barn!' : `Step ${state.step}!`,
+        text: top ? 'You rode all the way! Bonus star!' : 'Giddy-up! You trotted up a step! <b>Bonus star!</b>',
+        speak: top ? 'Yee-haw! You made it all the way to the barn! Bonus star!' : `Giddy-up! You trotted up to step ${state.step}! Bonus star!`,
         confetti: 80,
       }, ...prizeCheck(before)]);
     };

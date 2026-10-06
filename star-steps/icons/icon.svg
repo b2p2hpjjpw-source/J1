@@ -1,15 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffb84d"/><stop offset="1" stop-color="#ff6fa8"/>
+      <stop offset="0" stop-color="#6cc4ff"/><stop offset="1" stop-color="#bfe8ff"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <path d="M40 470 L190 300 L280 380 L370 250 L472 470 Z" fill="#7bd389"/>
-  <circle cx="120" cy="420" r="26" fill="#fff" opacity=".9"/>
-  <circle cx="210" cy="372" r="26" fill="#fff" opacity=".9"/>
-  <circle cx="300" cy="330" r="26" fill="#fff" opacity=".9"/>
-  <path d="M330 52l38 77 85 12-62 60 15 85-76-40-76 40 15-85-62-60 85-12z" fill="#ffe14d" stroke="#e6a100" stroke-width="12" stroke-linejoin="round"/>
-  <circle cx="345" cy="160" r="9" fill="#5a3b00"/><circle cx="392" cy="160" r="9" fill="#5a3b00"/>
-  <path d="M346 186q22 20 46 0" fill="none" stroke="#5a3b00" stroke-width="9" stroke-linecap="round"/>
+  <path d="M0 360 Q140 290 280 340 T512 320 V400 Q512 512 400 512 H112 Q0 512 0 400 Z" fill="#8fd16a"/>
+  <rect x="20" y="372" width="472" height="10" fill="#fff"/><rect x="20" y="400" width="472" height="10" fill="#fff"/>
+  <g fill="#fff"><rect x="40" y="360" width="12" height="60" rx="3"/><rect x="130" y="360" width="12" height="60" rx="3"/><rect x="370" y="360" width="12" height="60" rx="3"/><rect x="460" y="360" width="12" height="60" rx="3"/></g>
+  <path d="M330 40l38 77 85 12-62 60 15 85-76-40-76 40 15-85-62-60 85-12z" fill="#ffe14d" stroke="#e6a100" stroke-width="12" stroke-linejoin="round"/>
+  <text x="170" y="440" font-size="230" text-anchor="middle">🐴</text>
 </svg>
