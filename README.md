@@ -67,3 +67,5 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 ---
 
 **Also in this repo:** [Star Steps](star-steps/), a daily allergy-medicine star chart for a 3-year-old. See [star-steps/README.md](star-steps/README.md).
+
+**Also in this repo:** [Build-a-Plate](breakfast/), where the kids order tomorrow's breakfast the night before. See [breakfast/README.md](breakfast/README.md).
