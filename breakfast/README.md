@@ -28,6 +28,7 @@ The Mario-style theme uses look-alike scenery and emoji, not Nintendo's characte
   - **✕** removes an item for good. **+ Add** creates a new one.
   - Tap a name to rename it, move it to another group, or change its picture (an emoji or a **photo of the real food**).
 - **Children:** add, edit or remove a child, and pick their name, picture and theme.
+- **Allergies:** in a child's Edit screen, tap the foods they can't have. Those foods are hidden from that child completely, and the other children still see them. **Lucas is set up to never see Eggs.** In the menu, those items say "hidden for Lucas". New foods you add are not hidden automatically, so mark them in his Edit screen.
 - **What fits on a plate:** how many main dishes (1–2), sides (0–4) and drinks (0–2).
 - Sounds and the talking buddy on/off, backup download/restore, erase everything.
 

@@ -329,6 +329,10 @@ img.pic { object-fit: cover; border-radius: 22%; }
 .m-name { flex: 1; text-align: left; font-size: 17px; font-weight: 600; }
 .m-name small { display: block; font-weight: 400; font-size: 13px; color: var(--ink-soft); }
 .m-row.off .m-name small { color: #b54708; opacity: 1; }
+.allergy { color: #b42318; font-weight: 600; }
+.skip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.skip-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px 4px 6px; border-radius: 12px; background: #f0ebe4; font-size: 14px; font-weight: 600; border: 2px solid transparent; }
+.skip-chip.on { background: #fde4e1; border-color: #e5484d; color: #b42318; text-decoration: line-through; }
 .x-btn { width: 32px; height: 32px; border-radius: 50%; color: var(--red); font-weight: 700; font-size: 16px; flex: none; }
 .add-btn { color: #1d7a65; font-weight: 600; font-size: 16px; padding: 8px 0 0; }
 .k-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #f4f0ea; }

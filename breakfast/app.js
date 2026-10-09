@@ -87,10 +87,12 @@
 
   // ---------- Saved data ----------
   const item = (name, emoji, cat) => ({ id: uid(), name, emoji, cat, on: true });
-  const DEFAULT_STATE = () => ({
+  // kid.skip: foods that child can't have (allergies). They never see them.
+  const DEFAULT_STATE = () => withEggAllergy({
+    v: 2,
     kids: [
-      { id: 'lucas', name: 'Lucas', avatar: '🐴', theme: 'farm' },
-      { id: 'julien', name: 'Julien', avatar: '🍄', theme: 'mario' },
+      { id: 'lucas', name: 'Lucas', avatar: '🐴', theme: 'farm', skip: [] },
+      { id: 'julien', name: 'Julien', avatar: '🍄', theme: 'mario', skip: [] },
     ],
     menu: [
       item('Pancakes', '🥞', 'main'), item('Waffles', '🧇', 'main'), item('Cereal', '🥣', 'main'),
@@ -106,6 +108,15 @@
     sound: true,
     voice: true,
   });
+  // Lucas is allergic to eggs: hide every egg item from him.
+  function withEggAllergy(st) {
+    const lucas = st.kids.find(k => k.id === 'lucas');
+    if (lucas) {
+      const eggs = st.menu.filter(m => /\begg/i.test(m.name) || m.emoji === '🍳' || m.emoji === '🥚').map(m => m.id);
+      lucas.skip = [...new Set([...(lucas.skip || []), ...eggs])];
+    }
+    return st;
+  }
 
   let state = load();
   function load() {
@@ -113,7 +124,9 @@
     try {
       const raw = JSON.parse(localStorage.getItem(STORE_KEY));
       if (raw && Array.isArray(raw.kids) && Array.isArray(raw.menu)) {
-        return { ...base, ...raw, limits: { ...base.limits, ...(raw.limits || {}) }, orders: raw.orders || {} };
+        const st = { ...base, ...raw, limits: { ...base.limits, ...(raw.limits || {}) }, orders: raw.orders || {} };
+        if (!(raw.v >= 2)) { withEggAllergy(st); st.v = 2; } // saved before allergies existed
+        return st;
       }
     } catch (e) { /* start fresh */ }
     return base;
@@ -128,6 +141,7 @@
   const itemById = id => state.menu.find(m => m.id === id);
   const kidById = id => state.kids.find(k => k.id === id);
   const themeOf = kid => THEMES[kid && kid.theme] || THEMES.farm;
+  const canHave = (kid, it) => !(kid && kid.skip && kid.skip.includes(it.id));
   const activeCats = () => CATS.filter(c => state.limits[c.id] > 0);
   function orderFor(kidId, day = tomorrowKey(), create = false) {
     const dayOrders = state.orders[day] || (create ? (state.orders[day] = {}) : null);
@@ -351,14 +365,22 @@
     const kid = kidById(kidId);
     if (!kid) return;
     reminded = false;
-    // Anything a grown-up has since marked "not today" comes off the plate.
+    // Anything a grown-up has since marked "not today" comes off the plate (and anything this child can't have).
     const o = orderFor(kid.id);
     const gone = [];
+    let changed = false;
     if (o) CATS.forEach(c => {
-      o[c.id] = (o[c.id] || []).filter(id => { const it = itemById(id); if (it && !it.on) gone.push(it.name); return it && it.on; });
+      const before = (o[c.id] || []).length;
+      o[c.id] = (o[c.id] || []).filter(id => {
+        const it = itemById(id);
+        if (!it || !canHave(kid, it)) return false;
+        if (!it.on) gone.push(it.name);
+        return it.on;
+      });
       o[c.id] = o[c.id].slice(-state.limits[c.id]);
+      if (o[c.id].length !== before) changed = true;
     });
-    if (gone.length) { o.sent = false; save(); }
+    if (changed) { o.sent = false; save(); }
     view = { name: 'plate', kidId, cat: nextOpenCat(o) || activeCats()[0].id };
     render();
     sfx(themeOf(kid).add);
@@ -451,7 +473,7 @@
   }
   function drawShelf(resetScroll) {
     const shelf = $('shelf'), o = curOrder();
-    const items = state.menu.filter(m => m.cat === view.cat).sort((a, b) => (b.on - a.on));
+    const items = state.menu.filter(m => m.cat === view.cat && canHave(curKid, m)).sort((a, b) => (b.on - a.on));
     shelf.innerHTML = items.length ? items.map(m => {
       const picked = (o[m.cat] || []).includes(m.id);
       return `<button class="tile ${m.on ? '' : 'off'} ${picked ? 'picked' : ''}" data-item="${m.id}">
@@ -474,6 +496,7 @@
   function addItem(id, fromEl) {
     const it = itemById(id);
     if (!it) return;
+    if (!canHave(curKid, it)) return;
     if (!it.on) { refuse(it, fromEl); return; }
     const cat = it.cat, limit = state.limits[cat];
     if (!limit) return;
@@ -659,7 +682,7 @@
           <h3>🧒 Children</h3>
           ${state.kids.map(k => `<div class="k-row">
               <span class="k-av" style="--kc:${themeOf(k).swatch}">${k.avatar}</span>
-              <span class="k-name">${esc(k.name)}<small>${themeOf(k).label} theme</small></span>
+              <span class="k-name">${esc(k.name)}<small>${themeOf(k).label} theme${(k.skip || []).length ? ` · can't have ${k.skip.map(itemById).filter(Boolean).map(m => esc(m.name)).join(', ')}` : ''}</small></span>
               <button class="small-btn" data-edit-kid="${k.id}">Edit</button></div>`).join('') || '<p class="hint">No children yet.</p>'}
           <button class="add-btn" data-act="add-kid">+ Add a child</button>
         </section>
@@ -690,7 +713,8 @@
         : items.length ? '<span class="st wait">Still building</span>' : '<span class="st no">Not yet</span>';
       const lines = CATS.map(c => (o && o[c.id] || []).map(itemById).filter(Boolean).map(it => {
         counts[it.id] = (counts[it.id] || 0) + 1;
-        return `<div class="o-line ${it.on ? '' : 'warn'}">${pic(it, 'sm')}<span>${esc(it.name)}</span><small>${c.label === 'Main' ? 'main' : c.one}</small>${it.on ? '' : '<em>⚠️ marked not available</em>'}</div>`;
+        const warn = !canHave(k, it) ? `⚠️ ${esc(k.name)} can't have this` : !it.on ? '⚠️ marked not available' : '';
+        return `<div class="o-line ${warn ? 'warn' : ''}">${pic(it, 'sm')}<span>${esc(it.name)}</span><small>${c.label === 'Main' ? 'main' : c.one}</small>${warn ? `<em>${warn}</em>` : ''}</div>`;
       }).join('')).join('');
       return `<div class="o-card">
         <div class="o-head"><span class="k-av" style="--kc:${themeOf(k).swatch}">${k.avatar}</span><b>${esc(k.name)}</b>${status}</div>
@@ -701,12 +725,16 @@
     const cook = Object.entries(counts).map(([id, n]) => { const it = itemById(id); return `<span class="cook-chip">${pic(it, 'sm')} ${esc(it.name)}${n > 1 ? ` <b>×${n}</b>` : ''}</span>`; }).join('');
     return cards + (cook ? `<div class="cook"><div class="cook-t">To make:</div>${cook}</div>` : '');
   }
+  function hiddenFor(m) {
+    const names = state.kids.filter(k => !canHave(k, m)).map(k => esc(k.name));
+    return names.length ? ` · <span class="allergy">hidden for ${names.join(', ')}</span>` : '';
+  }
   function menuGroupHtml(c) {
     const items = state.menu.filter(m => m.cat === c.id);
     return `<div class="m-group"><div class="m-gt">${c.icon} ${c.label}</div>
       ${items.map(m => `<div class="m-row ${m.on ? '' : 'off'}">
         <button class="m-pic" data-edit-item="${m.id}">${pic(m, 'sm')}</button>
-        <button class="m-name" data-edit-item="${m.id}">${esc(m.name)}<small>${m.on ? 'Available' : 'Not available'}</small></button>
+        <button class="m-name" data-edit-item="${m.id}">${esc(m.name)}<small>${m.on ? 'Available' : 'Not available'}${hiddenFor(m)}</small></button>
         <button class="switch ${m.on ? 'on' : ''}" data-toggle-item="${m.id}" aria-label="${esc(m.name)} available"></button>
         <button class="x-btn" data-del-item="${m.id}" aria-label="Remove ${esc(m.name)}">✕</button>
       </div>`).join('') || '<p class="hint">Nothing here yet.</p>'}
@@ -783,7 +811,7 @@
   // Add or change a child.
   function editKid(id) {
     const existing = id && kidById(id);
-    const ed = existing ? { ...existing } : { name: '', avatar: '⭐', theme: 'space' };
+    const ed = existing ? { ...existing, skip: [...(existing.skip || [])] } : { name: '', avatar: '⭐', theme: 'space', skip: [] };
     const draw = () => {
       openModal(`
         <h2>${existing ? `Change ${esc(existing.name)}` : 'Add a child'}</h2>
@@ -792,6 +820,9 @@
           <div class="emoji-grid">${AVATARS.map(a => `<button class="${ed.avatar === a ? 'on' : ''}" data-av="${a}">${a}</button>`).join('')}</div></div>
         <div class="field"><label>Theme</label>
           <div class="theme-grid">${Object.entries(THEMES).map(([k, t]) => `<button class="theme-card ${ed.theme === k ? 'on' : ''}" data-th="${k}" style="--kc:${t.swatch}"><span>${t.buddy}</span>${t.label}</button>`).join('')}</div></div>
+        <div class="field"><label>🚫 Foods ${esc(ed.name.trim() || 'this child')} can't have (allergies)</label>
+          <p class="hint">Tap to hide a food from this child. They won't see it at all.</p>
+          <div class="skip-grid">${state.menu.map(m => `<button class="skip-chip ${ed.skip.includes(m.id) ? 'on' : ''}" data-skip="${m.id}">${pic(m, 'sm')}<span>${esc(m.name)}</span></button>`).join('')}</div></div>
         <button class="big-btn" data-act="k-save">Save</button>
         ${existing ? '<button class="link-btn danger" data-act="k-del">Remove this child</button>' : ''}
         <button class="link-btn" data-act="close">Cancel</button>`);
@@ -799,6 +830,11 @@
       nameIn.addEventListener('input', () => { ed.name = nameIn.value; });
       modalCard.querySelectorAll('[data-av]').forEach(b => b.onclick = () => { ed.avatar = b.dataset.av; draw(); });
       modalCard.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { ed.theme = b.dataset.th; draw(); });
+      modalCard.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => {
+        const id = b.dataset.skip;
+        ed.skip = ed.skip.includes(id) ? ed.skip.filter(x => x !== id) : [...ed.skip, id];
+        b.classList.toggle('on', ed.skip.includes(id));
+      });
       modalCard.querySelector('[data-act="k-save"]').onclick = () => {
         ed.name = ed.name.trim();
         if (!ed.name) { nameIn.classList.add('bad'); nameIn.focus(); return; }
@@ -833,6 +869,7 @@
         confirmBox('Restore this backup?', 'It replaces everything on this phone.', 'Restore', () => {
           const base = DEFAULT_STATE();
           state = { ...base, ...data, limits: { ...base.limits, ...(data.limits || {}) }, orders: data.orders || {} };
+          if (!(data.v >= 2)) { withEggAllergy(state); state.v = 2; }
           save(); render(); toast('Backup restored!');
         });
       } catch (e) { toast("That file isn't a Build-a-Plate backup."); }
