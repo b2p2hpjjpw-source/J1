@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Utopia</title>
+  <meta name="description" content="A Silo-inspired job application tracker. Every application sent refills the silo's supplies on the climb toward something better." />
+  <meta name="theme-color" content="#14110d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Utopia" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><use href="#i-silo" /></svg>
+    <div class="brand">
+      <div class="brand-name">Utopia</div>
+      <div class="brand-sub" id="hello">Day 1 in the silo</div>
+    </div>
+    <button class="icon-btn" id="settingsBtn" aria-label="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gear" /></svg>
+    </button>
+  </header>
+
+  <main id="app">
+    <section id="view-silo" class="view active" aria-label="Silo"></section>
+    <section id="view-missions" class="view" aria-label="Postings"></section>
+    <section id="view-climb" class="view" aria-label="The climb"></section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="silo"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-gauge" /></svg><span>Silo</span></button>
+    <button class="tab" data-view="missions"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-list" /></svg><span>Postings</span></button>
+    <button class="tab" data-view="climb"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-stairs" /></svg><span>The Climb</span></button>
+  </nav>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <canvas id="confetti" aria-hidden="true"></canvas>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-silo" viewBox="0 0 48 48">
+        <circle cx="24" cy="24" r="21" fill="none" stroke="currentColor" stroke-width="3" />
+        <path d="M12 34h24M15 29h18M18 24h12M21 19h6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none" />
+        <path d="M24 4v8" stroke="#9fd8a8" stroke-width="3" stroke-linecap="round" />
+      </symbol>
+      <symbol id="i-gear" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm7.4 3.5c0-.5 0-.9-.1-1.3l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2.2-1.3L14.4 3h-4l-.4 2.4A7 7 0 0 0 7.8 6.7l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.6l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2.2 1.3l.4 2.4h4l.4-2.4a7 7 0 0 0 2.2-1.3l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.3Z" /></symbol>
+      <symbol id="i-gauge" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 17a8 8 0 1 1 16 0M12 17l4-6M3 17h2M19 17h2M12 7V5" /></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" /></symbol>
+      <symbol id="i-stairs" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M3 20h5v-4h4v-4h4V8h5" /></symbol>
+      <symbol id="i-oxygen" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2" /><path d="M12 10c0-4 1-7 4-7s3 4-2 7M14 12c4 0 7 1 7 4s-4 3-7-2M12 14c0 4-1 7-4 7s-3-4 2-7M10 12c-4 0-7-1-7-4s4-3 7 2" /></g></symbol>
+      <symbol id="i-water" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11Z" /></symbol>
+      <symbol id="i-food" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V8" /><path d="M12 13c-3 0-5-2-5-5 3 0 5 2 5 5ZM12 13c3 0 5-2 5-5-3 0-5 2-5 5ZM12 8c-2 0-3-2-2-5 2 1 3 3 2 5Z" /></g></symbol>
+      <symbol id="i-power" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z" /></symbol>
+      <symbol id="i-medicine" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z" /></symbol>
+      <symbol id="i-crate" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4V7Z" /><path d="M3 7l9 4 9-4M12 11v10" /></g></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-signal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="18" r="1.5" /><path d="M8.5 14.5a5 5 0 0 1 7 0M5.5 11.5a9 9 0 0 1 13 0M2.5 8.5a13 13 0 0 1 19 0" /></g></symbol>
+    </defs>
+  </svg>
+
+  <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
