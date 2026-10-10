@@ -1,4 +1,4 @@
-/* Build-a-Plate: kids build tomorrow's breakfast plate the night before.
+/* Build-a-Plate: kids build tomorrow's breakfast plate the night before (orders switch over at 1 pm ET).
    Plain JS, no build step. Everything is saved in this phone's localStorage. */
 (() => {
   'use strict';
@@ -79,7 +79,21 @@
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
   const todayKey = () => keyOf(today());
-  const tomorrowKey = () => keyOf(addDays(today(), 1));
+  // Orders switch to the next breakfast at 1 pm Eastern time (not midnight), so a plate ordered
+  // the night before still shows the next morning. Before 1 pm ET the kids are ordering for today's
+  // breakfast; from 1 pm ET on, for tomorrow's.
+  const RESET_HOUR = 13, RESET_TZ = 'America/New_York';
+  function easternNow() {
+    try {
+      const parts = new Intl.DateTimeFormat('en-US', { timeZone: RESET_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
+      const get = t => Number(parts.find(x => x.type === t).value);
+      return { key: `${get('year')}-${pad(get('month'))}-${pad(get('day'))}`, hour: get('hour') % 24 };
+    } catch (e) { return { key: todayKey(), hour: new Date().getHours() }; } // no time zone support: use the phone's clock
+  }
+  const orderDayKey = () => { const n = easternNow(); return n.hour < RESET_HOUR ? n.key : keyOf(addDays(fromKey(n.key), 1)); };
+  const prevDayKey = () => keyOf(addDays(fromKey(orderDayKey()), -1));
+  // "today" or "tomorrow", for what the buddy says about the breakfast being ordered.
+  const whenWord = () => orderDayKey() === easternNow().key ? 'today' : 'tomorrow';
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayName = k => DAY_NAMES[fromKey(k).getDay()];
@@ -163,7 +177,7 @@
   const themeOf = kid => THEMES[kid && kid.theme] || THEMES.farm;
   const canHave = (kid, it) => !(kid && kid.skip && kid.skip.includes(it.id));
   const activeCats = () => CATS.filter(c => state.limits[c.id] > 0);
-  function orderFor(kidId, day = tomorrowKey(), create = false) {
+  function orderFor(kidId, day = orderDayKey(), create = false) {
     const dayOrders = state.orders[day] || (create ? (state.orders[day] = {}) : null);
     if (!dayOrders) return null;
     if (!dayOrders[kidId] && create) dayOrders[kidId] = { main: [], side: [], drink: [], sent: false, at: 0 };
@@ -515,7 +529,7 @@
   // ---------- Home: who's ordering? ----------
   function renderHome() {
     setTheme('home');
-    const day = tomorrowKey();
+    const day = orderDayKey();
     const cards = state.kids.map(k => {
       const o = orderFor(k.id, day);
       const items = orderItems(o);
@@ -564,7 +578,7 @@
     view = { name: 'plate', kidId, cat: nextOpenCat(o) || activeCats()[0].id };
     render();
     sfx(themeOf(kid).add);
-    if (gone.length) speak([{ slot: 'gone', text: setBubble(`Oh no! No ${listWords(gone)} tomorrow. Pick something else!`) }]);
+    if (gone.length) speak([{ slot: 'gone', text: setBubble(`Oh no! No ${listWords(gone)} ${whenWord()}. Pick something else!`) }]);
     else {
       const next = o && o.sent ? { slot: 'change', text: 'Want to change your breakfast?' } : promptPart(view.cat);
       setBubble(`Hi ${kid.name}! ${next.text}`);
@@ -686,7 +700,7 @@
     if (!it.on) { refuse(it, fromEl); return; }
     const cat = it.cat, limit = state.limits[cat];
     if (!limit) return;
-    const o = orderFor(curKid.id, tomorrowKey(), true);
+    const o = orderFor(curKid.id, orderDayKey(), true);
     if (o[cat].includes(id)) {
       sfx('tap');
       setBubble(`${it.name} is already on your plate!`);
@@ -729,7 +743,7 @@
   function refuse(it, el) {
     sfx('nope'); buzz([40, 30, 40]);
     wiggle(el);
-    setBubble(`Sorry, no ${it.name} tomorrow. Pick something else!`);
+    setBubble(`Sorry, no ${it.name} ${whenWord()}. Pick something else!`);
     speak([itemPart(it), { slot: 'notToday', text: "Sorry, that's all gone. Pick something else!" }]);
   }
   function wiggle(el) {
@@ -840,7 +854,7 @@
       <div class="sent t-${curKid.theme}">
         <div class="sent-buddy">${curTheme.buddy}</div>
         <h2>${esc(cheer)}</h2>
-        <p>Breakfast for <b>${dayName(tomorrowKey())}</b> is ordered, ${esc(curKid.name)}!</p>
+        <p>Breakfast for <b>${dayName(orderDayKey())}</b> is ordered, ${esc(curKid.name)}!</p>
         <div class="sent-plate">${items.map(i => `<span class="sp-item">${pic(i)}<small>${esc(i.name)}</small></span>`).join('')}</div>
         <button class="big-btn" data-act="close">Yay! 🎉</button>
       </div>`, () => go({ name: 'home' }));
@@ -849,8 +863,9 @@
   // ---------- Grown-ups ----------
   function renderGrownups() {
     setTheme('grown');
-    const tKey = todayKey(), mKey = tomorrowKey();
-    if (!view.day) view.day = new Date().getHours() < 12 ? tKey : mKey;
+    // Two days: the breakfast being ordered now, and the one before it.
+    const tKey = prevDayKey(), mKey = orderDayKey(), etToday = easternNow().key;
+    const label = k => k === etToday ? 'Today' : k < etToday ? 'Yesterday' : 'Tomorrow';
     if (view.day !== tKey && view.day !== mKey) view.day = mKey;
     app.innerHTML = `
       <div class="grown">
@@ -858,8 +873,8 @@
         <section class="card">
           <h3>🍽️ Breakfast orders</h3>
           <div class="seg">
-            <button class="${view.day === tKey ? 'on' : ''}" data-day="${tKey}">This morning<small>${shortDate(tKey)}</small></button>
-            <button class="${view.day === mKey ? 'on' : ''}" data-day="${mKey}">Tomorrow<small>${shortDate(mKey)}</small></button>
+            <button class="${view.day === tKey ? 'on' : ''}" data-day="${tKey}">${label(tKey)}<small>${shortDate(tKey)}</small></button>
+            <button class="${view.day === mKey ? 'on' : ''}" data-day="${mKey}">${label(mKey)} · ordering now<small>${shortDate(mKey)}</small></button>
           </div>
           ${ordersHtml(view.day)}
         </section>
@@ -1173,16 +1188,17 @@
     if (e.target.id === 'restoreFile' && e.target.files[0]) restoreBackup(e.target.files[0]);
   });
 
-  // When the app is reopened on a new day, "tomorrow" moves on.
-  let dayKey = todayKey();
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && todayKey() !== dayKey) {
-      dayKey = todayKey();
-      if (view.name === 'plate') view = { name: 'home' };
-      if (view.name === 'grown') view.day = null;
-      render();
-    }
-  });
+  // At 1 pm ET the app moves on to the next breakfast, whether it's open or reopened later.
+  let dayKey = orderDayKey();
+  function checkDay() {
+    if (orderDayKey() === dayKey) return;
+    dayKey = orderDayKey();
+    if (view.name === 'plate') { stopSpeaking(); closeModal(); view = { name: 'home' }; }
+    if (view.name === 'grown') view.day = null;
+    render();
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkDay(); });
+  setInterval(checkDay, 30000);
 
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ });

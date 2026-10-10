@@ -2,6 +2,8 @@
 
 A phone app where the kids build **tomorrow's breakfast** the night before by putting a main dish, sides and a drink on a plate. Grown-ups see the orders in the morning.
 
+**Orders switch over at 1 pm Eastern time**, not midnight. From 1 pm ET the kids order for the next day's breakfast. Until 1 pm ET the next day, that order still shows (✓ Ordered) so everyone can see it at breakfast. This uses Eastern time even if the phone is set to another time zone. To change it, edit `RESET_HOUR` and `RESET_TZ` at the top of `app.js`.
+
 ## For the kids (big pictures, a talking buddy, almost no reading)
 - **Who's ordering?** Each child taps their own big picture card. The card shows "Ordered ✓" and their food once they're done.
 - **Build your plate:** a big plate with a spot in the middle for the **main dish**, spots along the top for **sides**, and a cup beside it for the **drink**.
@@ -22,7 +24,7 @@ A phone app where the kids build **tomorrow's breakfast** the night before by pu
 The Mario-style theme uses look-alike scenery and emoji, not Nintendo's characters or artwork.
 
 ## 🔒 Grown-ups (unlock by answering a multiplication question, e.g. 23 × 7)
-- **Breakfast orders:** switch between *This morning* and *Tomorrow*. Each child shows ✓ Ordered, Still building or Not yet, with their food. A **To make** list totals everything (e.g. Pancakes ×2). An ordered food that has since been switched off is flagged ⚠️.
+- **Breakfast orders:** switch between the breakfast being ordered now and the one before it. Each child shows ✓ Ordered, Still building or Not yet, with their food. A **To make** list totals everything (e.g. Pancakes ×2). An ordered food that has since been switched off is flagged ⚠️.
 - **Menu:** grouped into Main, Sides and Drinks.
   - Switch an item **off** when you've run out. The kids still see it, but greyed out. "Mark everything available again" turns them all back on.
   - **✕** removes an item for good. **+ Add** creates a new one.
