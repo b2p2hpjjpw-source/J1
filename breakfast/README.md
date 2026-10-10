@@ -6,7 +6,7 @@ A phone app where the kids build **tomorrow's breakfast** the night before by pu
 - **Who's ordering?** Each child taps their own big picture card. The card shows "Ordered ✓" and their food once they're done.
 - **Build your plate:** a big plate with a spot in the middle for the **main dish**, spots along the top for **sides**, and a cup beside it for the **drink**.
   - Tap a food on the shelf, or drag it up onto the plate.
-  - The tabs (🍳 Main, 🍓 Sides, 🥛 Drinks) have dots that fill up. When one part is full, the app moves on to the next by itself.
+  - The tabs (🥞 Main, 🍓 Sides, 🥛 Drinks) have dots that fill up. When one part is full, the app moves on to the next by itself.
   - Tap a food on the plate to take it off. Picking again when a part is full swaps out the oldest pick.
   - The buddy reads every food name and instruction out loud (tap the speech bubble to hear it again).
 - **I'm done!** sends the order with a celebration. A main dish is needed. If they skipped sides or a drink, the buddy reminds them once ("Don't forget a drink!").

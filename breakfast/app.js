@@ -9,7 +9,7 @@
 
   // The three parts of a plate. Grown-ups set how many of each fit on a plate.
   const CATS = [
-    { id: 'main', label: 'Main', one: 'main dish', many: 'main dishes', icon: '🍳' },
+    { id: 'main', label: 'Main', one: 'main dish', many: 'main dishes', icon: '🥞' },
     { id: 'side', label: 'Sides', one: 'side', many: 'sides', icon: '🍓' },
     { id: 'drink', label: 'Drinks', one: 'drink', many: 'drinks', icon: '🥛' },
   ];
