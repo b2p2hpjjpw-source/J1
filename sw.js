@@ -1,7 +1,7 @@
 // Offline support: serve the app from cache, refresh the cache in the background.
-const CACHE = 'homework-hero-v4';
+const CACHE = 'homework-hero-v5';
 const ASSETS = [
-  './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
+  './', 'index.html', 'family-sync.js', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
@@ -19,6 +19,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Only handle this site's files, fonts and the Firebase library. Family-sync traffic (sign-in, database)
+  // goes straight to the network: caching it would break live updates.
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin && !/^(fonts\.googleapis\.com|fonts\.gstatic\.com|www\.gstatic\.com)$/.test(url.hostname)) return;
   e.respondWith(
     caches.open(CACHE).then(async cache => {
       const cached = await cache.match(e.request, { ignoreSearch: true });

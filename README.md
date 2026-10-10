@@ -43,7 +43,7 @@ The app is a plain web app (HTML/CSS/JS, nothing to build). You can add it to th
 After that it opens full-screen with its own icon, like a regular app.
 
 ### About saved data
-Progress is saved **only on that phone**, in the browser's storage. There's no account and nothing is sent anywhere. Use *Grown-ups → Download backup* every so often. The same backup file can be restored on another phone.
+Progress is saved on the phone, in the browser's storage. To share it between both parents' phones, sign in under *Grown-ups → Family sync*. This works for every app in this repo; see [FAMILY-SYNC.md](FAMILY-SYNC.md). You can also use *Grown-ups → Download backup* every so often. The same backup file can be restored on another phone.
 
 ## Trying it on a computer
 

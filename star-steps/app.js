@@ -62,6 +62,7 @@
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch (e) { toast('Could not save. The phone storage may be full.'); }
+    if (window.FamilySync) FamilySync.changed(STORE_KEY);
   }
 
   // ---------- Stars ----------
@@ -838,6 +839,11 @@
         <input type="file" id="gImport" accept="application/json,.json" hidden />
         <button class="link-btn" id="gReset" style="color:var(--red)">Erase everything</button>
       </div>
+      <div class="card">
+        <h3>☁️ Family sync</h3>
+        <p class="hint" style="margin-top:0">Sign in to share stars between your phones. Voice recordings stay on each phone.</p>
+        <div data-family-sync></div>
+      </div>
       <button class="link-btn" id="gLock">🔒 Lock grown-ups area</button>`;
 
     const set = fn => () => { fn(); save(); renderAll(); };
@@ -987,4 +993,15 @@
       })
       .catch(() => { /* offline support is optional */ });
   }
+
+  // ---------- Family sync ----------
+  // Shares this app's data between our phones once someone signs in (see ../family-sync.js).
+  if (window.FamilySync) FamilySync.attach(STORE_KEY, {
+    label: 'Star Steps',
+    get: () => state,
+    apply: json => {
+      localStorage.setItem(STORE_KEY, json); state = load();
+      if (modal.classList.contains('hidden')) renderAll();
+    },
+  });
 })();

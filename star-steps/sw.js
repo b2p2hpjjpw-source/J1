@@ -1,8 +1,8 @@
 // Offline support. Online: always fetch the latest files (so updates show up right away)
 // and keep a copy. Offline: serve the saved copy.
-const CACHE = 'star-steps-v6';
+const CACHE = 'star-steps-v7';
 const ASSETS = [
-  './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
+  './', 'index.html', '../family-sync.js', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
@@ -24,6 +24,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Only handle this site's files, fonts and the Firebase library. Family-sync traffic (sign-in, database)
+  // goes straight to the network: caching it would break live updates.
+  const url = new URL(e.request.url);
+  if (url.origin !== self.location.origin && !/^(fonts\.googleapis\.com|fonts\.gstatic\.com|www\.gstatic\.com)$/.test(url.hostname)) return;
   const sameOrigin = new URL(e.request.url).origin === self.location.origin;
   e.respondWith(
     caches.open(CACHE).then(async cache => {

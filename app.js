@@ -106,6 +106,7 @@
   }
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage full or blocked */ }
+    if (window.FamilySync) FamilySync.changed(STORE_KEY);
   }
 
   // ---------- Homework stats ----------
@@ -824,6 +825,12 @@
       </div>
 
       <div class="card">
+        <h2>☁️ Family sync</h2>
+        <p class="muted" style="margin-top:0">Sign in to share progress between your phones.</p>
+        <div data-family-sync></div>
+      </div>
+
+      <div class="card">
         <h2>🧹 Start over</h2>
         <button class="small-btn danger" id="gReset">Erase all progress</button>
       </div>
@@ -961,4 +968,15 @@
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
+
+  // ---------- Family sync ----------
+  // Shares this app's data between our phones once someone signs in (see ../family-sync.js).
+  if (window.FamilySync) FamilySync.attach(STORE_KEY, {
+    label: 'Homework Hero',
+    get: () => state,
+    apply: json => {
+      localStorage.setItem(STORE_KEY, json); state = load();
+      if (modal.classList.contains('hidden')) renderAll();
+    },
+  });
 })();
