@@ -73,3 +73,5 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 **Also in this repo:** [Clean Sheet](clean-sheet/), an Arsenal-themed sobriety tracker with a nightly breathalyzer log and savings kitty. See [clean-sheet/README.md](clean-sheet/README.md).
 
 **Also in this repo:** [Utopia](utopia/), a Silo-inspired job application tracker where every application sent refills the silo's supplies. See [utopia/README.md](utopia/README.md).
+
+**Also in this repo:** [Daily $80 Tracker](expenses/), a daily spending allowance tracker with a grove of trees that grows as you save. See [expenses/README.md](expenses/README.md).
