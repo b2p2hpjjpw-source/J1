@@ -21,6 +21,8 @@
   const mealWord = meal => MEALS[meal].label.toLowerCase();
   // Orders are saved per day; lunch orders use 'YYYY-MM-DD|lunch' so breakfast orders keep their old keys.
   const slotKey = (meal, day) => meal === 'breakfast' ? day : `${day}|${meal}`;
+  // Recordings that mention the meal have a separate lunch version ('<slot>:lunch').
+  const mealSlot = base => curMeal === 'breakfast' ? base : `${base}:${curMeal}`;
   const catIcon = c => c.id === 'main' ? MEALS[curMeal].mainIcon : c.icon;
   // The three parts of a plate. Grown-ups set how many of each fit on a plate.
   const CATS = [
@@ -364,8 +366,10 @@
     { id: 'mainFirst', label: 'Tapped I’m done without a main dish', script: () => 'Pick your main dish first!' },
     { id: 'forgot-side', label: 'Forgot sides', script: () => "Don't forget your sides! Or tap I'm done again." },
     { id: 'forgot-drink', label: 'Forgot a drink', script: () => "Don't forget a drink! Or tap I'm done again." },
-    { id: 'change', label: 'Opening a plate that was already ordered', script: () => 'Want to change your order?' },
-    { id: 'sent', label: 'Order sent! (the food names play after it)', script: () => 'Hooray! Your order is in!' },
+    { id: 'change', label: '🥞 Opening a breakfast that was already ordered', script: () => 'Want to change your breakfast?' },
+    { id: 'change:lunch', label: '🥪 Opening a lunch that was already ordered', script: () => 'Want to change your lunch?' },
+    { id: 'sent', label: '🥞 Breakfast sent! (the food names play after it)', script: () => 'Hooray! Your breakfast is ordered!' },
+    { id: 'sent:lunch', label: '🥪 Lunch sent! (the food names play after it)', script: () => 'Hooray! Your lunch is ordered!' },
   ];
   const clips = {}; // slot -> { buffer, start, end, gain }
   let clipPlaying = null;
@@ -628,9 +632,9 @@
     sfx(themeOf(kid).add);
     if (gone.length) speak([{ slot: 'gone', text: setBubble(`Oh no! No ${listWords(gone)} ${whenWord()}. Pick something else!`) }]);
     else {
-      const next = o && o.sent ? { slot: 'change', text: `Want to change your ${mealWord(curMeal)}?` } : promptPart(view.cat);
+      const next = o && o.sent ? { slot: mealSlot('change'), text: `Want to change your ${mealWord(curMeal)}?` } : promptPart(view.cat);
       setBubble(`Hi ${kid.name}! ${next.text}`);
-      speak([{ slot: 'kid:' + kid.id, text: `Hi ${kid.name}!` }, next]);
+      speak([{ slot: mealSlot('kid:' + kid.id), text: `Hi ${kid.name}! Let's build your ${mealWord(curMeal)}!` }, next]);
     }
   }
   const listWords = arr => arr.length < 2 ? (arr[0] || '') : `${arr.slice(0, -1).join(', ')} or ${arr[arr.length - 1]}`;
@@ -903,7 +907,7 @@
     const items = orderItems(o), cheer = pick(curTheme.cheers);
     sfx(curTheme.done); buzz([60, 40, 120]);
     confetti(60, curTheme.bits);
-    speak([{ slot: 'sent', text: `${cheer} Your ${mealWord(curMeal)} is ordered, ${curKid.name}!` }, ...items.map(itemPart)]);
+    speak([{ slot: mealSlot('sent'), text: `${cheer} Your ${mealWord(curMeal)} is ordered, ${curKid.name}!` }, ...items.map(itemPart)]);
     openModal(`
       <div class="sent t-${curKid.theme}">
         <div class="sent-buddy">${curTheme.buddy}</div>
@@ -973,7 +977,9 @@
   let openVoice = new Set(['kids']);
   function voiceSlots() {
     return {
-      kids: { title: '👋 Hello for each child', rows: state.kids.map(k => ({ id: 'kid:' + k.id, icon: emo(k.avatar), label: `Hello for ${k.name}`, script: `Hi ${k.name}! Let's build your plate!` })) },
+      kids: { title: '👋 Hello for each child', rows: state.kids.flatMap(k => Object.entries(MEALS).map(([meal, m]) => ({
+        id: meal === 'breakfast' ? 'kid:' + k.id : `kid:${k.id}:${meal}`, icon: emo(k.avatar),
+        label: `${m.icon} ${m.label} hello for ${k.name}`, script: `Hi ${k.name}! Let's build your ${mealWord(meal)}!` }))) },
       lines: { title: '💬 Buddy lines', rows: VOICE_LINES.map(l => ({ id: l.id, icon: '', label: l.label, script: l.script() })) },
       foods: { title: '🍽️ Food names', rows: state.menu.map(m => ({ id: 'item:' + m.id, icon: pic(m, 'sm'), label: m.name + (mealOf(m) === 'lunch' ? ' (lunch)' : ''), script: `${m.name}!` })) },
     };
@@ -1159,7 +1165,7 @@
       const del = modalCard.querySelector('[data-act="k-del"]');
       if (del) del.onclick = () => confirmBox(`Remove ${esc(existing.name)}?`, 'Their orders are removed too.', 'Remove', () => {
         state.kids = state.kids.filter(k => k.id !== existing.id);
-        clipDelete('kid:' + existing.id);
+        clipDelete('kid:' + existing.id); clipDelete(`kid:${existing.id}:lunch`);
         Object.values(state.orders).forEach(day => delete day[existing.id]);
         save(); render();
       });

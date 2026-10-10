@@ -36,7 +36,7 @@ Both boys' pictures are a **super star** (Julien's card is red, Lucas's is green
 - **Allergies:** in a child's Edit screen, tap the foods they can't have. Those foods are hidden from that child completely, and the other children still see them. **Lucas is set up to never see Eggs.** In the menu, those items say "hidden for Lucas". New foods you add are not hidden automatically, so mark them in his Edit screen.
 - **What fits on a plate:** how many main dishes (1–2), sides (0–4) and drinks (0–2).
 - **🎙️ Your voice:** record yourself so the kids hear you instead of the phone's voice. Tap ● next to a line, say it, and tap Done (it stops by itself after 10 seconds). Then ▶ plays it back and 🗑 deletes it. There are three groups:
-  - **Hello for each child** ("Hi Lucas! Let's build your breakfast!")
+  - **Hello for each child**, one for breakfast ("Hi Lucas! Let's build your breakfast!") and one for lunch ("Hi Lucas! Let's build your lunch!"). The "Order sent!" and "Want to change…?" lines also have separate breakfast and lunch versions.
   - **Buddy lines** ("Pick your main dish!", "Pick two sides!", "Yummy!", "Bye-bye!", "Sorry, that's all gone…", "Hooray! Your breakfast is ordered!" and more)
   - **Food names**: record each food once ("Pancakes!") and it's joined to the lines, so a child hears "Pancakes!" + "Yummy!" in your voice. After an order is sent, your "Hooray!" plays followed by the names of the foods they picked.
 
