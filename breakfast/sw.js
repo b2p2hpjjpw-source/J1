@@ -1,9 +1,9 @@
 // Offline support. Online: always fetch the latest files (so updates show up right away)
 // and keep a copy. Offline: serve the saved copy.
-const CACHE = 'build-a-plate-v9';
+const CACHE = 'build-a-plate-v10';
 const ASSETS = [
   './', 'index.html', 'styles.css', 'app.js', 'manifest.webmanifest',
-  'icons/icon.svg', 'art/salmon-bagel.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
+  'icons/icon.svg', 'art/salmon-bagel.svg', 'art/banana-bread.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', e => {

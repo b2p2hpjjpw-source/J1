@@ -26,7 +26,7 @@ The Mario-style theme uses look-alike scenery and emoji, not Nintendo's characte
 - **Menu:** grouped into Main, Sides and Drinks.
   - Switch an item **off** when you've run out. The kids still see it, but greyed out. "Mark everything available again" turns them all back on.
   - **✕** removes an item for good. **+ Add** creates a new one.
-  - Tap a name to rename it, move it to another group, or change its picture: an emoji, a drawn picture (there's a **bagel with smoked salmon**, which has no emoji), or a **photo of the real food**. The menu starts with a "Salmon bagel" main dish.
+  - Tap a name to rename it, move it to another group, or change its picture: an emoji, a drawn picture (there are **bagel with smoked salmon** and **banana bread** pictures, which have no emoji), or a **photo of the real food**. The menu starts with "Salmon bagel" and "Banana bread" main dishes.
 - **Children:** add, edit or remove a child, and pick their name, picture and theme.
 - **Allergies:** in a child's Edit screen, tap the foods they can't have. Those foods are hidden from that child completely, and the other children still see them. **Lucas is set up to never see Eggs.** In the menu, those items say "hidden for Lucas". New foods you add are not hidden automatically, so mark them in his Edit screen.
 - **What fits on a plate:** how many main dishes (1–2), sides (0–4) and drinks (0–2).

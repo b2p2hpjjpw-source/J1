@@ -63,6 +63,7 @@
   // Drawn pictures for foods that have no emoji (in the art/ folder).
   const ART = {
     'salmon-bagel': { label: 'Bagel with smoked salmon', src: 'art/salmon-bagel.svg' },
+    'banana-bread': { label: 'Banana bread', src: 'art/banana-bread.svg' },
   };
   const AVATARS = ['🍄', '🐴', '⭐', '🦄', '🚀', '🦖', '🐬', '🐶', '🐱', '🐰', '🦊', '🐼', '🐸', '🐯', '🦁', '🐵',
     '🐧', '🦋', '🐢', '🐙', '🤖', '👑', '⚽', '🏎️', '🚒', '🚜', '🧸', '🌈', '🐉', '🦈'];
@@ -92,16 +93,17 @@
   // ---------- Saved data ----------
   const item = (name, emoji, cat, art) => ({ id: uid(), name, emoji, cat, on: true, ...(art ? { art } : {}) });
   const salmonBagel = () => item('Salmon bagel', '🥯', 'main', 'salmon-bagel');
+  const bananaBread = () => item('Banana bread', '🍞', 'main', 'banana-bread');
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 3,
+    v: 4,
     kids: [
       { id: 'lucas', name: 'Lucas', avatar: '🐴', theme: 'farm', skip: [] },
       { id: 'julien', name: 'Julien', avatar: '🍄', theme: 'mario', skip: [] },
     ],
     menu: [
       item('Pancakes', '🥞', 'main'), item('Waffles', '🧇', 'main'), item('Cereal', '🥣', 'main'),
-      item('Eggs', '🍳', 'main'), item('Toast', '🍞', 'main'), item('Bagel', '🥯', 'main'), salmonBagel(),
+      item('Eggs', '🍳', 'main'), item('Toast', '🍞', 'main'), item('Bagel', '🥯', 'main'), salmonBagel(), bananaBread(),
       item('Banana', '🍌', 'side'), item('Strawberries', '🍓', 'side'), item('Apple', '🍎', 'side'),
       item('Blueberries', '🫐', 'side'), item('Grapes', '🍇', 'side'), item('Bacon', '🥓', 'side'),
       item('Cheese', '🧀', 'side'), item('Yogurt', '🍨', 'side'),
@@ -121,7 +123,11 @@
       const at = st.menu.findIndex(m => /bagel/i.test(m.name));
       st.menu.splice(at >= 0 ? at + 1 : st.menu.length, 0, salmonBagel()); // the salmon bagel picture arrived
     }
-    st.v = 3;
+    if (!(v >= 4) && !st.menu.some(m => m.art === 'banana-bread')) {
+      const at = st.menu.map(m => m.cat).lastIndexOf('main');
+      st.menu.splice(at + 1, 0, bananaBread()); // the banana bread picture arrived
+    }
+    st.v = 4;
   }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
