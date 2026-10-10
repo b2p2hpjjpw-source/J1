@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Bagel sandwich with cream cheese and smoked salmon, seen from the side -->
+  <defs>
+    <linearGradient id="crust" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0b768"/><stop offset="1" stop-color="#c47f35"/></linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3934a"/><stop offset="1" stop-color="#a8662a"/></linearGradient>
+  </defs>
+  <ellipse cx="64" cy="112" rx="54" ry="9" fill="#000" opacity=".13"/>
+  <!-- bottom half -->
+  <path d="M10 86 C10 76 118 76 118 86 L116 98 C112 112 16 112 12 98 Z" fill="url(#side)"/>
+  <ellipse cx="64" cy="86" rx="54" ry="13" fill="#f3d9a8"/>
+  <!-- cream cheese -->
+  <path d="M10 82 C20 92 30 76 42 86 C52 94 60 78 72 86 C84 94 92 78 104 86 C110 90 116 84 118 80 C116 70 12 70 10 82 Z" fill="#fffdf7" stroke="#eadfca" stroke-width="1.5"/>
+  <!-- smoked salmon, draping over the edges -->
+  <path d="M6 72 C4 84 16 90 22 80 C26 92 40 90 42 80 C48 92 62 92 66 80 C72 92 86 92 90 80 C94 90 108 92 110 80 C116 88 126 82 122 70 C110 58 18 58 6 72 Z" fill="#f47c5c" stroke="#d9573a" stroke-width="2" stroke-linejoin="round"/>
+  <g stroke="#ffc1a8" stroke-width="2.6" fill="none" stroke-linecap="round">
+    <path d="M14 74 C24 70 34 72 40 76"/><path d="M50 74 C60 70 70 72 78 76"/><path d="M88 74 C98 70 108 72 116 75"/>
+  </g>
+  <!-- dill and capers peeking out -->
+  <g stroke="#3f8f3a" stroke-width="2.2" stroke-linecap="round" fill="none">
+    <path d="M30 66 l-8 -6 M26 63 l-1 -5 M26 63 l-5 1"/><path d="M98 66 l8 -6 M102 63 l1 -5 M102 63 l5 1"/>
+  </g>
+  <circle cx="58" cy="66" r="3.4" fill="#6b8e23" stroke="#4a6418"/><circle cx="76" cy="65" r="3" fill="#6b8e23" stroke="#4a6418"/>
+  <!-- top half: shiny domed bagel with its hole -->
+  <path d="M10 54 C10 62 118 62 118 54 L118 50 L10 50 Z" fill="url(#side)"/>
+  <ellipse cx="64" cy="44" rx="54" ry="22" fill="url(#crust)" stroke="#b06d2c" stroke-width="2"/>
+  <ellipse cx="64" cy="42" rx="13" ry="5.5" fill="#8a4f1b"/>
+  <ellipse cx="64" cy="43.5" rx="9" ry="3.2" fill="#5e3410"/>
+  <path d="M28 34 C38 26 52 24 60 25" stroke="#fff3d6" stroke-width="4" stroke-linecap="round" fill="none" opacity=".7"/>
+  <g fill="#fff8e6">
+    <ellipse cx="36" cy="44" rx="2.4" ry="1.4" transform="rotate(-20 36 44)"/><ellipse cx="46" cy="32" rx="2.4" ry="1.4" transform="rotate(10 46 32)"/>
+    <ellipse cx="84" cy="30" rx="2.4" ry="1.4" transform="rotate(-10 84 30)"/><ellipse cx="96" cy="42" rx="2.4" ry="1.4" transform="rotate(30 96 42)"/>
+    <ellipse cx="80" cy="54" rx="2.4" ry="1.4" transform="rotate(-30 80 54)"/><ellipse cx="50" cy="54" rx="2.4" ry="1.4" transform="rotate(15 50 54)"/>
+    <ellipse cx="22" cy="48" rx="2.4" ry="1.4" transform="rotate(40 22 48)"/><ellipse cx="106" cy="50" rx="2.4" ry="1.4" transform="rotate(-40 106 50)"/>
+  </g>
+</svg>

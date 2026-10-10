@@ -26,10 +26,16 @@ The Mario-style theme uses look-alike scenery and emoji, not Nintendo's characte
 - **Menu:** grouped into Main, Sides and Drinks.
   - Switch an item **off** when you've run out. The kids still see it, but greyed out. "Mark everything available again" turns them all back on.
   - **✕** removes an item for good. **+ Add** creates a new one.
-  - Tap a name to rename it, move it to another group, or change its picture (an emoji or a **photo of the real food**).
+  - Tap a name to rename it, move it to another group, or change its picture: an emoji, a drawn picture (there's a **bagel with smoked salmon**, which has no emoji), or a **photo of the real food**. The menu starts with a "Salmon bagel" main dish.
 - **Children:** add, edit or remove a child, and pick their name, picture and theme.
 - **Allergies:** in a child's Edit screen, tap the foods they can't have. Those foods are hidden from that child completely, and the other children still see them. **Lucas is set up to never see Eggs.** In the menu, those items say "hidden for Lucas". New foods you add are not hidden automatically, so mark them in his Edit screen.
 - **What fits on a plate:** how many main dishes (1–2), sides (0–4) and drinks (0–2).
+- **🎙️ Your voice:** record yourself so the kids hear you instead of the phone's voice. Tap ● next to a line, say it, and tap Done (it stops by itself after 10 seconds). Then ▶ plays it back and 🗑 deletes it. There are three groups:
+  - **Hello for each child** ("Hi Lucas! Let's build your breakfast!")
+  - **Buddy lines** ("Pick your main dish!", "Pick two sides!", "Yummy!", "Bye-bye!", "Sorry, that's all gone…", "Hooray! Your breakfast is ordered!" and more)
+  - **Food names**: record each food once ("Pancakes!") and it's joined to the lines, so a child hears "Pancakes!" + "Yummy!" in your voice. After an order is sent, your "Hooray!" plays followed by the names of the foods they picked.
+
+  Anything you don't record uses the phone's voice. Recordings stay on that phone and aren't in the backup file. The phone asks for microphone permission the first time.
 - Sounds and the talking buddy on/off, backup download/restore, erase everything.
 
 ## Putting it on the phone
@@ -41,4 +47,4 @@ It then opens full-screen with its own icon and works offline. Data is saved onl
 
 To try it on a computer: `npx http-server breakfast`, then open the link at phone size.
 
-If you change files after installing, bump `CACHE` in `sw.js` so phones pick up the update. The starting menu, children and themes are at the top of `app.js`.
+If you change files after installing, bump `CACHE` in `sw.js` so phones pick up the update. The starting menu, children, themes and drawn food pictures (`ART`, with the images in `art/`) are at the top of `app.js`.

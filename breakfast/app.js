@@ -60,6 +60,10 @@
   };
   const HOME_DECO = `<span class="pal sun">☀️</span><span class="cloud c1">☁️</span><span class="cloud c2">☁️</span>`;
 
+  // Drawn pictures for foods that have no emoji (in the art/ folder).
+  const ART = {
+    'salmon-bagel': { label: 'Bagel with smoked salmon', src: 'art/salmon-bagel.svg' },
+  };
   const AVATARS = ['🍄', '🐴', '⭐', '🦄', '🚀', '🦖', '🐬', '🐶', '🐱', '🐰', '🦊', '🐼', '🐸', '🐯', '🦁', '🐵',
     '🐧', '🦋', '🐢', '🐙', '🤖', '👑', '⚽', '🏎️', '🚒', '🚜', '🧸', '🌈', '🐉', '🦈'];
   const FOOD_EMOJIS = ['🥞', '🧇', '🥣', '🍳', '🥚', '🍞', '🥯', '🥐', '🧁', '🍩', '🥪', '🌯', '🌮', '🍕', '🥓', '🌭',
@@ -86,17 +90,18 @@
   const NUM_WORDS = ['zero', 'one', 'two', 'three', 'four'];
 
   // ---------- Saved data ----------
-  const item = (name, emoji, cat) => ({ id: uid(), name, emoji, cat, on: true });
+  const item = (name, emoji, cat, art) => ({ id: uid(), name, emoji, cat, on: true, ...(art ? { art } : {}) });
+  const salmonBagel = () => item('Salmon bagel', '🥯', 'main', 'salmon-bagel');
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 2,
+    v: 3,
     kids: [
       { id: 'lucas', name: 'Lucas', avatar: '🐴', theme: 'farm', skip: [] },
       { id: 'julien', name: 'Julien', avatar: '🍄', theme: 'mario', skip: [] },
     ],
     menu: [
       item('Pancakes', '🥞', 'main'), item('Waffles', '🧇', 'main'), item('Cereal', '🥣', 'main'),
-      item('Eggs', '🍳', 'main'), item('Toast', '🍞', 'main'), item('Bagel', '🥯', 'main'),
+      item('Eggs', '🍳', 'main'), item('Toast', '🍞', 'main'), item('Bagel', '🥯', 'main'), salmonBagel(),
       item('Banana', '🍌', 'side'), item('Strawberries', '🍓', 'side'), item('Apple', '🍎', 'side'),
       item('Blueberries', '🫐', 'side'), item('Grapes', '🍇', 'side'), item('Bacon', '🥓', 'side'),
       item('Cheese', '🧀', 'side'), item('Yogurt', '🍨', 'side'),
@@ -109,6 +114,15 @@
     voice: true,
   });
   // Lucas is allergic to eggs: hide every egg item from him.
+  // Bring data saved by an older version of the app up to date.
+  function migrate(st, v) {
+    if (!(v >= 2)) withEggAllergy(st); // before allergies existed
+    if (!(v >= 3) && !st.menu.some(m => m.art === 'salmon-bagel')) {
+      const at = st.menu.findIndex(m => /bagel/i.test(m.name));
+      st.menu.splice(at >= 0 ? at + 1 : st.menu.length, 0, salmonBagel()); // the salmon bagel picture arrived
+    }
+    st.v = 3;
+  }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
     if (lucas) {
@@ -125,7 +139,7 @@
       const raw = JSON.parse(localStorage.getItem(STORE_KEY));
       if (raw && Array.isArray(raw.kids) && Array.isArray(raw.menu)) {
         const st = { ...base, ...raw, limits: { ...base.limits, ...(raw.limits || {}) }, orders: raw.orders || {} };
-        if (!(raw.v >= 2)) { withEggAllergy(st); st.v = 2; } // saved before allergies existed
+        migrate(st, raw.v);
         return st;
       }
     } catch (e) { /* start fresh */ }
@@ -152,6 +166,7 @@
   const orderItems = o => o ? CATS.flatMap(c => (o[c.id] || []).map(itemById).filter(Boolean)) : [];
   const pic = (it, cls = '') => it.photo
     ? `<img class="pic ${cls}" src="${it.photo}" alt="" draggable="false" />`
+    : it.art && ART[it.art] ? `<img class="pic art ${cls}" src="${ART[it.art].src}" alt="" draggable="false" />`
     : `<span class="pic ${cls}">${it.emoji || '🍽️'}</span>`;
 
   // ---------- Sound ----------
@@ -230,17 +245,176 @@
     return speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)).sort((a, b) => voiceScore(b) - voiceScore(a))[0] || null;
   }
   if ('speechSynthesis' in window) speechSynthesis.getVoices(); // starts loading the list on some phones
-  // Speak a line. queue: wait for the current line instead of cutting it off.
-  function say(text, queue) {
-    if (!state.voice || !('speechSynthesis' in window)) return;
+  // The buddy talks in "parts": { slot, text }. If a grown-up recorded their own voice for a slot,
+  // that recording plays; otherwise the phone reads the text. Parts play one after another.
+  let speechQueue = [], speechBusy = false, speechToken = 0, lastParts = [];
+  function speak(parts, queue) {
+    if (typeof parts === 'string') parts = [{ text: parts }];
+    parts = parts.filter(Boolean);
+    if (!queue) { stopSpeaking(); lastParts = parts; } else lastParts = lastParts.concat(parts);
+    if (!state.voice) return;
+    speechQueue.push(...parts);
+    if (!speechBusy) speakNext(speechToken);
+  }
+  function stopSpeaking() {
+    speechQueue = []; speechBusy = false; speechToken++;
+    try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) { /* no voice */ }
+    stopClip();
+  }
+  function speakNext(token) {
+    if (token !== speechToken) return;
+    const part = speechQueue.shift();
+    if (!part) { speechBusy = false; return; }
+    speechBusy = true;
+    let finished = false;
+    const done = () => { if (!finished) { finished = true; setTimeout(() => speakNext(token), 120); } };
+    if (part.slot && playClip(part.slot, done)) return;
+    if (!part.text || !('speechSynthesis' in window)) { done(); return; }
     try {
-      if (!queue) speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, ''));
+      const u = new SpeechSynthesisUtterance(part.text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, ''));
       const v = pickVoice();
       if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-US';
       u.rate = 0.95; u.pitch = 1.05;
+      u.onend = done; u.onerror = done;
       speechSynthesis.speak(u);
-    } catch (e) { /* no voice */ }
+      setTimeout(done, 1500 + part.text.length * 90); // some phones never fire onend
+    } catch (e) { done(); }
+  }
+
+  // ---------- Grown-up's own voice ----------
+  // Recordings live in IndexedDB on this phone (too big for localStorage). Slots:
+  //   a buddy line below, 'kid:<id>' (hello for that child) or 'item:<id>' (a food's name).
+  const VOICE_LINES = [
+    { id: 'pick-main', label: 'Pick a main dish', script: () => promptFor('main') },
+    { id: 'pick-side', label: 'Pick sides', script: () => promptFor('side') },
+    { id: 'pick-drink', label: 'Pick a drink', script: () => promptFor('drink') },
+    { id: 'yum', label: 'After picking a food (plays after its name)', script: () => 'Yummy!' },
+    { id: 'already', label: 'Picking a food that is already on the plate', script: () => "That's already on your plate!" },
+    { id: 'bye', label: 'Taking a food off the plate (plays before its name)', script: () => 'Bye-bye!' },
+    { id: 'notToday', label: 'Tapping a food that is “Not today”', script: () => "Sorry, that's all gone. Pick something else!" },
+    { id: 'gone', label: 'Something they ordered ran out', script: () => 'Oh no! Something you picked is all gone. Pick something else!' },
+    { id: 'ready', label: 'Plate is full', script: () => "Your plate is ready! Tap I'm done!" },
+    { id: 'mainFirst', label: 'Tapped I’m done without a main dish', script: () => 'Pick your main dish first!' },
+    { id: 'forgot-side', label: 'Forgot sides', script: () => "Don't forget your sides! Or tap I'm done again." },
+    { id: 'forgot-drink', label: 'Forgot a drink', script: () => "Don't forget a drink! Or tap I'm done again." },
+    { id: 'change', label: 'Opening a plate that was already ordered', script: () => 'Want to change your breakfast?' },
+    { id: 'sent', label: 'Order sent! (the food names play after it)', script: () => 'Hooray! Your breakfast is ordered!' },
+  ];
+  const clips = {}; // slot -> { buffer, start, end, gain }
+  let clipPlaying = null;
+  function idb() {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) return reject(new Error('no indexedDB'));
+      const r = indexedDB.open('build-a-plate-voice', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('clips');
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  }
+  async function idbDo(mode, fn) {
+    const db = await idb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('clips', mode), req = fn(tx.objectStore('clips'));
+      tx.oncomplete = () => resolve(req && req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const clipSave = (id, blob) => idbDo('readwrite', st => st.put(blob, id));
+  const clipDelete = id => { delete clips[id]; return idbDo('readwrite', st => st.delete(id)).catch(() => { /* already gone */ }); };
+  const clipClearAll = () => { Object.keys(clips).forEach(k => delete clips[k]); return idbDo('readwrite', st => st.clear()).catch(() => { /* none */ }); };
+  // Decode a recording and find where the talking starts and stops, so taps before/after don't add silence.
+  async function loadClip(id, blob) {
+    const buf = await new Promise((resolve, reject) => {
+      blob.arrayBuffer().then(ab => {
+        const p = getCtx().decodeAudioData(ab, resolve, reject);
+        if (p && p.then) p.then(resolve, reject);
+      }, reject);
+    });
+    const data = buf.getChannelData(0), rate = buf.sampleRate;
+    let peak = 0;
+    for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+    const th = Math.max(0.01, peak * 0.08);
+    let a = 0, b = data.length - 1;
+    while (a < b && Math.abs(data[a]) < th) a++;
+    while (b > a && Math.abs(data[b]) < th) b--;
+    clips[id] = { buffer: buf, start: Math.max(0, a / rate - 0.12), end: Math.min(buf.duration, b / rate + 0.25), gain: peak > 0 ? Math.min(4, 0.9 / peak) : 1 };
+  }
+  async function loadAllClips() {
+    try {
+      const keys = await idbDo('readonly', st => st.getAllKeys());
+      for (const id of keys || []) {
+        const blob = await idbDo('readonly', st => st.get(id));
+        if (blob) await loadClip(id, blob).catch(() => { /* unreadable clip; the phone's voice is used */ });
+      }
+    } catch (e) { /* no IndexedDB; the phone's voice only */ }
+  }
+  function stopClip() {
+    if (clipPlaying) { try { clipPlaying.onended = null; clipPlaying.stop(); } catch (e) { /* already stopped */ } }
+    clipPlaying = null;
+  }
+  function playClip(id, onEnd) {
+    const c = clips[id];
+    if (!c) return false;
+    try {
+      const ctx = getCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      stopClip();
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = c.buffer; g.gain.value = c.gain;
+      src.connect(g).connect(ctx.destination);
+      src.onended = () => { if (clipPlaying === src) clipPlaying = null; if (onEnd) onEnd(); };
+      src.start(0, c.start, Math.max(0.1, c.end - c.start));
+      clipPlaying = src;
+      return true;
+    } catch (e) { return false; }
+  }
+  const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  async function recordSlot(slotId, label, script) {
+    stopSpeaking();
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      toast("The microphone is blocked. Allow microphone access for this app in the phone's Settings, then try again.");
+      return;
+    }
+    const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+    const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    let secs = 10, timer = null, cancelled = false;
+    mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      clearInterval(timer);
+      stream.getTracks().forEach(t => t.stop());
+      if (cancelled || !chunks.length) return;
+      const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' });
+      try {
+        await loadClip(slotId, blob);
+        await clipSave(slotId, blob);
+        closeModal();
+        render();
+        setTimeout(() => playClip(slotId), 150);
+      } catch (e) {
+        toast('That recording could not be saved. Please try again.');
+      }
+    };
+    openModal(`
+      <div class="rec-dot"></div>
+      <h2>Recording…</h2>
+      <p class="hint">${esc(label)}. Say something like:</p>
+      <p class="rec-script">“${esc(script)}”</p>
+      <p class="hint" id="recLeft">Stops by itself in 10 seconds</p>
+      <button class="big-btn red" id="recStop">■ Done</button>
+      <button class="link-btn" id="recCancel">Cancel</button>`, () => { if (mr.state !== 'inactive') { cancelled = true; mr.stop(); } });
+    $('recStop').onclick = () => { if (mr.state !== 'inactive') mr.stop(); };
+    $('recCancel').onclick = () => closeModal();
+    mr.start();
+    timer = setInterval(() => {
+      secs--;
+      const el = $('recLeft');
+      if (el) el.textContent = `Stops by itself in ${secs} second${secs === 1 ? '' : 's'}`;
+      if (secs <= 0 && mr.state !== 'inactive') mr.stop();
+    }, 1000);
   }
 
   // ---------- Confetti ----------
@@ -384,8 +558,12 @@
     view = { name: 'plate', kidId, cat: nextOpenCat(o) || activeCats()[0].id };
     render();
     sfx(themeOf(kid).add);
-    if (gone.length) say(setBubble(`Oh no! No ${listWords(gone)} tomorrow. Pick something else!`));
-    else say(setBubble(`Hi ${kid.name}! ${o && o.sent ? 'Want to change your breakfast?' : promptFor(view.cat)}`));
+    if (gone.length) speak([{ slot: 'gone', text: setBubble(`Oh no! No ${listWords(gone)} tomorrow. Pick something else!`) }]);
+    else {
+      const next = o && o.sent ? { slot: 'change', text: 'Want to change your breakfast?' } : promptPart(view.cat);
+      setBubble(`Hi ${kid.name}! ${next.text}`);
+      speak([{ slot: 'kid:' + kid.id, text: `Hi ${kid.name}!` }, next]);
+    }
   }
   const listWords = arr => arr.length < 2 ? (arr[0] || '') : `${arr.slice(0, -1).join(', ')} or ${arr[arr.length - 1]}`;
   function nextOpenCat(o) {
@@ -397,6 +575,8 @@
     if (catId === 'main') return n > 1 ? `Pick ${NUM_WORDS[n]} main dishes!` : 'Pick your main dish!';
     return n > 1 ? `Pick ${NUM_WORDS[n]} ${c.many}!` : `Pick a ${c.one}!`;
   }
+  const promptPart = catId => ({ slot: 'pick-' + catId, text: promptFor(catId) });
+  const itemPart = it => ({ slot: 'item:' + it.id, text: it.name });
   function setBubble(text) {
     const b = $('bubbleText');
     if (b) b.textContent = text;
@@ -485,12 +665,12 @@
     const n = orderItems(curOrder()).length;
     $('counter').innerHTML = `<span class="cc-ico">${curTheme.coin}</span><span class="cc-x">×${n}</span>`;
   }
-  function switchCat(catId, speak = true) {
+  function switchCat(catId, talk = true) {
     if (!state.limits[catId]) return;
     view.cat = catId;
     drawPlate(); drawTabs(); drawShelf(true);
-    const t = setBubble(promptFor(catId));
-    if (speak) say(t);
+    setBubble(promptFor(catId));
+    if (talk) speak([promptPart(catId)]);
   }
 
   function addItem(id, fromEl) {
@@ -503,7 +683,8 @@
     const o = orderFor(curKid.id, tomorrowKey(), true);
     if (o[cat].includes(id)) {
       sfx('tap');
-      say(setBubble(`${it.name} is already on your plate!`));
+      setBubble(`${it.name} is already on your plate!`);
+      speak([itemPart(it), { slot: 'already', text: "That's already on your plate!" }]);
       wiggle(fromEl);
       return;
     }
@@ -515,13 +696,15 @@
     sfx(curTheme.add); buzz(30);
     view.cat = cat;
     drawAll(id);
-    say(setBubble(`${it.name}! ${pick(['Yum!', 'Yummy!', 'Good pick!', curTheme.cheers[0]])}`));
+    const yum = pick(['Yum!', 'Yummy!', 'Good pick!', curTheme.cheers[0]]);
+    setBubble(`${it.name}! ${yum}`);
+    speak([itemPart(it), { slot: 'yum', text: yum }]);
     if (o[cat].length >= limit) {
       const next = nextOpenCat(o);
       setTimeout(() => {
         if (view.name !== 'plate' || view.cat !== cat) return;
-        if (next) { view.cat = next; drawPlate(); drawTabs(); drawShelf(true); say(setBubble(promptFor(next)), true); }
-        else say(setBubble(`Your plate is ready! Tap I'm done!`), true);
+        if (next) { view.cat = next; drawPlate(); drawTabs(); drawShelf(true); setBubble(promptFor(next)); speak([promptPart(next)], true); }
+        else speak([{ slot: 'ready', text: setBubble("Your plate is ready! Tap I'm done!") }], true);
       }, 900);
     }
   }
@@ -534,12 +717,14 @@
     sfx(curKid.theme === 'mario' ? 'bump' : 'pop');
     view.cat = it.cat;
     drawAll(); drawShelf(true);
-    say(setBubble(`Bye-bye, ${it.name}! ${promptFor(it.cat)}`));
+    setBubble(`Bye-bye, ${it.name}! ${promptFor(it.cat)}`);
+    speak([{ slot: 'bye', text: 'Bye-bye,' }, itemPart(it)]);
   }
   function refuse(it, el) {
     sfx('nope'); buzz([40, 30, 40]);
     wiggle(el);
-    say(setBubble(`Sorry, no ${it.name} tomorrow. Pick something else!`));
+    setBubble(`Sorry, no ${it.name} tomorrow. Pick something else!`);
+    speak([itemPart(it), { slot: 'notToday', text: "Sorry, that's all gone. Pick something else!" }]);
   }
   function wiggle(el) {
     if (!el) return;
@@ -628,7 +813,7 @@
       switchCat('main', false);
       wiggle(document.querySelector('.cat-tab[data-cat="main"]'));
       sfx('nope');
-      say(setBubble('Pick your main dish first!'));
+      speak([{ slot: 'mainFirst', text: setBubble('Pick your main dish first!') }]);
       return;
     }
     const missing = activeCats().find(c => c.id !== 'main' && !(o[c.id] || []).length);
@@ -636,7 +821,7 @@
       reminded = true;
       switchCat(missing.id, false);
       wiggle(document.querySelector(`.cat-tab[data-cat="${missing.id}"]`));
-      say(setBubble(`Don't forget a ${missing.one}! Or tap I'm done again.`));
+      speak([{ slot: 'forgot-' + missing.id, text: setBubble(`Don't forget ${missing.id === 'side' ? 'your sides' : 'a ' + missing.one}! Or tap I'm done again.`) }]);
       return;
     }
     o.sent = true; o.at = Date.now();
@@ -644,7 +829,7 @@
     const items = orderItems(o), cheer = pick(curTheme.cheers);
     sfx(curTheme.done); buzz([60, 40, 120]);
     confetti(60, curTheme.bits);
-    say(`${cheer} Your breakfast is ordered, ${curKid.name}! ${items.map(i => i.name).join(', ')}.`);
+    speak([{ slot: 'sent', text: `${cheer} Your breakfast is ordered, ${curKid.name}!` }, ...items.map(itemPart)]);
     openModal(`
       <div class="sent t-${curKid.theme}">
         <div class="sent-buddy">${curTheme.buddy}</div>
@@ -691,6 +876,7 @@
           ${CATS.map(c => `<div class="step-row"><span>${c.icon} ${c.label}</span>
             <span class="stepper"><button data-step="${c.id}" data-d="-1" aria-label="Fewer">−</button><b>${state.limits[c.id]}</b><button data-step="${c.id}" data-d="1" aria-label="More">+</button></span></div>`).join('')}
         </section>
+        ${voiceCardHtml()}
         <section class="card">
           <h3>⚙️ Settings</h3>
           <div class="toggle"><span>Sounds</span><button class="switch ${state.sound ? 'on' : ''}" data-set="sound" aria-label="Sounds"></button></div>
@@ -704,6 +890,44 @@
         </section>
       </div>`;
   }
+  // Record your own voice: hello for each child, the buddy's lines, and each food's name.
+  let openVoice = new Set(['kids']);
+  function voiceSlots() {
+    return {
+      kids: { title: '👋 Hello for each child', rows: state.kids.map(k => ({ id: 'kid:' + k.id, icon: k.avatar, label: `Hello for ${k.name}`, script: `Hi ${k.name}! Let's build your breakfast!` })) },
+      lines: { title: '💬 Buddy lines', rows: VOICE_LINES.map(l => ({ id: l.id, icon: '', label: l.label, script: l.script() })) },
+      foods: { title: '🍽️ Food names', rows: state.menu.map(m => ({ id: 'item:' + m.id, icon: pic(m, 'sm'), label: m.name, script: `${m.name}!` })) },
+    };
+  }
+  const findSlot = id => Object.values(voiceSlots()).flatMap(g => g.rows).find(r => r.id === id);
+  function voiceCardHtml() {
+    if (!canRecord()) return `<section class="card"><h3>🎙️ Your voice</h3><p class="hint">This phone's browser can't record audio. Try updating it, or open the app in Safari or Chrome.</p></section>`;
+    const groups = Object.entries(voiceSlots()).map(([key, g]) => {
+      const done = g.rows.filter(r => clips[r.id]).length;
+      return `<details class="v-group" data-vgroup="${key}" ${openVoice.has(key) ? 'open' : ''}>
+        <summary>${g.title} <small>${done} of ${g.rows.length} recorded</small></summary>
+        ${g.rows.map(r => `<div class="voice-row">
+          ${r.icon ? `<span class="v-ico">${r.icon}</span>` : ''}
+          <div class="voice-txt"><b>${clips[r.id] ? '✅' : '⚪'} ${esc(r.label)}</b><span>“${esc(r.script)}”</span></div>
+          <div class="voice-btns">
+            <button class="vbtn rec" data-rec="${r.id}" aria-label="Record">●</button>
+            ${clips[r.id] ? `<button class="vbtn" data-play="${r.id}" aria-label="Play">▶</button><button class="vbtn del" data-unrec="${r.id}" aria-label="Delete recording">🗑</button>` : ''}
+          </div></div>`).join('') || '<p class="hint">Nothing here yet.</p>'}
+      </details>`;
+    }).join('');
+    return `<section class="card">
+      <h3>🎙️ Your voice</h3>
+      <p class="hint">Record yourself and the kids hear <b>you</b> instead of the phone's voice. Tap ● and say the line. Anything you skip uses the phone's voice. The food names are joined to the lines, so you hear “Pancakes!” + “Yummy!”.</p>
+      ${groups}
+      <p class="hint" style="margin-top:10px">Recordings stay on this phone (they aren't in the backup file).</p>
+    </section>`;
+  }
+  // <details> open/closed survives re-drawing the screen.
+  app.addEventListener('toggle', e => {
+    const g = e.target.dataset && e.target.dataset.vgroup;
+    if (g) { if (e.target.open) openVoice.add(g); else openVoice.delete(g); }
+  }, true);
+
   function ordersHtml(day) {
     if (!state.kids.length) return '<p class="hint">Add a child below to start taking orders.</p>';
     const counts = {};
@@ -752,7 +976,7 @@
         <div class="field"><label>Name</label><input id="edName" type="text" maxlength="24" value="${esc(ed.name)}" placeholder="e.g. Pancakes" /></div>
         <div class="field"><label>Goes in</label><div class="chips">${CATS.map(c => `<button class="chip ${ed.cat === c.id ? 'on' : ''}" data-ecat="${c.id}">${c.icon} ${c.label}</button>`).join('')}</div></div>
         <div class="field"><label>Picture</label>
-          <div class="emoji-grid">${FOOD_EMOJIS.map(e => `<button class="${!ed.photo && ed.emoji === e ? 'on' : ''}" data-emoji="${e}">${e}</button>`).join('')}</div>
+          <div class="emoji-grid">${Object.entries(ART).map(([k, a]) => `<button class="${!ed.photo && ed.art === k ? 'on' : ''}" data-art="${k}" aria-label="${esc(a.label)}"><img src="${a.src}" alt="" /></button>`).join('')}${FOOD_EMOJIS.map(e => `<button class="${!ed.photo && !ed.art && ed.emoji === e ? 'on' : ''}" data-emoji="${e}">${e}</button>`).join('')}</div>
           <div class="row" style="margin-top:8px">
             <button class="small-btn" data-act="photo">📷 Use a photo</button>
             ${ed.photo ? '<button class="small-btn" data-act="no-photo">Remove photo</button>' : ''}
@@ -764,14 +988,15 @@
       const nameIn = $('edName');
       nameIn.addEventListener('input', () => { ed.name = nameIn.value; });
       modalCard.querySelectorAll('[data-ecat]').forEach(b => b.onclick = () => { ed.cat = b.dataset.ecat; draw(); });
-      modalCard.querySelectorAll('[data-emoji]').forEach(b => b.onclick = () => { ed.emoji = b.dataset.emoji; delete ed.photo; draw(); });
+      modalCard.querySelectorAll('[data-emoji]').forEach(b => b.onclick = () => { ed.emoji = b.dataset.emoji; delete ed.photo; delete ed.art; draw(); });
+      modalCard.querySelectorAll('[data-art]').forEach(b => b.onclick = () => { ed.art = b.dataset.art; delete ed.photo; draw(); });
       modalCard.querySelector('[data-act="photo"]').onclick = () => $('edPhoto').click();
       const np = modalCard.querySelector('[data-act="no-photo"]');
       if (np) np.onclick = () => { delete ed.photo; draw(); };
       $('edPhoto').onchange = async e => {
         const f = e.target.files[0];
         if (!f) return;
-        try { ed.photo = await shrinkPhoto(f); draw(); } catch (err) { toast("Sorry, that photo couldn't be used."); }
+        try { ed.photo = await shrinkPhoto(f); delete ed.art; draw(); } catch (err) { toast("Sorry, that photo couldn't be used."); }
       };
       modalCard.querySelector('[data-act="ed-save"]').onclick = () => {
         ed.name = ed.name.trim();
@@ -780,6 +1005,7 @@
           if (existing.cat !== ed.cat) dropFromOrders(existing.id); // moved to another part of the plate
           Object.assign(existing, ed);
           if (!ed.photo) delete existing.photo;
+          if (!ed.art) delete existing.art;
         } else state.menu.push({ ...ed, id: uid() });
         save(); closeModal(); render();
       };
@@ -845,6 +1071,7 @@
       const del = modalCard.querySelector('[data-act="k-del"]');
       if (del) del.onclick = () => confirmBox(`Remove ${esc(existing.name)}?`, 'Their orders are removed too.', 'Remove', () => {
         state.kids = state.kids.filter(k => k.id !== existing.id);
+        clipDelete('kid:' + existing.id);
         Object.values(state.orders).forEach(day => delete day[existing.id]);
         save(); render();
       });
@@ -869,7 +1096,7 @@
         confirmBox('Restore this backup?', 'It replaces everything on this phone.', 'Restore', () => {
           const base = DEFAULT_STATE();
           state = { ...base, ...data, limits: { ...base.limits, ...(data.limits || {}) }, orders: data.orders || {} };
-          if (!(data.v >= 2)) { withEggAllergy(state); state.v = 2; }
+          migrate(state, data.v);
           save(); render(); toast('Backup restored!');
         });
       } catch (e) { toast("That file isn't a Build-a-Plate backup."); }
@@ -888,8 +1115,8 @@
       return;
     }
     if (view.name === 'plate') {
-      if (d.act === 'home') { sfx('tap'); if (window.speechSynthesis) speechSynthesis.cancel(); go({ name: 'home' }); }
-      else if (d.act === 'repeat') say($('bubbleText').textContent);
+      if (d.act === 'home') { sfx('tap'); stopSpeaking(); go({ name: 'home' }); }
+      else if (d.act === 'repeat') speak(lastParts.length ? lastParts : $('bubbleText').textContent);
       else if (d.act === 'done') finishOrder();
       else if (d.remove) removeItem(d.remove);
       else if (d.cat) { sfx('tap'); switchCat(d.cat); }
@@ -910,10 +1137,14 @@
       const it = itemById(d.delItem);
       confirmBox(`Remove ${esc(it.name)}?`, 'It comes off the menu for good. (To hide it for a while, switch it off instead.)', 'Remove', () => {
         state.menu = state.menu.filter(m => m.id !== it.id);
+        clipDelete('item:' + it.id);
         dropFromOrders(it.id);
         save(); render();
       });
     }
+    else if (d.rec) { const r = findSlot(d.rec); if (r) recordSlot(r.id, r.label, r.script); }
+    else if (d.play) { stopSpeaking(); playClip(d.play); }
+    else if (d.unrec) confirmBox('Delete this recording?', "The phone's voice will say this line instead.", 'Delete', () => clipDelete(d.unrec).then(render));
     else if (d.editKid) editKid(d.editKid);
     else if (d.act === 'add-kid') editKid(null);
     else if (d.step) {
@@ -929,7 +1160,7 @@
     else if (d.act === 'backup') downloadBackup();
     else if (d.act === 'restore') $('restoreFile').click();
     else if (d.act === 'erase') confirmBox('Erase everything?', 'Children, menu and orders all go back to the start.', 'Erase', () => {
-      state = DEFAULT_STATE(); save(); render();
+      state = DEFAULT_STATE(); save(); clipClearAll().then(render);
     });
   });
   app.addEventListener('change', e => {
@@ -950,5 +1181,7 @@
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ });
   }
+  save(); // keeps any upgrade from load()
   render();
+  loadAllClips().then(() => { if (view.name === 'grown') render(); });
 })();

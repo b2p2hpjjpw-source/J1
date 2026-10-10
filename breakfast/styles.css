@@ -45,6 +45,7 @@ input { font-family: inherit; }
 
 .pic { display: inline-block; line-height: 1; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 img.pic { object-fit: cover; border-radius: 22%; }
+img.pic.art { object-fit: contain; border-radius: 0; }
 
 /* ---------- Background decorations ---------- */
 #bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
@@ -110,6 +111,7 @@ img.pic { object-fit: cover; border-radius: 22%; }
 .slot { position: absolute; border-radius: 50%; display: grid; place-items: center; }
 .slot.full .pic { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .18)); }
 .slot.full img.pic { width: 100%; height: 100%; border-radius: 50%; }
+.slot.full img.pic.art { border-radius: 0; transform: scale(1.1); }
 .slot.empty { border: 3px dashed #d7d0dc; }
 .slot.empty .ghost { font-size: 10cqw; opacity: .3; filter: grayscale(.4); }
 .slot.empty.now { border-color: var(--accent); animation: pulse 1.4s ease-in-out infinite; }
@@ -357,6 +359,22 @@ img.pic { object-fit: cover; border-radius: 22%; }
 .link-btn.sm { margin: 4px 0 0; font-size: 14px; }
 .link-btn.danger { color: var(--red); }
 
+/* Your voice */
+.v-group { border-top: 1px solid #f4f0ea; padding: 6px 0; }
+.v-group summary { font-weight: 700; font-size: 17px; padding: 8px 0; cursor: pointer; list-style-position: outside; }
+.v-group summary small { font-weight: 400; color: var(--ink-soft); font-size: 14px; margin-left: 4px; }
+.voice-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid #f4f0ea; }
+.v-ico { font-size: 24px; flex: none; }
+.voice-txt { flex: 1; min-width: 0; }
+.voice-txt b { display: block; font-size: 15px; }
+.voice-txt span { display: block; font-size: 14px; color: var(--ink-soft); }
+.voice-btns { display: flex; gap: 6px; flex: none; }
+.vbtn { width: 40px; height: 40px; border-radius: 50%; background: #e7f3ff; font-size: 16px; font-weight: 700; color: #2f83db; }
+.vbtn.rec { background: #ffe3df; color: var(--red); font-size: 20px; }
+.vbtn.del { background: #f5f0f8; }
+.rec-dot { width: 70px; height: 70px; border-radius: 50%; background: var(--red); margin: 6px auto 4px; animation: pulse 1s ease-in-out infinite; }
+.rec-script { font-size: 22px !important; font-weight: 600; }
+
 /* ---------- Modal ---------- */
 .modal { position: fixed; inset: 0; z-index: 20; background: rgba(40, 30, 50, .5); display: grid; place-items: center; padding: 18px; }
 .modal.hidden { display: none; }
@@ -377,6 +395,7 @@ img.pic { object-fit: cover; border-radius: 22%; }
 .chip.on { background: #2f3b52; color: #fff; }
 .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; max-height: 190px; overflow-y: auto; padding: 4px; background: #faf8f5; border-radius: 14px; }
 .emoji-grid button { font-size: 28px; height: 44px; border-radius: 10px; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+.emoji-grid button img { width: 34px; height: 34px; vertical-align: middle; }
 .emoji-grid button.on { background: #ffe0a8; outline: 3px solid #ff9a3d; }
 .ed-preview { font-size: 64px; } .ed-preview img.pic { width: 80px; height: 80px; }
 .theme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
