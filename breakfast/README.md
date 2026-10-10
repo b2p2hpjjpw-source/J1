@@ -4,7 +4,7 @@ A phone app where the kids build **tomorrow's breakfast and lunch** the night be
 
 **🥞 Breakfast / 🥪 Lunch:** the start screen has a Breakfast / Lunch switch above the kids' cards. Lunch works exactly like breakfast. It has its own menu (sandwich, pizza, pasta, chicken nuggets, wrap, soup; apple slices, carrots, grapes, cheese, pretzels, cucumber, yogurt, fruit salad, cookie; water, milk, apple juice), and the plate becomes a red **lunchbox**. Each meal has its own order and its own "Ordered ✓". The app remembers which meal was picked last.
 
-**Orders switch over at 1 pm Eastern time**, not midnight. From 1 pm ET the kids order for the next day's breakfast. Until 1 pm ET the next day, that order still shows (✓ Ordered) so everyone can see it at breakfast. This uses Eastern time even if the phone is set to another time zone. To change it, edit `RESET_HOUR` and `RESET_TZ` at the top of `app.js`.
+**Orders switch over at a set time Eastern time**, not midnight: **breakfast at 1 pm ET, lunch at 5 pm ET**. From then on the kids order that meal for the next day. Until that time the next day, the order still shows (✓ Ordered), so everyone can see it at mealtime. This uses Eastern time even if the phone is set to another time zone. To change it, edit `RESET_HOURS` and `RESET_TZ` at the top of `app.js`.
 
 ## For the kids (big pictures, a talking buddy, almost no reading)
 - **Who's ordering?** Each child taps their own big picture card. The card shows "Ordered ✓" and their food once they're done.

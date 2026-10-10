@@ -98,10 +98,10 @@
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
   const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
   const todayKey = () => keyOf(today());
-  // Orders switch to the next breakfast at 1 pm Eastern time (not midnight), so a plate ordered
-  // the night before still shows the next morning. Before 1 pm ET the kids are ordering for today's
-  // breakfast; from 1 pm ET on, for tomorrow's.
-  const RESET_HOUR = 13, RESET_TZ = 'America/New_York';
+  // Orders switch to the next day at a set hour Eastern time (not midnight), so a plate ordered the
+  // night before still shows the next day. Breakfast switches at 1 pm ET, lunch at 5 pm ET: before
+  // that hour the kids are ordering for today's meal; from then on, for tomorrow's.
+  const RESET_HOURS = { breakfast: 13, lunch: 17 }, RESET_TZ = 'America/New_York';
   function easternNow() {
     try {
       const parts = new Intl.DateTimeFormat('en-US', { timeZone: RESET_TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date());
@@ -109,9 +109,12 @@
       return { key: `${get('year')}-${pad(get('month'))}-${pad(get('day'))}`, hour: get('hour') % 24 };
     } catch (e) { return { key: todayKey(), hour: new Date().getHours() }; } // no time zone support: use the phone's clock
   }
-  const orderDayKey = () => { const n = easternNow(); return n.hour < RESET_HOUR ? n.key : keyOf(addDays(fromKey(n.key), 1)); };
-  const prevDayKey = () => keyOf(addDays(fromKey(orderDayKey()), -1));
-  // "today" or "tomorrow", for what the buddy says about the breakfast being ordered.
+  const orderDayKey = (meal = curMeal) => {
+    const n = easternNow();
+    return n.hour < (RESET_HOURS[meal] ?? 13) ? n.key : keyOf(addDays(fromKey(n.key), 1));
+  };
+  const prevDayKey = (meal = curMeal) => keyOf(addDays(fromKey(orderDayKey(meal)), -1));
+  // "today" or "tomorrow", for what the buddy says about the meal being ordered.
   const whenWord = () => orderDayKey() === easternNow().key ? 'today' : 'tomorrow';
   const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -926,7 +929,7 @@
   function renderGrownups() {
     setTheme('grown');
     // Two days: the breakfast being ordered now, and the one before it.
-    const tKey = prevDayKey(), mKey = orderDayKey(), etToday = easternNow().key;
+    const tKey = prevDayKey(gMeal()), mKey = orderDayKey(gMeal()), etToday = easternNow().key;
     const label = k => k === etToday ? 'Today' : k < etToday ? 'Yesterday' : 'Tomorrow';
     if (view.day !== tKey && view.day !== mKey) view.day = mKey;
     app.innerHTML = `
@@ -1230,7 +1233,7 @@
     else if (d.gseg) { view[d.gseg] = d.gval; render(); }
     else if (d.clear) {
       const k = kidById(d.clear);
-      confirmBox(`Clear ${esc(k.name)}'s order?`, '', 'Clear', () => { delete state.orders[view.day][d.clear]; save(); render(); });
+      confirmBox(`Clear ${esc(k.name)}'s order?`, '', 'Clear', () => { const day = state.orders[slotKey(gMeal(), view.day)]; if (day) delete day[d.clear]; save(); render(); });
     }
     else if (d.toggleItem) { const it = itemById(d.toggleItem); it.on = !it.on; save(); render(); }
     else if (d.act === 'all-on') { state.menu.forEach(m => { m.on = true; }); save(); render(); }
@@ -1276,10 +1279,11 @@
   });
 
   // At 1 pm ET the app moves on to the next breakfast, whether it's open or reopened later.
-  let dayKey = orderDayKey();
+  const allDays = () => Object.keys(MEALS).map(orderDayKey).join('/');
+  let dayKey = allDays();
   function checkDay() {
-    if (orderDayKey() === dayKey) return;
-    dayKey = orderDayKey();
+    if (allDays() === dayKey) return;
+    dayKey = allDays();
     if (view.name === 'plate') { stopSpeaking(); closeModal(); view = { name: 'home' }; }
     if (view.name === 'grown') view.day = null;
     render();
