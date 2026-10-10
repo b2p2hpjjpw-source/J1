@@ -31,7 +31,7 @@
       cheers: ['Yee-haw!', 'Giddy-up!', 'Yummy!', 'Great job, cowboy!'],
       deco: `<span class="cloud c1">☁️</span><span class="cloud c2">☁️</span>`,
       ground: `<div class="hill h1"></div><div class="hill h2"></div><div class="fence"></div>
-        <span class="pal p1">🌻</span><span class="pal p2">🐔</span><span class="pal p3">🐎</span>`,
+        <span class="pal p1">🌻</span><span class="pal p2">☀️</span><span class="pal p3">🐎</span>`,
     },
     space: {
       label: 'Space', buddy: '🚀', coin: '⭐', swatch: '#5a4fcf', add: 'zap', done: 'fanfare',

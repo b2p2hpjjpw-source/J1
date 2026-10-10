@@ -257,7 +257,7 @@ img.pic.art { object-fit: contain; border-radius: 0; }
 .hill.h2 { right: -25%; width: 80%; height: 26%; background: #7bc65c; }
 .fence { position: absolute; left: 0; right: 0; bottom: 14%; height: 28px; background: repeating-linear-gradient(90deg, #fff 0 8px, transparent 8px 40px), linear-gradient(transparent 6px, #fff 6px 11px, transparent 11px 18px, #fff 18px 23px, transparent 23px); opacity: .85; }
 .pal.p1 { left: 4%; bottom: 4%; font-size: 36px; }
-.pal.p2 { right: 6%; top: 6%; font-size: 30px; }
+.pal.p2 { right: 5%; top: 4%; font-size: 46px; animation: spin 30s linear infinite; }
 .pal.p3 { left: 18%; bottom: 3%; font-size: 40px; }
 
 /* Space */
