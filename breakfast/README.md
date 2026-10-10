@@ -10,6 +10,7 @@ A phone app where the kids build **tomorrow's breakfast** the night before by pu
   - Tap a food on the shelf, or drag it up onto the plate.
   - The tabs (🥞 Main, 🍓 Sides, 🥛 Drinks) have dots that fill up. When one part is full, the app moves on to the next by itself.
   - Tap a food on the plate to take it off. Picking again when a part is full swaps out the oldest pick.
+  - **Extra side (optional):** there's a gold **+** spot on the plate for one more side if they want it. When the plate is ready the buddy offers it ("Or add an extra side if you want!"). It's never needed to finish. Grown-ups can switch it off under *What fits on a plate*.
   - The buddy reads every food name and instruction out loud (tap the speech bubble to hear it again).
 - **I'm done!** sends the order with a celebration. A main dish is needed. If they skipped sides or a drink, the buddy reminds them once ("Don't forget a drink!").
 - Foods a grown-up has switched off are greyed out with a **Not today** sticker. They wiggle and say "Sorry, no waffles tomorrow" if tapped.

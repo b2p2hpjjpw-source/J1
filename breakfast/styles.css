@@ -121,6 +121,11 @@ img.emo { width: 1em; height: 1em; vertical-align: -0.12em; object-fit: contain;
 .slot.s38 .pic { font-size: 27cqw; }
 .slot.s28 .pic { font-size: 21cqw; }
 .slot.s22 .pic { font-size: 16cqw; }
+.slot.empty.extra { border: 3px dashed #f4b400; background: rgba(255, 214, 64, .18); width: auto; }
+.slot.empty.extra .plus { font-size: 11cqw; font-weight: 700; color: #e09a00; line-height: 1; }
+.dots i.extra { border-style: dashed; width: 9px; height: 9px; opacity: .6; }
+.dots i.extra.on { border-style: solid; }
+.t-sub { display: block; font-size: 13px; font-weight: 400; color: var(--ink-soft); }
 .pop { animation: popIn .45s cubic-bezier(.2, 1.7, .5, 1); }
 @keyframes popIn { from { transform: scale(.2); } }
 
