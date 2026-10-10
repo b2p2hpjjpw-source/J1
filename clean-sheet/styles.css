@@ -11,6 +11,8 @@
   --red-deep: #b40006;
   --gold: #d8b45e;       /* money and trophies */
   --gold-soft: #3a3220;
+  --rose: #ff6b8a;       /* date nights */
+  --rose-soft: #3a1a2e;
   --win: #ef0107;
   --loss: #5d6a8c;
   --display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
@@ -133,6 +135,12 @@ main { padding: 16px 16px calc(env(safe-area-inset-bottom, 0px) + 96px); max-wid
 
 .nudge { display: flex; gap: 12px; align-items: center; background: var(--gold-soft); border: 1px solid var(--gold); border-radius: var(--r); padding: 12px 14px; }
 .nudge p { margin: 0; flex: 1; min-width: 0; }
+.nudge.date { background: var(--rose-soft); border-color: var(--rose); }
+.nudge svg, .date-card .heart { width: 30px; height: 30px; color: var(--rose); flex: none; }
+.date-card .bar > div { background: linear-gradient(90deg, var(--red), var(--rose)); }
+.date-night { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; }
+.date-night svg { width: 56px; height: 56px; color: var(--rose); }
+.date-night p { margin: 0; color: var(--mist); }
 
 /* ---------- Season ---------- */
 .form-guide { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; }

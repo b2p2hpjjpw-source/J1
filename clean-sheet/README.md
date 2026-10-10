@@ -16,6 +16,8 @@ An Arsenal-themed phone app for getting sober. Each night he blows into the brea
 
 **Savings:** the kitty total, a goal with a progress bar and a projected date (default: a trip to London for a match at the Emirates), a chart of money saved, and what a week, month, season and year sober is worth. When the goal is paid for, **Cash it in** and pick the next one.
 
+**Date nights:** every $500 saved earns a date night. A "Date night earned!" screen pops up the moment he crosses each $500, Tonight shows a reminder while one is waiting, and Savings tracks progress to the next one. After you go, tap **We had our date night**. Date nights are a bonus, so they don't come out of the kitty. (The amount is `DATE_NIGHT_EVERY` at the top of `app.js`.)
+
 **Trophies:** 14 trophies, from *First Clean Sheet* and *Hat-trick* to *Invincible* (49 in a row) and *Legend* (a full year), plus money milestones.
 
 **Settings (gear icon):** name, nightly whiskey money, pass mark (0.000, 0.010 or 0.020), first night, his reason, whistle sound, and backup / restore / erase.
