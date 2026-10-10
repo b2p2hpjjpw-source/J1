@@ -1,6 +1,8 @@
 # Build-a-Plate 🍽️
 
-A phone app where the kids build **tomorrow's breakfast** the night before by putting a main dish, sides and a drink on a plate. Grown-ups see the orders in the morning.
+A phone app where the kids build **tomorrow's breakfast and lunch** the night before by putting a main dish, sides and a drink on a plate (or in a lunchbox). Grown-ups see the orders in the morning.
+
+**🥞 Breakfast / 🥪 Lunch:** the start screen has a Breakfast / Lunch switch above the kids' cards. Lunch works exactly like breakfast. It has its own menu (sandwich, pizza, pasta, chicken nuggets, wrap, soup; apple slices, carrots, grapes, cheese, pretzels, cucumber, yogurt, fruit salad, cookie; water, milk, apple juice), and the plate becomes a red **lunchbox**. Each meal has its own order and its own "Ordered ✓". The app remembers which meal was picked last.
 
 **Orders switch over at 1 pm Eastern time**, not midnight. From 1 pm ET the kids order for the next day's breakfast. Until 1 pm ET the next day, that order still shows (✓ Ordered) so everyone can see it at breakfast. This uses Eastern time even if the phone is set to another time zone. To change it, edit `RESET_HOUR` and `RESET_TZ` at the top of `app.js`.
 
@@ -25,8 +27,8 @@ A phone app where the kids build **tomorrow's breakfast** the night before by pu
 Both boys' pictures are a **super star** (Julien's card is red, Lucas's is green, so they're easy to tell apart). The super star and the gold coin are drawn pictures in `art/`, so they look the same on every phone. The Mario-style theme uses look-alike scenery and pictures, not Nintendo's characters or artwork.
 
 ## 🔒 Grown-ups (unlock by answering a multiplication question, e.g. 23 × 7)
-- **Breakfast orders:** switch between the breakfast being ordered now and the one before it. Each child shows ✓ Ordered, Still building or Not yet, with their food. A **To make** list totals everything (e.g. Pancakes ×2). An ordered food that has since been switched off is flagged ⚠️.
-- **Menu:** grouped into Main, Sides and Drinks.
+- **Orders:** pick Breakfast or Lunch, then switch between the day being ordered now and the one before it. Each child shows ✓ Ordered, Still building or Not yet, with their food. A **To make** list totals everything (e.g. Pancakes ×2). An ordered food that has since been switched off is flagged ⚠️.
+- **Menu:** pick Breakfast or Lunch, then the menu is grouped into Main, Sides and Drinks. Each food belongs to one meal (change it in the food's edit screen under *For*).
   - Switch an item **off** when you've run out. The kids still see it, but greyed out. "Mark everything available again" turns them all back on.
   - **✕** removes an item for good. **+ Add** creates a new one.
   - Tap a name to rename it, move it to another group, or change its picture: an emoji, a drawn picture (there are **bagel with smoked salmon**, **banana bread** and **fruit salad** pictures, which have no emoji), or a **photo of the real food**. The menu starts with "Salmon bagel" and "Banana bread" main dishes and a "Fruit salad" side.

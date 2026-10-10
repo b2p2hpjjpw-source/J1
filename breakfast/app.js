@@ -11,6 +11,17 @@
   function emo(x, cls = '') {
     return String(x).startsWith('art:') ? `<img class="emo ${cls}" src="art/${x.slice(4)}.svg" alt="" draggable="false" />` : x;
   }
+  // Meals the kids can order. Lunch works just like breakfast, with its own menu, and shows as a lunchbox.
+  const MEALS = {
+    breakfast: { label: 'Breakfast', icon: '🥞', mainIcon: '🥞' },
+    lunch: { label: 'Lunch', icon: '🥪', mainIcon: '🥪' },
+  };
+  let curMeal = 'breakfast';
+  const mealOf = m => m.meal || 'breakfast';
+  const mealWord = meal => MEALS[meal].label.toLowerCase();
+  // Orders are saved per day; lunch orders use 'YYYY-MM-DD|lunch' so breakfast orders keep their old keys.
+  const slotKey = (meal, day) => meal === 'breakfast' ? day : `${day}|${meal}`;
+  const catIcon = c => c.id === 'main' ? MEALS[curMeal].mainIcon : c.icon;
   // The three parts of a plate. Grown-ups set how many of each fit on a plate.
   const CATS = [
     { id: 'main', label: 'Main', one: 'main dish', many: 'main dishes', icon: '🥞' },
@@ -114,9 +125,18 @@
   const salmonBagel = () => item('Salmon bagel', '🥯', 'main', 'salmon-bagel');
   const bananaBread = () => item('Banana bread', '🍞', 'main', 'banana-bread');
   const fruitSalad = () => item('Fruit salad', '🍓', 'side', 'fruit-salad');
+  const lunchItem = (name, emoji, cat, art) => ({ ...item(name, emoji, cat, art), meal: 'lunch' });
+  const LUNCH_MENU = () => [
+    lunchItem('Sandwich', '🥪', 'main'), lunchItem('Pizza', '🍕', 'main'), lunchItem('Pasta', '🍝', 'main'),
+    lunchItem('Chicken nuggets', '🍗', 'main'), lunchItem('Wrap', '🌯', 'main'), lunchItem('Soup', '🍲', 'main'),
+    lunchItem('Apple slices', '🍎', 'side'), lunchItem('Carrots', '🥕', 'side'), lunchItem('Grapes', '🍇', 'side'),
+    lunchItem('Cheese', '🧀', 'side'), lunchItem('Pretzels', '🥨', 'side'), lunchItem('Cucumber', '🥒', 'side'),
+    lunchItem('Yogurt', '🍨', 'side'), lunchItem('Fruit salad', '🍓', 'side', 'fruit-salad'), lunchItem('Cookie', '🍪', 'side'),
+    lunchItem('Water', '💧', 'drink'), lunchItem('Milk', '🥛', 'drink'), lunchItem('Apple juice', '🧃', 'drink'),
+  ];
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 7,
+    v: 8,
     kids: [
       { id: 'lucas', name: 'Lucas', avatar: 'art:super-star', theme: 'mario', color: '#43b047', skip: [] },
       { id: 'julien', name: 'Julien', avatar: 'art:super-star', theme: 'mario', skip: [] },
@@ -129,6 +149,7 @@
       item('Cheese', '🧀', 'side'), item('Yogurt', '🍨', 'side'), fruitSalad(),
       item('Milk', '🥛', 'drink'), item('Apple juice', '🧃', 'drink'), item('Smoothie', '🥤', 'drink'),
       item('Water', '💧', 'drink'), item('Chocolate milk', '🍫', 'drink'),
+      ...LUNCH_MENU(),
     ],
     limits: { main: 1, side: 2, drink: 1 },
     extraSides: 2, // kids may add up to this many optional extra sides
@@ -159,7 +180,8 @@
       const at = st.menu.map(m => m.cat).lastIndexOf('side');
       st.menu.splice(at >= 0 ? at + 1 : st.menu.length, 0, fruitSalad()); // the fruit salad picture arrived
     }
-    st.v = 7;
+    if (!(v >= 8) && !st.menu.some(m => m.meal === 'lunch')) st.menu.push(...LUNCH_MENU()); // lunch arrived
+    st.v = 8;
   }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
@@ -171,6 +193,7 @@
   }
 
   let state = load();
+  curMeal = MEALS[state.lastMeal] ? state.lastMeal : 'breakfast';
   function load() {
     const base = DEFAULT_STATE();
     try {
@@ -199,7 +222,7 @@
   // Kids may add up to this many optional extra sides on top of the usual number (grown-ups set 0–2).
   const extraSides = () => state.limits.side > 0 ? Math.max(0, Math.min(2, state.extraSides ?? 2)) : 0;
   const capacity = catId => state.limits[catId] + (catId === 'side' ? extraSides() : 0);
-  function orderFor(kidId, day = orderDayKey(), create = false) {
+  function orderFor(kidId, day = slotKey(curMeal, orderDayKey()), create = false) {
     const dayOrders = state.orders[day] || (create ? (state.orders[day] = {}) : null);
     if (!dayOrders) return null;
     if (!dayOrders[kidId] && create) dayOrders[kidId] = { main: [], side: [], drink: [], sent: false, at: 0 };
@@ -341,8 +364,8 @@
     { id: 'mainFirst', label: 'Tapped I’m done without a main dish', script: () => 'Pick your main dish first!' },
     { id: 'forgot-side', label: 'Forgot sides', script: () => "Don't forget your sides! Or tap I'm done again." },
     { id: 'forgot-drink', label: 'Forgot a drink', script: () => "Don't forget a drink! Or tap I'm done again." },
-    { id: 'change', label: 'Opening a plate that was already ordered', script: () => 'Want to change your breakfast?' },
-    { id: 'sent', label: 'Order sent! (the food names play after it)', script: () => 'Hooray! Your breakfast is ordered!' },
+    { id: 'change', label: 'Opening a plate that was already ordered', script: () => 'Want to change your order?' },
+    { id: 'sent', label: 'Order sent! (the food names play after it)', script: () => 'Hooray! Your order is in!' },
   ];
   const clips = {}; // slot -> { buffer, start, end, gain }
   let clipPlaying = null;
@@ -555,7 +578,7 @@
     setTheme('home');
     const day = orderDayKey();
     const cards = state.kids.map(k => {
-      const o = orderFor(k.id, day);
+      const o = orderFor(k.id, slotKey(curMeal, day));
       const items = orderItems(o);
       const status = o && o.sent ? `Ordered ✓ <span class="kc-pics">${items.map(i => pic(i, 'mini')).join('')}</span>`
         : items.length ? 'Still building… tap me!' : 'Tap to order!';
@@ -569,8 +592,9 @@
         <header class="home-head">
           <div class="logo">🍽️</div>
           <h1>Build-a-Plate</h1>
-          <div class="home-sub">Breakfast for <b>${dayName(day)}</b></div>
+          <div class="home-sub">${MEALS[curMeal].label} for <b>${dayName(day)}</b></div>
         </header>
+        <div class="meal-pick">${Object.entries(MEALS).map(([k, m]) => `<button class="meal-btn ${curMeal === k ? 'on' : ''}" data-meal="${k}"><span>${m.icon}</span>${m.label}</button>`).join('')}</div>
         <h2 class="who">Who's ordering?</h2>
         <div class="kid-list">${cards || '<p class="empty">Ask a grown-up to add you! 👇</p>'}</div>
         <button class="grown-btn" data-act="grown">🔒 Grown-ups</button>
@@ -604,7 +628,7 @@
     sfx(themeOf(kid).add);
     if (gone.length) speak([{ slot: 'gone', text: setBubble(`Oh no! No ${listWords(gone)} ${whenWord()}. Pick something else!`) }]);
     else {
-      const next = o && o.sent ? { slot: 'change', text: 'Want to change your breakfast?' } : promptPart(view.cat);
+      const next = o && o.sent ? { slot: 'change', text: `Want to change your ${mealWord(curMeal)}?` } : promptPart(view.cat);
       setBubble(`Hi ${kid.name}! ${next.text}`);
       speak([{ slot: 'kid:' + kid.id, text: `Hi ${kid.name}!` }, next]);
     }
@@ -642,7 +666,7 @@
         </header>
         <section class="table" id="table">
           <div class="scene" aria-hidden="true">${curTheme.ground || ''}</div>
-          <div class="plate-wrap"><div class="plate" id="plate"></div></div>
+          <div class="plate-wrap"><div class="plate ${curMeal === 'lunch' ? 'lunchbox' : ''}" id="plate"></div></div>
           <div class="cups" id="cups"></div>
           <div class="drop-hint">Drop it here!</div>
         </section>
@@ -666,7 +690,7 @@
       if (it) return `<button class="slot full s${size} ${id === popId ? 'pop' : ''}" style="${style}" data-remove="${id}" aria-label="Take off ${esc(it.name)}">${pic(it)}</button>`;
       const c = CATS.find(x => x.id === catId);
       if (extra) return `<button class="slot empty extra" style="${style}" data-cat="${catId}" aria-label="Extra side"><span class="plus">+</span></button>`;
-      return `<button class="slot empty ${view.cat === catId ? 'now' : ''}" style="${style}" data-cat="${catId}" aria-label="${c.one}"><span class="ghost">${c.icon}</span></button>`;
+      return `<button class="slot empty ${view.cat === catId ? 'now' : ''}" style="${style}" data-cat="${catId}" aria-label="${c.one}"><span class="ghost">${catIcon(c)}</span></button>`;
     };
     let html = '';
     const mains = L.main > 1 ? [[36, 60], [64, 60]] : [[50, 60]];
@@ -694,12 +718,12 @@
       const dots = Array.from({ length: n }, (_, i) => `<i class="${i < have ? 'on' : ''}"></i>`).join('')
         + (c.id === 'side' ? Array.from({ length: extraSides() }, (_, i) => `<i class="extra ${have > n + i ? 'on' : ''}"></i>`).join('') : '');
       return `<button class="cat-tab ${view.cat === c.id ? 'active' : ''} ${have >= n ? 'full' : ''}" data-cat="${c.id}">
-        <span class="ct-ico">${c.icon}</span><span class="ct-lbl">${c.label}</span><span class="dots">${dots}</span></button>`;
+        <span class="ct-ico">${catIcon(c)}</span><span class="ct-lbl">${c.label}</span><span class="dots">${dots}</span></button>`;
     }).join('');
   }
   function drawShelf(resetScroll) {
     const shelf = $('shelf'), o = curOrder();
-    const items = state.menu.filter(m => m.cat === view.cat && canHave(curKid, m)).sort((a, b) => (b.on - a.on));
+    const items = state.menu.filter(m => m.cat === view.cat && mealOf(m) === curMeal && canHave(curKid, m)).sort((a, b) => (b.on - a.on));
     shelf.innerHTML = items.length ? items.map(m => {
       const picked = (o[m.cat] || []).includes(m.id);
       return `<button class="tile ${m.on ? '' : 'off'} ${picked ? 'picked' : ''}" data-item="${m.id}">
@@ -726,7 +750,7 @@
     if (!it.on) { refuse(it, fromEl); return; }
     const cat = it.cat, limit = state.limits[cat], cap = capacity(cat);
     if (!limit) return;
-    const o = orderFor(curKid.id, orderDayKey(), true);
+    const o = orderFor(curKid.id, slotKey(curMeal, orderDayKey()), true);
     if (o[cat].includes(id)) {
       sfx('tap');
       setBubble(`${it.name} is already on your plate!`);
@@ -879,12 +903,12 @@
     const items = orderItems(o), cheer = pick(curTheme.cheers);
     sfx(curTheme.done); buzz([60, 40, 120]);
     confetti(60, curTheme.bits);
-    speak([{ slot: 'sent', text: `${cheer} Your breakfast is ordered, ${curKid.name}!` }, ...items.map(itemPart)]);
+    speak([{ slot: 'sent', text: `${cheer} Your ${mealWord(curMeal)} is ordered, ${curKid.name}!` }, ...items.map(itemPart)]);
     openModal(`
       <div class="sent t-${curKid.theme}">
         <div class="sent-buddy">${curTheme.buddy}</div>
         <h2>${esc(cheer)}</h2>
-        <p>Breakfast for <b>${dayName(orderDayKey())}</b> is ordered, ${esc(curKid.name)}!</p>
+        <p>${MEALS[curMeal].label} for <b>${dayName(orderDayKey())}</b> is ordered, ${esc(curKid.name)}!</p>
         <div class="sent-plate">${items.map(i => `<span class="sp-item">${pic(i)}<small>${esc(i.name)}</small></span>`).join('')}</div>
         <button class="big-btn" data-act="close">Yay! 🎉</button>
       </div>`, () => go({ name: 'home' }));
@@ -901,15 +925,17 @@
       <div class="grown">
         <header class="g-head"><button class="g-back" data-act="home">← Done</button><h1>Grown-ups</h1></header>
         <section class="card">
-          <h3>🍽️ Breakfast orders</h3>
+          <h3>🍽️ Orders</h3>
+          ${mealSeg('gmeal')}
           <div class="seg">
             <button class="${view.day === tKey ? 'on' : ''}" data-day="${tKey}">${label(tKey)}<small>${shortDate(tKey)}</small></button>
             <button class="${view.day === mKey ? 'on' : ''}" data-day="${mKey}">${label(mKey)} · ordering now<small>${shortDate(mKey)}</small></button>
           </div>
-          ${ordersHtml(view.day)}
+          ${ordersHtml(slotKey(gMeal(), view.day))}
         </section>
         <section class="card">
           <h3>📋 Menu</h3>
+          ${mealSeg('mmeal')}
           <p class="hint">Switch an item off when you run out. The kids still see it, greyed out with “Not today”, but can't pick it. Tap a name to change it.</p>
           ${CATS.map(c => menuGroupHtml(c)).join('')}
           ${state.menu.some(m => !m.on) ? '<button class="link-btn" data-act="all-on">Mark everything available again</button>' : ''}
@@ -947,9 +973,9 @@
   let openVoice = new Set(['kids']);
   function voiceSlots() {
     return {
-      kids: { title: '👋 Hello for each child', rows: state.kids.map(k => ({ id: 'kid:' + k.id, icon: emo(k.avatar), label: `Hello for ${k.name}`, script: `Hi ${k.name}! Let's build your breakfast!` })) },
+      kids: { title: '👋 Hello for each child', rows: state.kids.map(k => ({ id: 'kid:' + k.id, icon: emo(k.avatar), label: `Hello for ${k.name}`, script: `Hi ${k.name}! Let's build your plate!` })) },
       lines: { title: '💬 Buddy lines', rows: VOICE_LINES.map(l => ({ id: l.id, icon: '', label: l.label, script: l.script() })) },
-      foods: { title: '🍽️ Food names', rows: state.menu.map(m => ({ id: 'item:' + m.id, icon: pic(m, 'sm'), label: m.name, script: `${m.name}!` })) },
+      foods: { title: '🍽️ Food names', rows: state.menu.map(m => ({ id: 'item:' + m.id, icon: pic(m, 'sm'), label: m.name + (mealOf(m) === 'lunch' ? ' (lunch)' : ''), script: `${m.name}!` })) },
     };
   }
   const findSlot = id => Object.values(voiceSlots()).flatMap(g => g.rows).find(r => r.id === id);
@@ -1006,9 +1032,16 @@
     const names = state.kids.filter(k => !canHave(k, m)).map(k => esc(k.name));
     return names.length ? ` · <span class="allergy">hidden for ${names.join(', ')}</span>` : '';
   }
+  const gMeal = () => view.gmeal || curMeal;
+  const mMeal = () => view.mmeal || curMeal;
+  // A Breakfast / Lunch switch for the grown-ups' orders (gmeal) or menu (mmeal).
+  function mealSeg(which) {
+    const cur = which === 'gmeal' ? gMeal() : mMeal();
+    return `<div class="seg meal-seg">${Object.entries(MEALS).map(([k, m]) => `<button class="${cur === k ? 'on' : ''}" data-gseg="${which}" data-gval="${k}">${m.icon} ${m.label}</button>`).join('')}</div>`;
+  }
   function menuGroupHtml(c) {
-    const items = state.menu.filter(m => m.cat === c.id);
-    return `<div class="m-group"><div class="m-gt">${c.icon} ${c.label}</div>
+    const items = state.menu.filter(m => m.cat === c.id && mealOf(m) === mMeal());
+    return `<div class="m-group"><div class="m-gt">${c.id === 'main' ? MEALS[mMeal()].mainIcon : c.icon} ${c.label}</div>
       ${items.map(m => `<div class="m-row ${m.on ? '' : 'off'}">
         <button class="m-pic" data-edit-item="${m.id}">${pic(m, 'sm')}</button>
         <button class="m-name" data-edit-item="${m.id}">${esc(m.name)}<small>${m.on ? 'Available' : 'Not available'}${hiddenFor(m)}</small></button>
@@ -1021,12 +1054,13 @@
   // Add or change a menu item.
   function editItem(id, cat) {
     const existing = id && itemById(id);
-    const ed = existing ? { ...existing } : { name: '', emoji: CATS.find(c => c.id === cat).icon, cat, on: true };
+    const ed = existing ? { ...existing, meal: mealOf(existing) } : { name: '', emoji: CATS.find(c => c.id === cat).icon, cat, on: true, meal: mMeal() };
     const draw = () => {
       openModal(`
         <h2>${existing ? 'Change' : 'Add'} ${CATS.find(c => c.id === ed.cat).one}</h2>
         <div class="ed-preview">${pic(ed)}</div>
         <div class="field"><label>Name</label><input id="edName" type="text" maxlength="24" value="${esc(ed.name)}" placeholder="e.g. Pancakes" /></div>
+        <div class="field"><label>For</label><div class="chips">${Object.entries(MEALS).map(([k, m]) => `<button class="chip ${ed.meal === k ? 'on' : ''}" data-emeal="${k}">${m.icon} ${m.label}</button>`).join('')}</div></div>
         <div class="field"><label>Goes in</label><div class="chips">${CATS.map(c => `<button class="chip ${ed.cat === c.id ? 'on' : ''}" data-ecat="${c.id}">${c.icon} ${c.label}</button>`).join('')}</div></div>
         <div class="field"><label>Picture</label>
           <div class="emoji-grid">${Object.entries(ART).map(([k, a]) => `<button class="${!ed.photo && ed.art === k ? 'on' : ''}" data-art="${k}" aria-label="${esc(a.label)}"><img src="${a.src}" alt="" /></button>`).join('')}${FOOD_EMOJIS.map(e => `<button class="${!ed.photo && !ed.art && ed.emoji === e ? 'on' : ''}" data-emoji="${e}">${e}</button>`).join('')}</div>
@@ -1041,6 +1075,7 @@
       const nameIn = $('edName');
       nameIn.addEventListener('input', () => { ed.name = nameIn.value; });
       modalCard.querySelectorAll('[data-ecat]').forEach(b => b.onclick = () => { ed.cat = b.dataset.ecat; draw(); });
+      modalCard.querySelectorAll('[data-emeal]').forEach(b => b.onclick = () => { ed.meal = b.dataset.emeal; draw(); });
       modalCard.querySelectorAll('[data-emoji]').forEach(b => b.onclick = () => { ed.emoji = b.dataset.emoji; delete ed.photo; delete ed.art; draw(); });
       modalCard.querySelectorAll('[data-art]').forEach(b => b.onclick = () => { ed.art = b.dataset.art; delete ed.photo; draw(); });
       modalCard.querySelector('[data-act="photo"]').onclick = () => $('edPhoto').click();
@@ -1055,7 +1090,7 @@
         ed.name = ed.name.trim();
         if (!ed.name) { nameIn.classList.add('bad'); nameIn.focus(); return; }
         if (existing) {
-          if (existing.cat !== ed.cat) dropFromOrders(existing.id); // moved to another part of the plate
+          if (existing.cat !== ed.cat || mealOf(existing) !== ed.meal) dropFromOrders(existing.id); // moved elsewhere
           Object.assign(existing, ed);
           if (!ed.photo) delete existing.photo;
           if (!ed.art) delete existing.art;
@@ -1101,7 +1136,7 @@
           <div class="theme-grid">${Object.entries(THEMES).map(([k, t]) => `<button class="theme-card ${ed.theme === k ? 'on' : ''}" data-th="${k}" style="--kc:${t.swatch}"><span>${t.buddy}</span>${t.label}</button>`).join('')}</div></div>
         <div class="field"><label>🚫 Foods ${esc(ed.name.trim() || 'this child')} can't have (allergies)</label>
           <p class="hint">Tap to hide a food from this child. They won't see it at all.</p>
-          <div class="skip-grid">${state.menu.map(m => `<button class="skip-chip ${ed.skip.includes(m.id) ? 'on' : ''}" data-skip="${m.id}">${pic(m, 'sm')}<span>${esc(m.name)}</span></button>`).join('')}</div></div>
+          <div class="skip-grid">${state.menu.map(m => `<button class="skip-chip ${ed.skip.includes(m.id) ? 'on' : ''}" data-skip="${m.id}">${pic(m, 'sm')}<span>${esc(m.name)}${mealOf(m) === 'lunch' ? ' <small>(lunch)</small>' : ''}</span></button>`).join('')}</div></div>
         <button class="big-btn" data-act="k-save">Save</button>
         ${existing ? '<button class="link-btn danger" data-act="k-del">Remove this child</button>' : ''}
         <button class="link-btn" data-act="close">Cancel</button>`);
@@ -1164,6 +1199,10 @@
     const d = t.dataset;
     if (view.name === 'home') {
       if (d.kid) { sfx('tap'); openKid(d.kid); }
+      else if (d.meal && d.meal !== curMeal) {
+        curMeal = state.lastMeal = d.meal; save(); sfx('tap'); render();
+        speak([{ text: `${MEALS[curMeal].label}!` }]);
+      }
       else if (d.act === 'grown') askGrownup(() => go({ name: 'grown' }));
       return;
     }
@@ -1178,6 +1217,7 @@
     // Grown-ups
     if (d.act === 'home') { grownupUnlocked = false; go({ name: 'home' }); }
     else if (d.day) { view.day = d.day; render(); }
+    else if (d.gseg) { view[d.gseg] = d.gval; render(); }
     else if (d.clear) {
       const k = kidById(d.clear);
       confirmBox(`Clear ${esc(k.name)}'s order?`, '', 'Clear', () => { delete state.orders[view.day][d.clear]; save(); render(); });

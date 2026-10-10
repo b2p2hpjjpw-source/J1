@@ -109,6 +109,17 @@ img.emo { width: 1em; height: 1em; vertical-align: -0.12em; object-fit: contain;
   border: 10px solid var(--plate-rim);
   box-shadow: 0 10px 0 rgba(0, 0, 0, .12), 0 0 0 3px rgba(0, 0, 0, .04);
 }
+/* Lunch: the plate becomes a lunchbox */
+.plate.lunchbox {
+  border-radius: 18%; border: 12px solid #e5484d; background: #fffaf2;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, .14), inset 0 0 0 4px #ffd9d6;
+}
+.plate.lunchbox::before { content: ""; position: absolute; left: 32%; right: 32%; top: -26px; height: 16px; border: 7px solid #b8343a; border-bottom: 0; border-radius: 14px 14px 0 0; }
+.meal-pick { display: flex; gap: 10px; justify-content: center; margin: 16px auto 0; max-width: 380px; }
+.meal-btn { flex: 1; background: rgba(255, 255, 255, .7); border-radius: 20px; padding: 8px 6px; font-size: 20px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; border: 4px solid transparent; box-shadow: 0 4px 0 rgba(0, 0, 0, .1); }
+.meal-btn span { font-size: 28px; }
+.meal-btn.on { background: #fff; border-color: #ff9a3d; }
+.meal-seg { margin-bottom: 10px; }
 .slot { position: absolute; border-radius: 50%; display: grid; place-items: center; }
 .slot.full .pic { filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .18)); }
 .slot.full img.pic { width: 100%; height: 100%; border-radius: 50%; }
