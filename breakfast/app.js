@@ -1237,6 +1237,29 @@
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkDay(); });
   setInterval(checkDay, 30000);
 
+  // Pick up new versions by itself. Phones often resume a home-screen app instead of reloading it, so
+  // each time the app is opened (and every 15 minutes) it checks whether sw.js changed and, if so,
+  // reloads. It waits for the start screen so a child's plate is never interrupted.
+  let swText = null, updatePending = false;
+  async function fetchSw() {
+    const r = await fetch('sw.js?check=' + Date.now(), { cache: 'no-store' });
+    return r.ok ? r.text() : null;
+  }
+  async function checkForUpdate() {
+    if (location.protocol === 'file:') return;
+    try {
+      const t = await fetchSw();
+      if (!t) return;
+      if (swText === null) { swText = t; return; }
+      if (t !== swText) updatePending = true;
+    } catch (e) { /* offline: keep the saved copy */ }
+    if (updatePending && view.name === 'home' && modal.classList.contains('hidden')) location.reload();
+  }
+  checkForUpdate();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkForUpdate(); });
+  setInterval(checkForUpdate, 15 * 60 * 1000);
+  app.addEventListener('click', () => { if (updatePending) setTimeout(checkForUpdate, 300); });
+
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ });
   }

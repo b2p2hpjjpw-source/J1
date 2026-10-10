@@ -50,4 +50,4 @@ It then opens full-screen with its own icon and works offline. Data is saved onl
 
 To try it on a computer: `npx http-server breakfast`, then open the link at phone size.
 
-If you change files after installing, bump `CACHE` in `sw.js` so phones pick up the update. The starting menu, children, themes and drawn food pictures (`ART`, with the images in `art/`) are at the top of `app.js`.
+**Updates arrive by themselves:** each time the app is opened (and every 15 minutes while it's open) it checks for a newer version and reloads. It waits until it's back on the "Who's ordering?" screen, so it never interrupts a child's plate. If you change files, bump `CACHE` in `sw.js`. That's what tells phones there's an update. The starting menu, children, themes and drawn food pictures (`ART`, with the images in `art/`) are at the top of `app.js`.
