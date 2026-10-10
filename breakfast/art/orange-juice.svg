@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A glass of orange juice with an orange slice and a straw -->
+  <defs>
+    <linearGradient id="oj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb52e"/><stop offset="1" stop-color="#ff8a00"/></linearGradient>
+  </defs>
+  <ellipse cx="60" cy="118" rx="34" ry="6" fill="#000" opacity=".13"/>
+  <!-- straw -->
+  <path d="M70 52 L86 8 L94 11 L78 54 Z" fill="#fff" stroke="#c9c9c9" stroke-width="1.5"/>
+  <g fill="#e5484d"><path d="M83 17 L90 19.5 L88 25 L81 22.5 Z"/><path d="M79 29 L86 31.5 L84 37 L77 34.5 Z"/><path d="M75 41 L82 43.5 L80 49 L73 46.5 Z"/></g>
+  <!-- glass -->
+  <path d="M26 30 L94 30 L86 112 C86 115 83 117 80 117 L40 117 C37 117 34 115 34 112 Z" fill="#eaf6ff" opacity=".9" stroke="#9ccbe8" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M30 46 L90 46 L84.5 110 C84.5 112 83 113 80.5 113 L39.5 113 C37 113 35.5 112 35.5 110 Z" fill="url(#oj)"/>
+  <ellipse cx="60" cy="46" rx="30" ry="4" fill="#ffc95c"/>
+  <g fill="#fff" opacity=".55"><circle cx="48" cy="70" r="2.2"/><circle cx="66" cy="86" r="1.8"/><circle cx="54" cy="98" r="1.6"/><circle cx="72" cy="62" r="1.5"/></g>
+  <path d="M38 52 L43 106" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+  <!-- orange slice on the rim -->
+  <g transform="rotate(-18 30 32)">
+    <circle cx="30" cy="32" r="17" fill="#ff9f1a" stroke="#e07800" stroke-width="2"/>
+    <circle cx="30" cy="32" r="13" fill="#ffc266"/>
+    <g stroke="#ff9f1a" stroke-width="1.8"><path d="M30 19 V45"/><path d="M17 32 H43"/><path d="M21 23 L39 41"/><path d="M39 23 L21 41"/></g>
+    <circle cx="30" cy="32" r="2.5" fill="#fff3d6"/>
+  </g>
+</svg>

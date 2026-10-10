@@ -82,6 +82,7 @@
     'salmon-bagel': { label: 'Bagel with smoked salmon', src: 'art/salmon-bagel.svg' },
     'banana-bread': { label: 'Banana bread', src: 'art/banana-bread.svg' },
     'fruit-salad': { label: 'Fruit salad', src: 'art/fruit-salad.svg' },
+    'orange-juice': { label: 'Orange juice', src: 'art/orange-juice.svg' },
   };
   const AVATARS = ['art:super-star', '🍄', '🐴', '⭐', '🦄', '🚀', '🦖', '🐬', '🐶', '🐱', '🐰', '🦊', '🐼', '🐸', '🐯', '🦁', '🐵',
     '🐧', '🦋', '🐢', '🐙', '🤖', '👑', '⚽', '🏎️', '🚒', '🚜', '🧸', '🌈', '🐉', '🦈'];
@@ -138,7 +139,7 @@
   ];
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 8,
+    v: 9,
     kids: [
       { id: 'lucas', name: 'Lucas', avatar: 'art:super-star', theme: 'mario', color: '#43b047', skip: [] },
       { id: 'julien', name: 'Julien', avatar: 'art:super-star', theme: 'mario', skip: [] },
@@ -183,7 +184,10 @@
       st.menu.splice(at >= 0 ? at + 1 : st.menu.length, 0, fruitSalad()); // the fruit salad picture arrived
     }
     if (!(v >= 8) && !st.menu.some(m => m.meal === 'lunch')) st.menu.push(...LUNCH_MENU()); // lunch arrived
-    st.v = 8;
+    if (!(v >= 9)) { // the orange juice picture arrived: give it to an "Orange juice" a grown-up already added
+      st.menu.forEach(m => { if (/orange\s*juice|^\s*oj\s*$/i.test(m.name) && !m.photo) m.art = 'orange-juice'; });
+    }
+    st.v = 9;
   }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
