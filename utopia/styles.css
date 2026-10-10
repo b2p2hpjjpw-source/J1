@@ -24,7 +24,8 @@ body {
   background: var(--bg);
   background-image:
     radial-gradient(ellipse at 50% -10%, rgba(232, 163, 61, 0.10), transparent 60%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 4px);
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.014) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 9px);
   color: var(--text);
   font: 16px/1.45 Barlow, system-ui, -apple-system, sans-serif;
   min-height: 100vh;
@@ -79,7 +80,14 @@ h2.sec {
 }
 h2.sec .count { color: var(--dim); font-family: 'Share Tech Mono', monospace; letter-spacing: 0; }
 .card {
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  background-color: var(--panel);
+  background-image:
+    radial-gradient(circle at 7px 7px, #4a3f33 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) 7px, #4a3f33 1.6px, transparent 2.2px),
+    radial-gradient(circle at 7px calc(100% - 7px), #4a3f33 1.6px, transparent 2.2px),
+    radial-gradient(circle at calc(100% - 7px) calc(100% - 7px), #4a3f33 1.6px, transparent 2.2px),
+    linear-gradient(180deg, rgba(255,255,255,.025), transparent 40%);
+  border: 1px solid var(--line); border-radius: var(--radius);
   padding: 14px; position: relative;
 }
 .btn {
@@ -108,6 +116,8 @@ h2.sec .count { color: var(--dim); font-family: 'Share Tech Mono', monospace; le
 }
 .status .lamp { width: 14px; height: 14px; border-radius: 50%; flex: none; background: var(--ok); box-shadow: 0 0 12px var(--ok); }
 .status.low .lamp { background: var(--low); box-shadow: 0 0 12px var(--low); }
+.status { position: relative; overflow: hidden; }
+.status.crit::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 6px; background: repeating-linear-gradient(-45deg, var(--amber) 0 10px, #16120d 10px 20px); }
 .status.crit .lamp { background: var(--crit); box-shadow: 0 0 14px var(--crit); animation: blink 1.1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: .25; } }
 .status .big { font: 700 34px/1 'Share Tech Mono', monospace; }
@@ -288,3 +298,40 @@ h2.sec .count { color: var(--dim); font-family: 'Share Tech Mono', monospace; le
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- The view (cafeteria wall screen) ---------- */
+.viewscreen { margin-bottom: 12px; }
+.vs-head { display: flex; justify-content: space-between; align-items: baseline; margin: 0 2px 6px; font: 600 12px Oswald, sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+.vs-svg { width: 100%; height: auto; display: block; border-radius: 12px; box-shadow: 0 0 0 1px var(--line), 0 10px 30px rgba(0,0,0,.45); }
+.vs-live, .vs-grime { transition: opacity 2.4s ease; }
+.vs-cap { font: 13px/1.35 'Share Tech Mono', monospace; color: var(--term); margin: 7px 2px 0; }
+.refill .viewscreen { margin: 6px 0 12px; text-align: left; }
+.refill.outside h3 { color: #ffe9a8; margin-top: 6px; }
+
+/* ---------- The Pact ---------- */
+.pact { border: 1px solid #5a4a36; border-radius: 10px; padding: 4px 14px; margin-bottom: 12px; background: #f1e6cf; color: #2b2116; font-family: Georgia, 'Times New Roman', serif; font-size: 14.5px; box-shadow: inset 0 0 30px rgba(120, 90, 50, .35); }
+.pact p { margin: 10px 0; }
+.pact b { font-variant: small-caps; letter-spacing: .5px; }
+
+/* ---------- The climb ---------- */
+.climb-head { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: 8px; padding: 16px 8px; }
+.climb-head .num { font: 700 36px/1 'Share Tech Mono', monospace; color: var(--amber); }
+.climb-head .cap { font: 600 11px Oswald, sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.shaft { margin-top: 10px; }
+.shaft svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto; }
+.shaft .wall { fill: #120f0b; stroke: var(--line); stroke-width: 2; }
+.shaft .zone { fill: none; stroke: #2b241c; stroke-dasharray: 3 4; }
+.shaft .zone-l { fill: var(--dim); font: 600 11px Oswald, sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+.shaft .core { stroke: #2b241c; stroke-width: 10; }
+.shaft .flight { stroke: #3a3229; stroke-width: 3; stroke-linecap: round; }
+.shaft .flight.done { stroke: var(--amber); }
+.shaft .landing { stroke: #4a4036; stroke-width: 2; }
+.shaft .lvl { fill: var(--muted); font: 11px 'Share Tech Mono', monospace; }
+.shaft .ground { stroke: #5a4d3e; stroke-width: 2; }
+.shaft .hill { stroke: #4b6b44; stroke-width: 2; fill: none; }
+.shaft .airlock { fill: #2a231b; stroke: var(--amber); stroke-width: 2; }
+.shaft .airlock.open { fill: #ffe9a8; }
+.shaft .me { fill: var(--term); }
+.shaft .me .halo { fill: var(--term); opacity: .25; animation: pulse 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.shaft .me-l { fill: var(--term); font: 12px 'Share Tech Mono', monospace; }
+@keyframes pulse { 50% { transform: scale(1.6); opacity: .05; } }

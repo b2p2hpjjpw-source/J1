@@ -1,6 +1,14 @@
 # Utopia
 
-A job application tracker for a phone, inspired by the TV series *Silo*. His current job is the silo. Each application he sends keeps the silo alive while he looks for the way out, toward a better job.
+A job application tracker for a phone, inspired by the TV series *Silo*. His current job is the silo: 144 levels underground, one spiral staircase, and a screen in the cafeteria showing hills that look dead. Each application he sends keeps the silo alive, cleans the lens and climbs a flight of stairs toward the airlock and a better job.
+
+## The Silo touches
+
+- **The Pact.** The first screen lays out the rules as six articles on a parchment-colored card. He taps *I accept the Pact* to start.
+- **The view.** The top of the Silo screen is the cafeteria wall screen. With no applications sent, the lens is filthy: a brown sky, dead hills, a bare tree and a dark city on the horizon. Each application sent this cycle cleans the lens 20%. At 5, the sky is blue, the hills are green, the tree is in leaf and the city's lights are on. If he stops applying, the dust settles back over 3 weeks.
+- **The stairs.** The Climb tab draws the silo from the side: Up Top, Mid and Down Deep, with the spiral stairs as 24 flights. He starts on level 144 by Mechanical. Each application climbs one flight (6 levels), and each interview climbs two more. Marking an application **Offer!** opens the airlock: *Welcome outside.* His level shows in the header.
+- **Departments.** Rooms are labeled with where they are in the silo: Air Handling (Up Top), Hydroponics and Medical (Mid), Water Treatment and Mechanical (Down Deep). Extra postings are **porter runs** that deliver crates to Supply.
+- **Badges** include First Flight, Clean Lens, Porter, Mid Levels, Up Top, Signal From Outside and Utopia.
 
 ## How it works
 
@@ -13,7 +21,7 @@ A job application tracker for a phone, inspired by the TV series *Silo*. His cur
 
 **Submitting an application refills that room to 100%.** The room then starts its 2-week clock again, so he needs to find its next posting before it runs dry. That's 2 weeks to find a job plus 1 week to apply, so the five rooms ask for **at least 5 applications every 3 weeks or so**.
 
-**Bonus storerooms:** if he finds more postings than he has free rooms, each extra one goes into its own storeroom in the Supply Depot. It has the same deadline. Once it's sent, it becomes a sealed cache that never needs refilling.
+**Porter runs (bonus):** if he finds more postings than he has free rooms, each extra one becomes a porter run to Supply. It has the same deadline. Once it's sent, its crate is stocked for good and never needs refilling.
 
 **Each posting has four phases:**
 1. **Identify the job.** Done when he adds it. This starts the countdown.
@@ -23,9 +31,9 @@ A job application tracker for a phone, inspired by the TV series *Silo*. His cur
 
 Every posting and room shows a live countdown (days, hours, minutes, seconds). A room's status goes from Stable to Low, then Critical, then Depleted. The status bar at the top shows overall life support.
 
-**Postings tab:** what's in progress (soonest deadline first), what's been sent, and what's been set aside. On a sent application, tap **Interview!** when he hears back. That's a *signal from outside*.
+**Postings tab:** what's in progress (soonest deadline first), what's been sent, and what's been set aside. On a sent application, tap **Interview!** when he hears back (a *signal from outside*) or **Offer!** when he lands it (the airlock opens).
 
-**The Climb tab:** total applications sent, progress toward 5 this cycle, applications per week, interviews, the on-time rate, average days from finding a job to sending it, and 8 badges.
+**The Climb tab:** his level on the stairs, total applications sent, progress toward 5 this cycle, applications per week, interviews, the on-time rate, average days from finding a job to sending it, and 8 badges.
 
 **Settings (gear icon):** his name, the turnaround (3, 4, 5, 7, 10 or 14 days; default 7), how long empty rooms last (10, 14 or 21 days; default 14), sound, and backup, restore and erase. Changing the turnaround moves every open deadline right away.
 

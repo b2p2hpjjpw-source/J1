@@ -1,8 +1,8 @@
-/* Utopia — a Silo-inspired job application tracker.
- * The current job is the silo. Every application sent refills one of its supplies, on the way to somewhere better.
+/* Utopia — a job application tracker inspired by the TV series Silo.
+ * The current job is the silo: 144 levels underground, one spiral staircase, a screen in the cafeteria showing the dead hills. Every application sent refills one of its supplies, on the way to somewhere better.
  * Five core rooms (oxygen, water, food, power, medicine) drain over 2 weeks with no posting in them,
  * or over the turnaround window (1 week by default) once a posting is assigned. Submitting refills the room.
- * Bonus storerooms hold extra postings: same deadline, but once sent they're a sealed cache that never needs refilling.
+ * Porter runs hold extra postings: same deadline, but once sent they're a crate in Supply that never needs refilling.
  * Everything is stored on this phone in localStorage. No accounts, no servers. */
 (() => {
   'use strict';
@@ -19,12 +19,17 @@
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const NEEDS = [
-    { id: 'oxygen', name: 'Oxygen', place: 'Air Handling' },
-    { id: 'water', name: 'Water', place: 'Water Treatment' },
-    { id: 'food', name: 'Food', place: 'Hydroponics' },
-    { id: 'power', name: 'Power', place: 'Generator Room' },
-    { id: 'medicine', name: 'Medicine', place: 'Infirmary' },
+    { id: 'oxygen', name: 'Oxygen', place: 'Air Handling', zone: 'Up Top', out: 'The air is going stale' },
+    { id: 'water', name: 'Water', place: 'Water Treatment', zone: 'Down Deep', out: 'The pumps have run dry' },
+    { id: 'food', name: 'Food', place: 'Hydroponics', zone: 'Mid', out: 'The grow lights are going dark' },
+    { id: 'power', name: 'Power', place: 'Mechanical', zone: 'Down Deep', out: 'The generator is failing' },
+    { id: 'medicine', name: 'Medicine', place: 'Medical', zone: 'Mid', out: 'The medical shelves are empty' },
   ];
+
+  // The climb: he starts Down Deep on level 144. Every application sent is one flight of stairs (6 levels) up,
+  // an interview is two more, and an offer opens the airlock: outside, to Utopia.
+  const LEVELS = 144;
+  const FLIGHT = 6;
   const needOf = id => NEEDS.find(n => n.id === id);
 
   // The four phases between finding a posting and getting it in front of a hiring manager.
@@ -38,6 +43,13 @@
 
   // Transmissions from outside: one a day.
   const TRANSMISSIONS = [
+    'Somebody always has to be the first one up the stairs.',
+    'Down Deep they fix what’s broken. Up Top they dream about the view. Do both.',
+    'The Pact says don’t talk about outside. You’re allowed to want more than this.',
+    'Every relic is proof there was a world before this one. There’s one after it, too.',
+    'The screen shows dead hills because nobody’s cleaned the lens lately. Go clean it.',
+    'Porters carry the whole silo on their backs, one flight at a time. So can you.',
+    'They kept you in the dark by keeping you busy. Make time for the climb.',
     'The silo is not the whole world. It only feels that way from the inside.',
     'Every application is a lens cleaned. A little more of outside comes into view.',
     'You don’t have to reach the top today. Just the next landing.',
@@ -56,14 +68,16 @@
   ];
 
   const BADGES = [
-    { id: 'first', n: 'First Breath', d: 'First application sent' },
-    { id: 'quick', n: 'Quick Hands', d: 'Sent within 2 days of finding it' },
-    { id: 'full', n: 'Full Life Support', d: 'All 5 rooms refilled within 3 weeks' },
-    { id: 'bonus', n: 'Stockpiler', d: 'First bonus cache sealed' },
-    { id: 'ten', n: 'Ten Landings', d: '10 applications sent' },
-    { id: 'signal', n: 'Signal From Outside', d: 'First interview' },
-    { id: 'quarter', n: 'Quarter Century', d: '25 applications sent' },
-    { id: 'fifty', n: 'Top of the Stairs', d: '50 applications sent' },
+    { id: 'first', n: 'First Flight', d: 'First application sent', ic: 'stairs' },
+    { id: 'quick', n: 'Quick Hands', d: 'Sent within 2 days of finding it', ic: 'wrench' },
+    { id: 'lens', n: 'Clean Lens', d: '5 sent in one cycle: the view is clear', ic: 'lens' },
+    { id: 'full', n: 'Full Life Support', d: 'All 5 rooms refilled within 3 weeks', ic: 'gauge' },
+    { id: 'bonus', n: 'Porter', d: 'First bonus supply run delivered', ic: 'crate' },
+    { id: 'mid', n: 'Mid Levels', d: 'Climbed above level 96', ic: 'stairs' },
+    { id: 'signal', n: 'Signal From Outside', d: 'First interview', ic: 'signal' },
+    { id: 'uptop', n: 'Up Top', d: 'Climbed above level 48', ic: 'stairs' },
+    { id: 'quarter', n: 'Quarter Century', d: '25 applications sent', ic: 'stairs' },
+    { id: 'utopia', n: 'Utopia', d: 'Got the offer. You’re outside.', ic: 'sun' },
   ];
 
   // ---------- Helpers ----------
@@ -145,7 +159,8 @@
     const now = Date.now();
     const inCycle = sent.filter(j => j.steps.submitted > now - CYCLE_DAYS * DAY);
     const coreInCycle = new Set(inCycle.filter(j => j.room !== 'bonus').map(j => j.room)).size;
-    const interviews = state.jobs.filter(j => j.outcome === 'interview').length;
+    const interviews = state.jobs.filter(j => j.outcome === 'interview' || j.outcome === 'offer').length;
+    const offers = state.jobs.filter(j => j.outcome === 'offer').length;
     const onTime = sent.filter(j => j.steps.submitted <= deadlineOf(j)).length;
     const avgDays = sent.length ? sent.reduce((a, j) => a + Math.max(0, (j.steps.submitted - fromKey(j.found)) / DAY), 0) / sent.length : 0;
     const caches = sent.filter(j => j.room === 'bonus').length;
@@ -157,18 +172,21 @@
       if (new Set(w.map(k => k.room)).size === NEEDS.length) full = true;
     });
     const quick = sent.some(j => j.steps.submitted < addDays(fromKey(j.found), 3).getTime());
-    return { sent, inCycle, coreInCycle, interviews, onTime, avgDays, caches, full, quick };
+    const level = offers ? 0 : Math.max(1, LEVELS - FLIGHT * (sent.length + 2 * interviews));
+    const lens = Math.min(1, inCycle.length / NEEDS.length);
+    return { sent, inCycle, coreInCycle, interviews, offers, onTime, avgDays, caches, full, quick, level, lens, best: Math.max(state.bestCycle || 0, inCycle.length) };
   }
 
   function earnedBadges(s = stats()) {
     const n = s.sent.length;
     return BADGES.filter(b => ({
-      first: n >= 1, quick: s.quick, full: s.full, bonus: s.caches >= 1, ten: n >= 10,
-      signal: s.interviews >= 1, quarter: n >= 25, fifty: n >= 50,
+      first: n >= 1, quick: s.quick, lens: s.best >= NEEDS.length, full: s.full, bonus: s.caches >= 1,
+      mid: s.level <= 96, signal: s.interviews >= 1, uptop: s.level <= 48, quarter: n >= 25, utopia: s.offers >= 1,
     })[b.id]).map(b => b.id);
   }
 
   function checkBadges() {
+    state.bestCycle = stats().best; save();
     const fresh = earnedBadges().filter(id => !state.seenBadges.includes(id));
     if (!fresh.length) return;
     state.seenBadges.push(...fresh); save();
@@ -187,7 +205,8 @@
 
   function renderTop() {
     const day = Math.floor((fromKey(todayKey()) - fromKey(keyOf(new Date(state.started)))) / DAY) + 1;
-    $('hello').textContent = `${state.name ? state.name + ' · ' : ''}Day ${day} in the silo`;
+    const lvl = stats().level;
+    $('hello').textContent = `${state.name ? state.name + ' · ' : ''}${lvl ? `Level ${lvl}` : 'Outside'} · Day ${day}`;
   }
 
   function lifeSupport() {
@@ -199,7 +218,8 @@
 
   function statusMessage(ls) {
     const out = NEEDS.filter((n, i) => ls.infos[i].st === 'out');
-    if (out.length) return `${out.map(n => n.name).join(', ')} ${out.length > 1 ? 'are' : 'is'} out. Send one application and the lights come back on.`;
+    if (out.length === 1) return `${out[0].out}. Send one application and the lights come back on.`;
+    if (out.length) return `${out.map(n => n.name).join(', ')} are out. One application at a time brings them back.`;
     if (ls.worst === 'crit') return 'A room is running on fumes. Today’s the day to send one.';
     if (ls.worst === 'low') return 'Supplies are getting low. Scout a posting or finish the one you’ve got.';
     return 'All systems holding. Keep the search moving.';
@@ -228,7 +248,7 @@
       <button class="card room st-${r.st}" data-room="${n.id}">
         <div class="ico">${icon(n.id)}</div>
         <div>
-          <div class="room-head"><span class="room-name">${n.name}</span><span class="room-place">${n.place}</span>
+          <div class="room-head"><span class="room-name">${n.name}</span><span class="room-place">${n.place} · ${n.zone}</span>
             <span class="room-pct" data-pct="${n.id}">${Math.round(r.pct * 100)}%</span></div>
           <div class="tank"><i data-tank="${n.id}" style="width:${r.pct * 100}%"></i></div>
           ${body}
@@ -244,7 +264,7 @@
       <button class="card room" data-job="${j.id}">
         <div class="ico">${icon('crate')}</div>
         <div>
-          <div class="room-head"><span class="room-name">Storeroom</span><span class="room-place">Bonus supplies</span></div>
+          <div class="room-head"><span class="room-name">Porter run</span><span class="room-place">Supply · bonus</span></div>
           <div class="room-line" style="margin-top:6px">${left > 0 ? 'Send in' : 'Overdue'} <span class="clock ${left <= 0 ? 'over' : ''}" data-dl="${deadlineOf(j)}">${fmtLeft(left)}</span></div>
           <div class="job-mini"><b>${esc(j.title)}</b>${j.company ? ` <span class="co">· ${esc(j.company)}</span>` : ''}</div>
           <div class="pips">${PHASES.map((p, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('')}</div>
@@ -253,12 +273,107 @@
       </button>`;
   }
 
+
+  // The cafeteria wall screen. A dirty lens shows the dead hills under a brown sky. Every application sent this
+  // cycle cleans it a little more, until the sky turns blue and the far-off city is lit: what's waiting outside.
+  // `p` (0–1) is how clean the lens is; the live layer fades in over the dead one.
+  function viewScreen(p, id = '') {
+    const g = `vs${id}`;
+    return `<svg class="vs-svg" viewBox="0 0 360 150" role="img" aria-label="The view outside, ${Math.round(p * 100)}% clear">
+      <defs>
+        <linearGradient id="${g}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a342d" /><stop offset="1" stop-color="#77695a" /></linearGradient>
+        <linearGradient id="${g}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f8fc4" /><stop offset="1" stop-color="#cfe6ee" /></linearGradient>
+        <radialGradient id="${g}g"><stop offset="0" stop-color="#1c140c" stop-opacity=".95" /><stop offset="1" stop-color="#1c140c" stop-opacity="0" /></radialGradient>
+        <pattern id="${g}s" width="3" height="3" patternUnits="userSpaceOnUse"><rect width="3" height="1" fill="#000" opacity=".22" /></pattern>
+        <clipPath id="${g}c"><rect x="8" y="8" width="344" height="134" rx="6" /></clipPath>
+      </defs>
+      <rect width="360" height="150" rx="10" fill="#0b0907" />
+      <g clip-path="url(#${g}c)">
+        <rect x="0" y="0" width="360" height="150" fill="url(#${g}d)" />
+        <g class="vs-live" style="opacity:${p}">
+          <rect x="0" y="0" width="360" height="150" fill="url(#${g}l)" />
+          <circle cx="292" cy="38" r="15" fill="#fff1c4" /><circle cx="292" cy="38" r="26" fill="#fff1c4" opacity=".25" />
+          <path d="M70 40q4-4 8 0q4-4 8 0M96 30q3-3 6 0q3-3 6 0M250 58q3-3 6 0q3-3 6 0" fill="none" stroke="#2c3e4c" stroke-width="1.6" stroke-linecap="round" />
+        </g>
+        <!-- the far city on the horizon -->
+        <g fill="#3a332c"><path d="M196 92h6v-16h5v16h4v-24h7v24h5v-12h6v12h4v-30h6v30h5v-18h7v18h4v-9h5v9z" /></g>
+        <g class="vs-live" style="opacity:${p}" fill="#7d98ad"><path d="M196 92h6v-16h5v16h4v-24h7v24h5v-12h6v12h4v-30h6v30h5v-18h7v18h4v-9h5v9z" />
+          <g fill="#ffe9a8"><rect x="213" y="73" width="2" height="2" /><rect x="238" y="68" width="2" height="2" /><rect x="238" y="78" width="2" height="2" /><rect x="251" y="80" width="2" height="2" /></g></g>
+        <path d="M0 98 C60 78 110 86 170 92 S290 80 360 94 V150 H0Z" fill="#4b4239" />
+        <path class="vs-live" style="opacity:${p}" d="M0 98 C60 78 110 86 170 92 S290 80 360 94 V150 H0Z" fill="#6f9a5c" />
+        <path d="M0 122 C70 104 140 112 200 120 S300 112 360 120 V150 H0Z" fill="#2c2620" />
+        <path class="vs-live" style="opacity:${p}" d="M0 122 C70 104 140 112 200 120 S300 112 360 120 V150 H0Z" fill="#40693a" />
+        <!-- the lone tree on the ridge: bare, then in leaf -->
+        <path d="M120 112 V84 M120 96 l-9 -8 M120 92 l8 -9 M120 86 l-5 -7 M111 88 l-4 -1 M128 83 l3 -4" stroke="#1d1813" stroke-width="2.4" fill="none" stroke-linecap="round" />
+        <g class="vs-live" style="opacity:${p}" fill="#4f8a43"><circle cx="112" cy="84" r="8" /><circle cx="127" cy="81" r="9" /><circle cx="120" cy="74" r="9" /></g>
+        <g class="vs-grime" style="opacity:${0.85 * (1 - p)}">
+          <rect width="360" height="150" fill="#3a2a1a" opacity=".35" />
+          <ellipse cx="60" cy="40" rx="70" ry="40" fill="url(#${g}g)" /><ellipse cx="300" cy="110" rx="80" ry="45" fill="url(#${g}g)" />
+          <ellipse cx="190" cy="20" rx="60" ry="26" fill="url(#${g}g)" /><ellipse cx="30" cy="130" rx="50" ry="30" fill="url(#${g}g)" />
+        </g>
+        <rect width="360" height="150" fill="url(#${g}s)" />
+      </g>
+      <rect x="8" y="8" width="344" height="134" rx="6" fill="none" stroke="#000" stroke-width="2" />
+      <g fill="#4a4036"><circle cx="16" cy="16" r="2" /><circle cx="344" cy="16" r="2" /><circle cx="16" cy="134" r="2" /><circle cx="344" cy="134" r="2" /></g>
+    </svg>`;
+  }
+
+  function lensCaption(s) {
+    const left = NEEDS.length - s.inCycle.length;
+    if (s.offers) return 'You made it outside. This is what you were climbing toward.';
+    if (left <= 0) return 'Lens clean. That’s what’s waiting outside. Keep it this way.';
+    if (!s.inCycle.length) return `The lens is filthy. Send ${left} applications this cycle to see outside clearly.`;
+    return `Lens ${Math.round(s.lens * 100)}% clean. ${left} more this cycle to see it clearly.`;
+  }
+
+  // The staircase: one spiral, 144 levels, drawn side-on as 24 flights. Each flight is one application.
+  function shaft(s) {
+    const W = 320, top = 50, bot = 560, H = 580, xl = 96, xr = 228;
+    const y = lvl => top + (lvl - 1) / (LEVELS - 1) * (bot - top);
+    const flights = LEVELS / FLIGHT;
+    const climbed = LEVELS - Math.max(1, s.level);
+    let stairs = '';
+    for (let i = 0; i < flights; i++) {
+      const a = LEVELS - i * FLIGHT, b = Math.max(1, a - FLIGHT);
+      const x1 = i % 2 ? xr : xl, x2 = i % 2 ? xl : xr;
+      const done = LEVELS - b <= climbed;
+      stairs += `<line class="flight ${done ? 'done' : ''}" x1="${x1}" y1="${y(a)}" x2="${x2}" y2="${y(b)}" />
+        <line class="landing" x1="${x2 - 10}" x2="${x2 + 10}" y1="${y(b)}" y2="${y(b)}" />`;
+    }
+    const zones = [['Up Top', 1, 48], ['Mid', 49, 96], ['Down Deep', 97, 144]].map(([n, a, b]) => `
+      <rect class="zone" x="60" y="${y(a) - 2}" width="204" height="${y(b) - y(a) + 4}" />
+      <text class="zone-l" x="52" y="${(y(a) + y(b)) / 2}" text-anchor="middle" transform="rotate(-90 52 ${(y(a) + y(b)) / 2})">${n}</text>`).join('');
+    const me = s.level ? y(s.level) : 20;
+    const mx = s.level ? (Math.round((LEVELS - s.level) / FLIGHT) % 2 ? xr : xl) : 160;
+    const marks = [1, 48, 96, 144].map(l => `<text class="lvl" x="272" y="${y(l) + 4}">${l}</text>`).join('');
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${s.level ? `Level ${s.level} of ${LEVELS}` : 'Outside'}">
+      <path class="ground" d="M0 36 H120 M200 36 H320" />
+      <path class="hill" d="M0 36 C40 22 80 26 120 36 M200 36 C240 24 290 20 320 30" />
+      <rect class="airlock ${s.offers ? 'open' : ''}" x="138" y="22" width="44" height="18" rx="3" />
+      <text class="lvl" x="160" y="16" text-anchor="middle">AIRLOCK · OUTSIDE</text>
+      <rect class="wall" x="60" y="${top - 8}" width="204" height="${bot - top + 16}" rx="10" />
+      ${zones}
+      <line class="core" x1="162" x2="162" y1="${top}" y2="${bot}" />
+      ${stairs}${marks}
+      <text class="lvl" x="272" y="${y(144) + 18}">Mechanical</text>
+      <g class="me" transform="translate(${mx} ${me})"><circle r="11" class="halo" /><circle r="6" /></g>
+      <text class="me-l" x="${mx === xl ? mx + 16 : mx - 16}" y="${me + 4}" text-anchor="${mx === xl ? 'start' : 'end'}">${state.name ? esc(state.name) : 'You'}</text>
+    </svg>`;
+  }
+
   function renderSilo() {
     const ls = lifeSupport();
     const bonus = activeJobs().filter(j => j.room === 'bonus').sort((a, b) => deadlineOf(a) - deadlineOf(b));
     const caches = sentJobs().filter(j => j.room === 'bonus').length;
     const dayIdx = Math.floor(fromKey(todayKey()).getTime() / DAY);
+    const s = stats();
     $('view-silo').innerHTML = `
+      <div class="viewscreen">
+        <div class="vs-head"><span>The view · cafeteria screen</span><span class="mono">${Math.round(s.lens * 100)}% clear</span></div>
+        ${viewScreen(s.lens)}
+        <div class="vs-cap">${lensCaption(s)}</div>
+      </div>
+
       <div class="status ${ls.worst}">
         <span class="lamp" aria-hidden="true"></span>
         <div>
@@ -271,14 +386,14 @@
       <h2 class="sec">Core supplies <span class="count">${NEEDS.filter(n => jobInRoom(n.id)).length}/5 with a posting</span></h2>
       <div class="rooms">${NEEDS.map(roomCard).join('')}</div>
 
-      <h2 class="sec">Supply depot <span class="count">bonus</span></h2>
+      <h2 class="sec">Supply · porter runs <span class="count">bonus</span></h2>
       <div class="rooms">${bonus.map(bonusCard).join('')}</div>
       <div class="card depot-cache" style="margin-top:${bonus.length ? 10 : 0}px">
         <div style="flex:1">
-          <div class="room-name" style="font-size:15px">Sealed caches: <span class="mono">${caches}</span></div>
-          <div class="hint" style="margin:2px 0 0">Found more postings than rooms? Each extra one gets its own storeroom. Same deadline, but once it’s sent it never needs refilling.</div>
+          <div class="room-name" style="font-size:15px">Crates delivered to Supply: <span class="mono">${caches}</span></div>
+          <div class="hint" style="margin:2px 0 0">Found more postings than rooms? Each extra one is a porter run. Same deadline, but once it’s sent the crate is stocked for good and never needs refilling.</div>
           ${caches ? `<div class="crates" style="margin-top:8px">${icon('crate').repeat(Math.min(caches, 40))}</div>` : ''}
-          <button class="btn small ghost add-bonus" id="addBonus">${icon('plus')} Open a storeroom</button>
+          <button class="btn small ghost add-bonus" id="addBonus">${icon('plus')} Start a porter run</button>
         </div>
       </div>
 
@@ -300,7 +415,7 @@
 
   function itemRow(j, right) {
     const ic = j.room === 'bonus' ? 'crate' : j.room;
-    const where = j.room === 'bonus' ? 'Storeroom' : needOf(j.room).name;
+    const where = j.room === 'bonus' ? 'Porter run' : needOf(j.room).name;
     return `
       <button class="card item" data-job="${j.id}">
         <div class="ico">${icon(ic)}</div>
@@ -313,7 +428,7 @@
     const act = activeJobs().sort((a, b) => deadlineOf(a) - deadlineOf(b));
     const sent = sentJobs().reverse();
     const aside = state.jobs.filter(j => j.status === 'dropped').sort((a, b) => b.droppedAt - a.droppedAt);
-    const outTxt = j => j.outcome === 'interview' ? `<span class="tag ok">${icon('signal')} Interview</span>` : j.outcome === 'no' ? '<span class="tag neutral">Closed</span>' : 'Waiting';
+    const outTxt = j => j.outcome === 'offer' ? `<span class="tag ok">${icon('sun')} Offer</span>` : j.outcome === 'interview' ? `<span class="tag ok">${icon('signal')} Interview</span>` : j.outcome === 'no' ? '<span class="tag neutral">Closed</span>' : 'Waiting';
     $('view-missions').innerHTML = `
       <h2 class="sec">In progress <span class="count">${act.length}</span></h2>
       <div class="list">${act.length ? act.map(j => {
@@ -358,9 +473,13 @@
     const got = earnedBadges(s);
     const goal = NEEDS.length;
     $('view-climb').innerHTML = `
-      <div class="card hero">
-        <div class="num">${s.sent.length}</div>
-        <div class="cap">Applications sent</div>
+      <div class="card climb-head">
+        <div><div class="num">${s.level ? s.level : '0'}</div><div class="cap">${s.level ? 'Level' : 'Outside'}</div></div>
+        <div><div class="num">${s.sent.length}</div><div class="cap">Sent</div></div>
+        <div><div class="num">${s.interviews}</div><div class="cap">Interviews</div></div>
+      </div>
+      <div class="card shaft">${shaft(s)}
+        <p class="hint">You start Down Deep, on level 144. Every application sent climbs one flight (${FLIGHT} levels). An interview climbs two more. The offer opens the airlock.${s.level > 1 ? ` ${Math.ceil((s.level - 1) / FLIGHT)} flights to the top.` : ''}</p>
       </div>
 
       <h2 class="sec">This supply cycle <span class="count">last 3 weeks</span></h2>
@@ -378,16 +497,16 @@
 
       <h2 class="sec">Logbook</h2>
       <div class="tiles">
-        <div class="card tile"><div class="v">${s.interviews}</div><div class="k">Interviews (signals)</div></div>
+        <div class="card tile"><div class="v">${s.best}</div><div class="k">Best cycle (sent in 3 wks)</div></div>
         <div class="card tile"><div class="v">${s.sent.length ? Math.round(100 * s.onTime / s.sent.length) + '%' : '—'}</div><div class="k">Sent on time</div></div>
         <div class="card tile"><div class="v">${s.sent.length ? s.avgDays.toFixed(1) + 'd' : '—'}</div><div class="k">Avg find → send</div></div>
-        <div class="card tile"><div class="v">${s.caches}</div><div class="k">Bonus caches sealed</div></div>
+        <div class="card tile"><div class="v">${s.caches}</div><div class="k">Porter crates delivered</div></div>
       </div>
 
       <h2 class="sec">Badges <span class="count">${got.length}/${BADGES.length}</span></h2>
       <div class="badges">${BADGES.map(b => `
         <div class="card badge ${got.includes(b.id) ? 'got' : ''}">
-          <div class="medal">${icon(b.id === 'signal' ? 'signal' : b.id === 'bonus' ? 'crate' : 'stairs')}</div>
+          <div class="medal">${icon(b.ic)}</div>
           <div><div class="n">${b.n}</div><div class="d">${b.d}</div></div>
         </div>`).join('')}</div>`;
   }
@@ -437,7 +556,7 @@
     // Suggest the emptiest free room first.
     free.sort((a, b) => roomInfo(a.id).pct - roomInfo(b.id).pct);
     return free.map(n => `<option value="${n.id}">${n.name} · ${n.place} (${Math.round(roomInfo(n.id).pct * 100)}% left)</option>`).join('') +
-      `<option value="bonus">Bonus storeroom (extra supplies)</option>`;
+      `<option value="bonus">Porter run to Supply (bonus)</option>`;
   }
 
   function editJob(id, room) {
@@ -468,7 +587,7 @@
       save();
       const newId = j ? j.id : state.jobs[state.jobs.length - 1].id;
       onModalClose = null;
-      if (!j) toast(data.room === 'bonus' ? 'Storeroom opened. Clock is ticking.' : `${needOf(data.room).name} room has a posting. Clock is ticking.`);
+      if (!j) toast(data.room === 'bonus' ? 'Porter run started. Clock is ticking.' : `${needOf(data.room).name} room has a posting. Clock is ticking.`);
       openJob(newId);
     };
     if (!j) setTimeout(() => $('fT')?.focus(), 250);
@@ -479,7 +598,7 @@
     const j = state.jobs.find(x => x.id === id);
     if (!j) return closeModal();
     const dl = deadlineOf(j);
-    const where = j.room === 'bonus' ? 'Bonus storeroom' : `${needOf(j.room).name} · ${needOf(j.room).place}`;
+    const where = j.room === 'bonus' ? 'Porter run · Supply' : `${needOf(j.room).name} · ${needOf(j.room).place}`;
     const active = j.status === 'active';
     const phaseRow = p => {
       const done = p.id === 'found' || !!j.steps[p.id];
@@ -504,6 +623,7 @@
         <div class="by" style="margin-top:8px">Heard back?</div>
         <div class="row" style="margin-top:8px">
           <button class="btn small ${j.outcome === 'interview' ? '' : 'ghost'}" id="oYes">${icon('signal')} Interview!</button>
+          <button class="btn small ${j.outcome === 'offer' ? '' : 'ghost'}" id="oOffer">${icon('sun')} Offer!</button>
           <button class="btn small ${j.outcome === 'no' ? '' : 'ghost'}" id="oNo">Not this time</button>
         </div></div>` : ''}
       ${j.status === 'dropped' ? `<div class="countdown"><span class="tag neutral">Set aside ${niceDate(j.droppedAt)}</span></div>` : ''}
@@ -520,8 +640,9 @@
     document.querySelectorAll('[data-phase]').forEach(el => el.onclick = () => togglePhase(j, el.dataset.phase));
     if ($('oYes')) $('oYes').onclick = () => setOutcome(j, 'interview');
     if ($('oNo')) $('oNo').onclick = () => setOutcome(j, 'no');
+    if ($('oOffer')) $('oOffer').onclick = () => setOutcome(j, 'offer');
     if ($('jDrop')) $('jDrop').onclick = () => confirmBox('Set this one aside?',
-      `Posting closed or not a fit? That’s fine. ${j.room === 'bonus' ? 'The storeroom closes.' : `The ${needOf(j.room).name.toLowerCase()} room goes back to its 2-week supply clock from its last refill, so find another posting soon.`}`,
+      `Posting closed or not a fit? That’s fine. ${j.room === 'bonus' ? 'The porter run is called off.' : `The ${needOf(j.room).name.toLowerCase()} room goes back to its 2-week supply clock from its last refill, so find another posting soon.`}`,
       'Set aside', () => { j.status = 'dropped'; j.droppedAt = Date.now(); save(); closeModal(); });
     if ($('jBack')) $('jBack').onclick = () => {
       if (j.room !== 'bonus' && jobInRoom(j.room)) j.room = 'bonus';
@@ -547,6 +668,7 @@
   function submit(j) {
     const now = Date.now();
     const before = j.room !== 'bonus' && j.status === 'active' ? roomInfo(j.room, now).pct : 0;
+    const lensBefore = stats().lens;
     j.steps.submitted = now; j.status = 'submitted';
     PHASES.forEach(p => { if (p.id !== 'found' && !j.steps[p.id]) j.steps[p.id] = now; });
     if (j.room !== 'bonus') {
@@ -554,7 +676,7 @@
       state.rooms[j.room].refilled = now;
     }
     save();
-    celebrate(j, before);
+    celebrate(j, before, lensBefore);
   }
 
   function unsubmit(j) {
@@ -569,29 +691,43 @@
     if (j.outcome === 'interview') {
       confetti(); chime(true);
       openModal(`<div class="refill"><svg class="ico" viewBox="0 0 24 24"><use href="#i-signal" /></svg>
-        <h3>Signal from outside!</h3><p class="sub">${esc(j.company || j.title)} wants to talk. Someone out there can see the silo. Prep, breathe, and go show them who you are.</p>
+        <h3>Signal from outside!</h3><p class="sub">${esc(j.company || j.title)} wants to talk. Someone out there has seen the silo, and they’re answering. You climb two more flights. Prep, breathe, and go show them who you are.</p>
         <button class="btn block" id="ok">Back to the silo</button></div>`);
+      $('ok').onclick = closeModal;
+      checkBadges();
+    } else if (j.outcome === 'offer') {
+      confetti(); setTimeout(confetti, 900); chime(true);
+      openModal(`<div class="refill outside">
+        <div class="viewscreen">${viewScreen(1, 'o')}</div>
+        <h3>The airlock opens</h3><p class="sub">${esc(j.company || j.title)} made an offer. You climbed every stair, cleaned every lens, and walked out. This is Utopia. Welcome outside.</p>
+        <button class="btn block" id="ok">Step outside</button></div>`);
       $('ok').onclick = closeModal;
       checkBadges();
     } else openJob(j.id);
   }
 
-  function celebrate(j, before) {
+  function celebrate(j, before, lensBefore) {
     const bonus = j.room === 'bonus';
     const n = bonus ? null : needOf(j.room);
-    const ls = lifeSupport();
-    const left = 5 - stats().inCycle.length;
+    const s = stats();
+    const left = NEEDS.length - s.inCycle.length;
     openModal(`<div class="refill">
       <svg class="ico" viewBox="0 0 24 24"><use href="#i-${bonus ? 'crate' : n.id}" /></svg>
-      <h3>${bonus ? 'Cache sealed' : `${n.name} restored`}</h3>
+      <h3>${bonus ? 'Crate delivered to Supply' : `${n.name} restored`}</h3>
       <p class="sub">${bonus
-        ? 'Extra supplies stocked in the depot. This one never needs refilling.'
-        : `The ${n.place.toLowerCase()} is back to full. It holds for ${state.drain} days: find its next posting before then.`}</p>
+        ? 'The porter run is done. Extra supplies are stocked for good and never need refilling.'
+        : `${n.place} (${n.zone}) is back to full. It holds for ${state.drain} days, so find its next posting before then.`}</p>
       ${bonus ? '' : `<div class="tank"><i id="fillBar" style="width:${before * 100}%"></i></div>`}
+      <div class="viewscreen" id="celebView">${viewScreen(lensBefore, 'c')}
+        <div class="vs-cap">${lensBefore < s.lens ? 'You cleaned the lens. ' : ''}${lensCaption(s)}</div></div>
       <p class="sub mono" style="color:var(--term)">Application sent: ${esc(j.title)}${j.company ? ' · ' + esc(j.company) : ''}<br>
-      ${left > 0 ? `${left} more this cycle to keep all 5 rooms full.` : 'Cycle target met. Life support at ' + Math.round(ls.avg * 100) + '%.'}</p>
+      You climbed a flight: ${s.level ? `level ${s.level}` : 'outside'}.${left > 0 ? ` ${left} more this cycle to keep all 5 rooms full.` : ''}</p>
       <button class="btn block" id="ok">Back to the silo</button></div>`);
-    requestAnimationFrame(() => setTimeout(() => { const b = $('fillBar'); if (b) b.style.width = '100%'; }, 80));
+    requestAnimationFrame(() => setTimeout(() => {
+      const b = $('fillBar'); if (b) b.style.width = '100%';
+      document.querySelectorAll('#celebView .vs-live').forEach(el => el.style.opacity = s.lens);
+      document.querySelectorAll('#celebView .vs-grime').forEach(el => el.style.opacity = 0.85 * (1 - s.lens));
+    }, 400));
     $('ok').onclick = closeModal;
     confetti(); chime();
     checkBadges();
@@ -602,15 +738,15 @@
     const turnOpts = TURNAROUND_CHOICES.map(d => `<option value="${d}">${d} days${d === 5 ? ' (recommended)' : d === 7 ? ' (one week)' : ''}</option>`).join('');
     openModal(`
       ${first ? '' : '<button class="close-x" id="mX" aria-label="Close">×</button>'}
-      <h3>${first ? 'Welcome to the silo' : 'Settings'}</h3>
-      ${first ? `<p class="sub">Your current job is the silo. Out there, somewhere, is something better. Every application you send keeps the silo alive while you search for the way out.</p>
-        <div class="advice" style="margin-bottom:12px">
-          <b>How it works</b><br>
-          Five rooms keep the silo alive: oxygen, water, food, power and medicine.<br>
-          • Find a posting and assign it to a room. You have <b>${state.turnaround} days</b> to send it, and the room drains on that clock.<br>
-          • Each posting moves through 4 phases: identify, tailor the resume, cover letter & materials, submit.<br>
-          • Submitting refills the room. An empty room lasts <b>${state.drain} days</b>, so find its next posting before then.<br>
-          • Found extra postings? Open a bonus storeroom. Same deadline, but once sent it never needs refilling.
+      <h3>${first ? 'The Pact' : 'Settings'}</h3>
+      ${first ? `<p class="sub">Your current job is the silo: 144 levels down, and a screen in the cafeteria showing hills that look dead. They aren’t. Out there is something better. These are the rules for getting out.</p>
+        <div class="pact">
+          <p><b>Article I.</b> Five rooms keep the silo alive: Oxygen, Water, Food, Power and Medicine.</p>
+          <p><b>Article II.</b> When you find a job posting, assign it to a room. You then have <b>${state.turnaround} days</b> to send it, and the room drains on that clock.</p>
+          <p><b>Article III.</b> Every posting goes through four phases: identify the job, tailor the resume, write the cover letter and materials, submit.</p>
+          <p><b>Article IV.</b> Submitting refills the room. An empty room lasts <b>${state.drain} days</b>, so find its next posting before then.</p>
+          <p><b>Article V.</b> Extra postings are porter runs to Supply. They have the same deadline, but once sent they never need refilling.</p>
+          <p><b>Article VI.</b> Every application cleans the lens and climbs a flight of stairs. An offer opens the airlock.</p>
         </div>` : ''}
       <label class="field"><span>Your name</span><input id="sName" maxlength="40" placeholder="Name" value="${esc(state.name)}" /></label>
       <label class="field"><span>Send applications within</span><select id="sTurn">${turnOpts}</select></label>
@@ -623,7 +759,7 @@
         <div class="row"><button class="btn small ghost" id="bDown">Download backup</button><label class="btn small ghost" for="bUp">Restore backup</label><input type="file" id="bUp" accept="application/json,.json" hidden /></div>
         <div class="row" style="margin-top:10px"><button class="btn small danger" id="bErase">Erase everything</button></div>
         <p class="hint" style="margin-top:16px">Utopia is an unofficial, fan-made app inspired by the TV series <i>Silo</i>. It isn’t connected to the show or its makers.</p>`}
-      <button class="btn block" id="sSave" style="margin-top:16px">${first ? 'Enter the silo' : 'Save'}</button>`);
+      <button class="btn block" id="sSave" style="margin-top:16px">${first ? 'I accept the Pact' : 'Save'}</button>`);
     $('sTurn').value = state.turnaround; $('sDrain').value = state.drain;
     if ($('mX')) $('mX').onclick = closeModal;
     $('sSave').onclick = () => {
