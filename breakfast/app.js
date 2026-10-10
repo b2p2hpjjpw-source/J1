@@ -68,6 +68,7 @@
   const ART = {
     'salmon-bagel': { label: 'Bagel with smoked salmon', src: 'art/salmon-bagel.svg' },
     'banana-bread': { label: 'Banana bread', src: 'art/banana-bread.svg' },
+    'fruit-salad': { label: 'Fruit salad', src: 'art/fruit-salad.svg' },
   };
   const AVATARS = ['art:super-star', '🍄', '🐴', '⭐', '🦄', '🚀', '🦖', '🐬', '🐶', '🐱', '🐰', '🦊', '🐼', '🐸', '🐯', '🦁', '🐵',
     '🐧', '🦋', '🐢', '🐙', '🤖', '👑', '⚽', '🏎️', '🚒', '🚜', '🧸', '🌈', '🐉', '🦈'];
@@ -112,9 +113,10 @@
   const item = (name, emoji, cat, art) => ({ id: uid(), name, emoji, cat, on: true, ...(art ? { art } : {}) });
   const salmonBagel = () => item('Salmon bagel', '🥯', 'main', 'salmon-bagel');
   const bananaBread = () => item('Banana bread', '🍞', 'main', 'banana-bread');
+  const fruitSalad = () => item('Fruit salad', '🍓', 'side', 'fruit-salad');
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 6,
+    v: 7,
     kids: [
       { id: 'lucas', name: 'Lucas', avatar: 'art:super-star', theme: 'mario', color: '#43b047', skip: [] },
       { id: 'julien', name: 'Julien', avatar: 'art:super-star', theme: 'mario', skip: [] },
@@ -124,7 +126,7 @@
       item('Eggs', '🍳', 'main'), item('Toast', '🍞', 'main'), item('Bagel', '🥯', 'main'), salmonBagel(), bananaBread(),
       item('Banana', '🍌', 'side'), item('Strawberries', '🍓', 'side'), item('Apple', '🍎', 'side'),
       item('Blueberries', '🫐', 'side'), item('Grapes', '🍇', 'side'), item('Bacon', '🥓', 'side'),
-      item('Cheese', '🧀', 'side'), item('Yogurt', '🍨', 'side'),
+      item('Cheese', '🧀', 'side'), item('Yogurt', '🍨', 'side'), fruitSalad(),
       item('Milk', '🥛', 'drink'), item('Apple juice', '🧃', 'drink'), item('Smoothie', '🥤', 'drink'),
       item('Water', '💧', 'drink'), item('Chocolate milk', '🍫', 'drink'),
     ],
@@ -153,7 +155,11 @@
       });
     }
     if (!(v >= 6)) { st.extraSides = st.extraSide === false ? 0 : 2; delete st.extraSide; } // one extra side became up to two
-    st.v = 6;
+    if (!(v >= 7) && !st.menu.some(m => m.art === 'fruit-salad')) {
+      const at = st.menu.map(m => m.cat).lastIndexOf('side');
+      st.menu.splice(at >= 0 ? at + 1 : st.menu.length, 0, fruitSalad()); // the fruit salad picture arrived
+    }
+    st.v = 7;
   }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
