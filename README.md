@@ -71,3 +71,5 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 **Also in this repo:** [Build-a-Plate](breakfast/), where the kids order tomorrow's breakfast the night before. See [breakfast/README.md](breakfast/README.md).
 
 **Also in this repo:** [Clean Sheet](clean-sheet/), an Arsenal-themed sobriety tracker with a nightly breathalyzer log and savings kitty. See [clean-sheet/README.md](clean-sheet/README.md).
+
+**Also in this repo:** [Utopia](utopia/), a Silo-inspired job application tracker where every application sent refills the silo's supplies. See [utopia/README.md](utopia/README.md).
