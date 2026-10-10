@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Bagel sandwich with cream cheese and smoked salmon, seen from the side -->
+  <!-- Bagel sandwich with cream cheese and smoked salmon (no green bits), seen from the side -->
   <defs>
     <linearGradient id="crust" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0b768"/><stop offset="1" stop-color="#c47f35"/></linearGradient>
     <linearGradient id="side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d3934a"/><stop offset="1" stop-color="#a8662a"/></linearGradient>
@@ -15,11 +15,6 @@
   <g stroke="#ffc1a8" stroke-width="2.6" fill="none" stroke-linecap="round">
     <path d="M14 74 C24 70 34 72 40 76"/><path d="M50 74 C60 70 70 72 78 76"/><path d="M88 74 C98 70 108 72 116 75"/>
   </g>
-  <!-- dill and capers peeking out -->
-  <g stroke="#3f8f3a" stroke-width="2.2" stroke-linecap="round" fill="none">
-    <path d="M30 66 l-8 -6 M26 63 l-1 -5 M26 63 l-5 1"/><path d="M98 66 l8 -6 M102 63 l1 -5 M102 63 l5 1"/>
-  </g>
-  <circle cx="58" cy="66" r="3.4" fill="#6b8e23" stroke="#4a6418"/><circle cx="76" cy="65" r="3" fill="#6b8e23" stroke="#4a6418"/>
   <!-- top half: shiny domed bagel with its hole -->
   <path d="M10 54 C10 62 118 62 118 54 L118 50 L10 50 Z" fill="url(#side)"/>
   <ellipse cx="64" cy="44" rx="54" ry="22" fill="url(#crust)" stroke="#b06d2c" stroke-width="2"/>
