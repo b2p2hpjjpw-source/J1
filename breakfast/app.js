@@ -220,6 +220,7 @@
     Object.keys(state.orders).forEach(k => { if (k < oldest) delete state.orders[k]; });
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch (e) { toast('The phone is out of space for saving. Try using fewer photos.'); }
+    if (window.FamilySync) FamilySync.changed(STORE_KEY);
   }
 
   const itemById = id => state.menu.find(m => m.id === id);
@@ -978,6 +979,11 @@
           <input type="file" id="restoreFile" accept="application/json,.json" hidden />
           <button class="link-btn danger" data-act="erase">Erase everything and start over</button>
         </section>
+        <section class="card">
+          <h3>☁️ Family sync</h3>
+          <p class="t-sub">Sign in to share the menu and orders between your phones. Voice recordings stay on each phone.</p>
+          <div data-family-sync></div>
+        </section>
       </div>`;
   }
   // Record your own voice: hello for each child, the buddy's lines, and each food's name.
@@ -1320,4 +1326,15 @@
   save(); // keeps any upgrade from load()
   render();
   loadAllClips().then(() => { if (view.name === 'grown') render(); });
+
+  // ---------- Family sync ----------
+  // Shares this app's data between our phones once someone signs in (see ../family-sync.js).
+  if (window.FamilySync) FamilySync.attach(STORE_KEY, {
+    label: 'Build-a-Plate',
+    get: () => state,
+    apply: json => {
+      localStorage.setItem(STORE_KEY, json); state = load();
+      if (modal.classList.contains('hidden')) render();
+    },
+  });
 })();

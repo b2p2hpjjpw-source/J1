@@ -153,6 +153,7 @@
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch (e) { toast('Couldn’t save on this phone. Download a backup from Settings.'); }
+    if (window.FamilySync) FamilySync.changed(STORE_KEY);
   }
 
   // ---------- The rules ----------
@@ -800,6 +801,9 @@
         <p class="hint">Everything is saved only on this phone. Download a backup now and then.</p>
         <div class="row"><button class="btn small ghost" id="bDown">Download backup</button><label class="btn small ghost" for="bUp">Restore backup</label><input type="file" id="bUp" accept="application/json,.json" hidden /></div>
         <div class="row" style="margin-top:10px"><button class="btn small danger" id="bErase">Erase everything</button></div>
+        <h2 class="sec">Family sync</h2>
+        <p class="hint">Sign in to share the silo between your phones.</p>
+        <div data-family-sync></div>
         <p class="hint" style="margin-top:16px">Utopia is an unofficial, fan-made app inspired by the TV series <i>Silo</i>. It isn’t connected to the show or its makers.</p>`}
       <button class="btn block" id="sSave" style="margin-top:16px">${first ? 'I accept the Pact' : 'Save'}</button>`);
     $('sTurn').value = state.turnaround; $('sDrain').value = state.drain;
@@ -820,7 +824,7 @@
       const f = e.target.files[0]; if (!f) return;
       f.text().then(t => {
         const s = JSON.parse(t); if (!s || !Array.isArray(s.jobs) || !s.rooms) throw new Error('bad');
-        localStorage.setItem(STORE_KEY, JSON.stringify(s)); state = load(); closeModal(); toast('Backup restored.');
+        localStorage.setItem(STORE_KEY, JSON.stringify(s)); state = load(); save(); closeModal(); toast('Backup restored.');
       }).catch(() => toast('That file isn’t a Utopia backup.'));
     };
     $('bErase').onclick = () => confirmBox('Erase everything?', 'Every posting, room and badge is wiped from this phone. This can’t be undone.', 'Erase', () => {
@@ -885,4 +889,15 @@
   save();
   renderAll();
   if (!state.welcomed) openSettings(true);
+
+  // ---------- Family sync ----------
+  // Shares this app's data between our phones once someone signs in (see ../family-sync.js).
+  if (window.FamilySync) FamilySync.attach(STORE_KEY, {
+    label: 'Utopia',
+    get: () => state,
+    apply: json => {
+      localStorage.setItem(STORE_KEY, json); state = load();
+      if ($('modal').classList.contains('hidden')) renderAll();
+    },
+  });
 })();

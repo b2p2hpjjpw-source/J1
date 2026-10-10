@@ -94,6 +94,7 @@
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch (e) { toast('Couldn’t save on this phone. Is storage full?'); }
+    if (window.FamilySync) FamilySync.changed(STORE_KEY);
   }
 
   // ---------- Scoring ----------
@@ -523,6 +524,11 @@
         <div class="row"><button class="btn small" id="bDown">Download backup</button><label class="btn small" for="bUp">Restore backup</label><input type="file" id="bUp" accept="application/json,.json" hidden /></div>
         <button class="btn small ghost danger" id="bReset">Erase everything</button>
       </div>
+      <div class="card">
+        <div class="eyebrow">Family sync</div>
+        <p class="hint">Sign in to share the log and savings between your phones.</p>
+        <div data-family-sync></div>
+      </div>
       <p class="hint">Stopping daily drinking all at once can cause withdrawal that needs a doctor’s care. If there are shakes, sweats, confusion or a racing heart, get medical help. SAMHSA National Helpline: 1-800-662-4357.</p>`}`);
     $('sSave').onclick = () => {
       const nightly = Number($('sNightly').value.replace(/[$,]/g, ''));
@@ -550,7 +556,7 @@
       file.text().then(t => {
         const s = JSON.parse(t);
         if (!s || typeof s.nights !== 'object') throw new Error('bad');
-        localStorage.setItem(STORE_KEY, JSON.stringify(s)); state = load(); closeModal(); toast('Backup restored.');
+        localStorage.setItem(STORE_KEY, JSON.stringify(s)); state = load(); save(); closeModal(); toast('Backup restored.');
       }).catch(() => toast('That file isn’t a Clean Sheet backup.'));
     };
     $('bReset').onclick = () => confirmBox('Erase everything?', 'Every reading, your savings and trophies will be deleted from this phone. This can’t be undone.', 'Erase', () => {
@@ -637,4 +643,15 @@
       })
       .catch(() => { /* offline support is optional */ });
   }
+
+  // ---------- Family sync ----------
+  // Shares this app's data between our phones once someone signs in (see ../family-sync.js).
+  if (window.FamilySync) FamilySync.attach(STORE_KEY, {
+    label: 'Clean Sheet',
+    get: () => state,
+    apply: json => {
+      localStorage.setItem(STORE_KEY, json); state = load();
+      if (modal.classList.contains('hidden')) renderAll();
+    },
+  });
 })();
