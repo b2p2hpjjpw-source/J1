@@ -17,11 +17,11 @@ A phone app where the kids build **tomorrow's breakfast** the night before by pu
 ### Themes (one per child)
 | Theme | Buddy | Feel |
 |---|---|---|
-| **Mario-style** (Julien) | 🍄 | Blue sky, ? blocks and bricks, green pipe, coin counter, coin "bling" sounds, power-up sound and coin confetti |
-| **Farm** (Lucas) | 🐴 | Sky, hills and a fence, a wooden shelf, clip-clop sounds and a horse whinny |
+| **Mario-style** (Julien and Lucas) | 🍄 | Blue sky, ? blocks and bricks, green pipe, gold coin counter, coin "bling" sounds, power-up sound and coin confetti |
+| Farm | 🐴 | Sky, hills and a fence, a wooden shelf, clip-clop sounds and a horse whinny |
 | Space, Unicorn, Ocean, Dinosaurs | 🚀 🦄 🐬 🦖 | For any other children you add |
 
-The Mario-style theme uses look-alike scenery and emoji, not Nintendo's characters or artwork.
+Both boys' pictures are a **super star** (Julien's card is red, Lucas's is green, so they're easy to tell apart). The super star and the gold coin are drawn pictures in `art/`, so they look the same on every phone. The Mario-style theme uses look-alike scenery and pictures, not Nintendo's characters or artwork.
 
 ## 🔒 Grown-ups (unlock by answering a multiplication question, e.g. 23 × 7)
 - **Breakfast orders:** switch between the breakfast being ordered now and the one before it. Each child shows ✓ Ordered, Still building or Not yet, with their food. A **To make** list totals everything (e.g. Pancakes ×2). An ordered food that has since been switched off is flagged ⚠️.

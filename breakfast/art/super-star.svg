@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A super star: a chunky yellow star with two big eyes -->
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff27a"/><stop offset=".55" stop-color="#ffd21f"/><stop offset="1" stop-color="#ffaa00"/></linearGradient></defs>
+  <polygon points="64.0,12.0 79.9,46.2 117.3,50.7 89.7,76.3 96.9,113.3 64.0,95.0 31.1,113.3 38.3,76.3 10.7,50.7 48.1,46.2" fill="url(#g)" stroke="#d96f00" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M46 40 L58 22" stroke="#fffbd1" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+  <ellipse cx="54" cy="66" rx="6" ry="12" fill="#1a1a1a"/><ellipse cx="74" cy="66" rx="6" ry="12" fill="#1a1a1a"/>
+  <ellipse cx="55.5" cy="61" rx="2.2" ry="4" fill="#fff"/><ellipse cx="75.5" cy="61" rx="2.2" ry="4" fill="#fff"/>
+</svg>

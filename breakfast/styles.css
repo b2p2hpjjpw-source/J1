@@ -46,6 +46,7 @@ input { font-family: inherit; }
 .pic { display: inline-block; line-height: 1; font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
 img.pic { object-fit: cover; border-radius: 22%; }
 img.pic.art { object-fit: contain; border-radius: 0; }
+img.emo { width: 1em; height: 1em; vertical-align: -0.12em; object-fit: contain; }
 
 /* ---------- Background decorations ---------- */
 #bg { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }

@@ -7,6 +7,10 @@
   const STORE_KEY = 'build-a-plate-v1';
   const KEEP_DAYS = 30; // old orders are tidied away after this many days
 
+  // An emoji, or one of the app's own pictures ('art:<name>' = art/<name>.svg) sized like an emoji.
+  function emo(x, cls = '') {
+    return String(x).startsWith('art:') ? `<img class="emo ${cls}" src="art/${x.slice(4)}.svg" alt="" draggable="false" />` : x;
+  }
   // The three parts of a plate. Grown-ups set how many of each fit on a plate.
   const CATS = [
     { id: 'main', label: 'Main', one: 'main dish', many: 'main dishes', icon: '🥞' },
@@ -18,10 +22,10 @@
   // Each child picks a theme: it sets the colours, background, buddy, sounds and confetti.
   const THEMES = {
     mario: {
-      label: 'Mario-style', buddy: '🍄', coin: '🪙', swatch: '#e52521', add: 'coin', done: 'powerup',
-      bits: ['🪙', '⭐', '🍄', '🪙', '✨', '🪙'],
+      label: 'Mario-style', buddy: '🍄', coin: 'art:coin', swatch: '#e52521', add: 'coin', done: 'powerup',
+      bits: ['art:coin', 'art:super-star', '🍄', 'art:coin', '✨', 'art:coin'],
       cheers: ['Wahoo!', "Let's-a go!", 'Super!', 'Yahoo!', 'Power up!'],
-      deco: `<div class="m-cloud mc1"></div><div class="m-cloud mc2"></div><span class="m-coin">🪙</span>`,
+      deco: `<div class="m-cloud mc1"></div><div class="m-cloud mc2"></div><span class="m-coin">${emo('art:coin')}</span>`,
       ground: `<div class="m-blocks"><i class="brick"></i><i class="qb">?</i><i class="brick"></i><i class="qb">?</i></div>
         <div class="m-hill mh1"></div><div class="m-hill mh2"></div><div class="m-pipe"></div>`,
     },
@@ -65,7 +69,7 @@
     'salmon-bagel': { label: 'Bagel with smoked salmon', src: 'art/salmon-bagel.svg' },
     'banana-bread': { label: 'Banana bread', src: 'art/banana-bread.svg' },
   };
-  const AVATARS = ['🍄', '🐴', '⭐', '🦄', '🚀', '🦖', '🐬', '🐶', '🐱', '🐰', '🦊', '🐼', '🐸', '🐯', '🦁', '🐵',
+  const AVATARS = ['art:super-star', '🍄', '🐴', '⭐', '🦄', '🚀', '🦖', '🐬', '🐶', '🐱', '🐰', '🦊', '🐼', '🐸', '🐯', '🦁', '🐵',
     '🐧', '🦋', '🐢', '🐙', '🤖', '👑', '⚽', '🏎️', '🚒', '🚜', '🧸', '🌈', '🐉', '🦈'];
   const FOOD_EMOJIS = ['🥞', '🧇', '🥣', '🍳', '🥚', '🍞', '🥯', '🥐', '🧁', '🍩', '🥪', '🌯', '🌮', '🍕', '🥓', '🌭',
     '🧀', '🍌', '🍓', '🍎', '🍏', '🍐', '🍊', '🍋', '🍇', '🫐', '🍉', '🍑', '🍒', '🥝', '🍍', '🥭', '🥑', '🍅',
@@ -110,10 +114,10 @@
   const bananaBread = () => item('Banana bread', '🍞', 'main', 'banana-bread');
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 4,
+    v: 5,
     kids: [
-      { id: 'lucas', name: 'Lucas', avatar: '🐴', theme: 'farm', skip: [] },
-      { id: 'julien', name: 'Julien', avatar: '🍄', theme: 'mario', skip: [] },
+      { id: 'lucas', name: 'Lucas', avatar: 'art:super-star', theme: 'mario', color: '#43b047', skip: [] },
+      { id: 'julien', name: 'Julien', avatar: 'art:super-star', theme: 'mario', skip: [] },
     ],
     menu: [
       item('Pancakes', '🥞', 'main'), item('Waffles', '🧇', 'main'), item('Cereal', '🥣', 'main'),
@@ -141,7 +145,13 @@
       const at = st.menu.map(m => m.cat).lastIndexOf('main');
       st.menu.splice(at + 1, 0, bananaBread()); // the banana bread picture arrived
     }
-    st.v = 4;
+    if (!(v >= 5)) { // both boys chose the Mario-style theme and a super star
+      st.kids.forEach(k => {
+        if (k.id === 'lucas') Object.assign(k, { theme: 'mario', avatar: 'art:super-star', color: '#43b047' });
+        if (k.id === 'julien') k.avatar = 'art:super-star';
+      });
+    }
+    st.v = 5;
   }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
@@ -174,6 +184,7 @@
 
   const itemById = id => state.menu.find(m => m.id === id);
   const kidById = id => state.kids.find(k => k.id === id);
+  const kidColor = kid => kid.color || themeOf(kid).swatch;
   const themeOf = kid => THEMES[kid && kid.theme] || THEMES.farm;
   const canHave = (kid, it) => !(kid && kid.skip && kid.skip.includes(it.id));
   const activeCats = () => CATS.filter(c => state.limits[c.id] > 0);
@@ -443,7 +454,7 @@
     for (let i = 0; i < n; i++) {
       const s = document.createElement('span');
       s.className = 'bit';
-      s.textContent = pick(bits);
+      s.innerHTML = emo(pick(bits));
       s.style.left = Math.random() * 100 + 'vw';
       s.style.fontSize = 18 + Math.random() * 26 + 'px';
       s.style.animationDuration = 1.8 + Math.random() * 1.8 + 's';
@@ -535,8 +546,8 @@
       const items = orderItems(o);
       const status = o && o.sent ? `Ordered ✓ <span class="kc-pics">${items.map(i => pic(i, 'mini')).join('')}</span>`
         : items.length ? 'Still building… tap me!' : 'Tap to order!';
-      return `<button class="kid-card ${o && o.sent ? 'done' : ''}" data-kid="${k.id}" style="--kc:${themeOf(k).swatch}">
-        <span class="kc-av">${k.avatar}</span>
+      return `<button class="kid-card ${o && o.sent ? 'done' : ''}" data-kid="${k.id}" style="--kc:${kidColor(k)}">
+        <span class="kc-av">${emo(k.avatar)}</span>
         <span class="kc-txt"><span class="kc-name">${esc(k.name)}</span><span class="kc-status">${status}</span></span>
       </button>`;
     }).join('');
@@ -612,7 +623,7 @@
       <div class="plate-view">
         <header class="ph">
           <button class="round-btn" data-act="home" aria-label="Back to start">🏠</button>
-          <button class="ph-av" data-act="repeat" aria-label="Say it again">${curKid.avatar}</button>
+          <button class="ph-av" style="border-color:${kidColor(curKid)}" data-act="repeat" aria-label="Say it again">${emo(curKid.avatar)}</button>
           <button class="bubble" data-act="repeat"><span id="bubbleText"></span><span class="spk">🔊</span></button>
           <div class="counter" id="counter"></div>
         </header>
@@ -683,7 +694,7 @@
   }
   function drawCounter() {
     const n = orderItems(curOrder()).length;
-    $('counter').innerHTML = `<span class="cc-ico">${curTheme.coin}</span><span class="cc-x">×${n}</span>`;
+    $('counter').innerHTML = `<span class="cc-ico">${emo(curTheme.coin)}</span><span class="cc-x">×${n}</span>`;
   }
   function switchCat(catId, talk = true) {
     if (!state.limits[catId]) return;
@@ -887,7 +898,7 @@
         <section class="card">
           <h3>🧒 Children</h3>
           ${state.kids.map(k => `<div class="k-row">
-              <span class="k-av" style="--kc:${themeOf(k).swatch}">${k.avatar}</span>
+              <span class="k-av" style="--kc:${kidColor(k)}">${emo(k.avatar)}</span>
               <span class="k-name">${esc(k.name)}<small>${themeOf(k).label} theme${(k.skip || []).length ? ` · can't have ${k.skip.map(itemById).filter(Boolean).map(m => esc(m.name)).join(', ')}` : ''}</small></span>
               <button class="small-btn" data-edit-kid="${k.id}">Edit</button></div>`).join('') || '<p class="hint">No children yet.</p>'}
           <button class="add-btn" data-act="add-kid">+ Add a child</button>
@@ -915,7 +926,7 @@
   let openVoice = new Set(['kids']);
   function voiceSlots() {
     return {
-      kids: { title: '👋 Hello for each child', rows: state.kids.map(k => ({ id: 'kid:' + k.id, icon: k.avatar, label: `Hello for ${k.name}`, script: `Hi ${k.name}! Let's build your breakfast!` })) },
+      kids: { title: '👋 Hello for each child', rows: state.kids.map(k => ({ id: 'kid:' + k.id, icon: emo(k.avatar), label: `Hello for ${k.name}`, script: `Hi ${k.name}! Let's build your breakfast!` })) },
       lines: { title: '💬 Buddy lines', rows: VOICE_LINES.map(l => ({ id: l.id, icon: '', label: l.label, script: l.script() })) },
       foods: { title: '🍽️ Food names', rows: state.menu.map(m => ({ id: 'item:' + m.id, icon: pic(m, 'sm'), label: m.name, script: `${m.name}!` })) },
     };
@@ -962,7 +973,7 @@
         return `<div class="o-line ${warn ? 'warn' : ''}">${pic(it, 'sm')}<span>${esc(it.name)}</span><small>${c.label === 'Main' ? 'main' : c.one}</small>${warn ? `<em>${warn}</em>` : ''}</div>`;
       }).join('')).join('');
       return `<div class="o-card">
-        <div class="o-head"><span class="k-av" style="--kc:${themeOf(k).swatch}">${k.avatar}</span><b>${esc(k.name)}</b>${status}</div>
+        <div class="o-head"><span class="k-av" style="--kc:${kidColor(k)}">${emo(k.avatar)}</span><b>${esc(k.name)}</b>${status}</div>
         ${lines || '<div class="o-none">No order yet.</div>'}
         ${items.length ? `<button class="link-btn sm" data-clear="${k.id}">Clear this order</button>` : ''}
       </div>`;
@@ -1064,7 +1075,7 @@
         <h2>${existing ? `Change ${esc(existing.name)}` : 'Add a child'}</h2>
         <div class="field"><label>Name</label><input id="kName" type="text" maxlength="16" value="${esc(ed.name)}" /></div>
         <div class="field"><label>Picture</label>
-          <div class="emoji-grid">${AVATARS.map(a => `<button class="${ed.avatar === a ? 'on' : ''}" data-av="${a}">${a}</button>`).join('')}</div></div>
+          <div class="emoji-grid">${AVATARS.map(a => `<button class="${ed.avatar === a ? 'on' : ''}" data-av="${a}">${emo(a)}</button>`).join('')}</div></div>
         <div class="field"><label>Theme</label>
           <div class="theme-grid">${Object.entries(THEMES).map(([k, t]) => `<button class="theme-card ${ed.theme === k ? 'on' : ''}" data-th="${k}" style="--kc:${t.swatch}"><span>${t.buddy}</span>${t.label}</button>`).join('')}</div></div>
         <div class="field"><label>🚫 Foods ${esc(ed.name.trim() || 'this child')} can't have (allergies)</label>
@@ -1076,7 +1087,7 @@
       const nameIn = $('kName');
       nameIn.addEventListener('input', () => { ed.name = nameIn.value; });
       modalCard.querySelectorAll('[data-av]').forEach(b => b.onclick = () => { ed.avatar = b.dataset.av; draw(); });
-      modalCard.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { ed.theme = b.dataset.th; draw(); });
+      modalCard.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { ed.theme = b.dataset.th; delete ed.color; draw(); });
       modalCard.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => {
         const id = b.dataset.skip;
         ed.skip = ed.skip.includes(id) ? ed.skip.filter(x => x !== id) : [...ed.skip, id];
