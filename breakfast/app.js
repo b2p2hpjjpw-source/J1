@@ -114,7 +114,7 @@
   const bananaBread = () => item('Banana bread', '🍞', 'main', 'banana-bread');
   // kid.skip: foods that child can't have (allergies). They never see them.
   const DEFAULT_STATE = () => withEggAllergy({
-    v: 5,
+    v: 6,
     kids: [
       { id: 'lucas', name: 'Lucas', avatar: 'art:super-star', theme: 'mario', color: '#43b047', skip: [] },
       { id: 'julien', name: 'Julien', avatar: 'art:super-star', theme: 'mario', skip: [] },
@@ -129,7 +129,7 @@
       item('Water', '💧', 'drink'), item('Chocolate milk', '🍫', 'drink'),
     ],
     limits: { main: 1, side: 2, drink: 1 },
-    extraSide: true, // kids may add one optional extra side
+    extraSides: 2, // kids may add up to this many optional extra sides
     orders: {}, // { 'YYYY-MM-DD': { kidId: { main: [ids], side: [ids], drink: [ids], sent: bool, at: time } } }
     sound: true,
     voice: true,
@@ -152,7 +152,8 @@
         if (k.id === 'julien') k.avatar = 'art:super-star';
       });
     }
-    st.v = 5;
+    if (!(v >= 6)) { st.extraSides = st.extraSide === false ? 0 : 2; delete st.extraSide; } // one extra side became up to two
+    st.v = 6;
   }
   function withEggAllergy(st) {
     const lucas = st.kids.find(k => k.id === 'lucas');
@@ -189,9 +190,9 @@
   const themeOf = kid => THEMES[kid && kid.theme] || THEMES.farm;
   const canHave = (kid, it) => !(kid && kid.skip && kid.skip.includes(it.id));
   const activeCats = () => CATS.filter(c => state.limits[c.id] > 0);
-  // Kids may add one optional extra side on top of the usual number (grown-ups can switch this off).
-  const extraSideOn = () => state.extraSide !== false && state.limits.side > 0;
-  const capacity = catId => state.limits[catId] + (catId === 'side' && extraSideOn() ? 1 : 0);
+  // Kids may add up to this many optional extra sides on top of the usual number (grown-ups set 0–2).
+  const extraSides = () => state.limits.side > 0 ? Math.max(0, Math.min(2, state.extraSides ?? 2)) : 0;
+  const capacity = catId => state.limits[catId] + (catId === 'side' ? extraSides() : 0);
   function orderFor(kidId, day = orderDayKey(), create = false) {
     const dayOrders = state.orders[day] || (create ? (state.orders[day] = {}) : null);
     if (!dayOrders) return null;
@@ -665,7 +666,7 @@
     const mains = L.main > 1 ? [[36, 60], [64, 60]] : [[50, 60]];
     const mainSize = L.main > 1 ? 28 : 38;
     mains.forEach(([x, y], i) => { html += slot('main', o.main[i], x - mainSize / 2, y - mainSize / 2, mainSize, i); });
-    (SIDE_ANGLES[L.side] || []).concat(extraSideOn() ? [148] : []).forEach((a, i) => {
+    (SIDE_ANGLES[L.side] || []).concat([145, 35].slice(0, extraSides())).forEach((a, i) => {
       const r = a * Math.PI / 180, size = 22, extra = i >= L.side;
       html += slot('side', o.side[i], 50 + 34 * Math.cos(r) - size / 2, 50 + 34 * Math.sin(r) - size / 2, size, i, extra);
     });
@@ -685,7 +686,7 @@
     $('tabs').innerHTML = activeCats().map(c => {
       const n = state.limits[c.id], have = (o[c.id] || []).length;
       const dots = Array.from({ length: n }, (_, i) => `<i class="${i < have ? 'on' : ''}"></i>`).join('')
-        + (c.id === 'side' && extraSideOn() ? `<i class="extra ${have > n ? 'on' : ''}"></i>` : '');
+        + (c.id === 'side' ? Array.from({ length: extraSides() }, (_, i) => `<i class="extra ${have > n + i ? 'on' : ''}"></i>`).join('') : '');
       return `<button class="cat-tab ${view.cat === c.id ? 'active' : ''} ${have >= n ? 'full' : ''}" data-cat="${c.id}">
         <span class="ct-ico">${c.icon}</span><span class="ct-lbl">${c.label}</span><span class="dots">${dots}</span></button>`;
     }).join('');
@@ -746,7 +747,7 @@
       setTimeout(() => {
         if (view.name !== 'plate' || view.cat !== cat) return;
         if (next) { view.cat = next; drawPlate(); drawTabs(); drawShelf(true); setBubble(promptFor(next)); speak([promptPart(next)], true); }
-        else if (extraSideOn() && o.side.length <= state.limits.side) { setBubble("Your plate is ready! Tap I'm done, or tap + for an extra side!"); speak([{ slot: 'ready', text: "Your plate is ready! Tap I'm done!" }, { slot: 'extraAsk', text: 'Or add an extra side if you want!' }], true); }
+        else if (o.side.length < capacity('side')) { setBubble("Your plate is ready! Tap I'm done, or tap + for an extra side!"); speak([{ slot: 'ready', text: "Your plate is ready! Tap I'm done!" }, { slot: 'extraAsk', text: 'Or add an extra side if you want!' }], true); }
         else speak([{ slot: 'ready', text: setBubble("Your plate is ready! Tap I'm done!") }], true);
       }, 900);
     }
@@ -919,7 +920,8 @@
           <h3>🔢 What fits on a plate</h3>
           ${CATS.map(c => `<div class="step-row"><span>${c.icon} ${c.label}</span>
             <span class="stepper"><button data-step="${c.id}" data-d="-1" aria-label="Fewer">−</button><b>${state.limits[c.id]}</b><button data-step="${c.id}" data-d="1" aria-label="More">+</button></span></div>`).join('')}
-          <div class="toggle"><span>➕ Kids may add one extra side<small class="t-sub">optional, shown as a + spot on the plate</small></span><button class="switch ${state.extraSide !== false ? 'on' : ''}" data-set="extraSide" aria-label="Extra side"></button></div>
+          <div class="step-row"><span>➕ Extra sides<small class="t-sub">optional, shown as + spots on the plate</small></span>
+            <span class="stepper"><button data-xstep="-1" aria-label="Fewer">−</button><b>${extraSides()}</b><button data-xstep="1" aria-label="More">+</button></span></div>
         </section>
         ${voiceCardHtml()}
         <section class="card">
@@ -1199,6 +1201,11 @@
       Object.values(state.orders).forEach(day => Object.values(day).forEach(o => {
         if (o[d.step]) o[d.step] = o[d.step].slice(0, capacity(d.step));
       }));
+      save(); render();
+    }
+    else if (d.xstep) {
+      state.extraSides = Math.max(0, Math.min(2, (state.extraSides ?? 2) + Number(d.xstep)));
+      Object.values(state.orders).forEach(day => Object.values(day).forEach(o => { if (o.side) o.side = o.side.slice(0, capacity('side')); }));
       save(); render();
     }
     else if (d.set) { state[d.set] = !state[d.set]; save(); render(); }
