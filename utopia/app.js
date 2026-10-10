@@ -19,17 +19,32 @@
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const NEEDS = [
-    { id: 'oxygen', name: 'Oxygen', place: 'Air Handling', zone: 'Up Top', out: 'The air is going stale' },
-    { id: 'water', name: 'Water', place: 'Water Treatment', zone: 'Down Deep', out: 'The pumps have run dry' },
-    { id: 'food', name: 'Food', place: 'Hydroponics', zone: 'Mid', out: 'The grow lights are going dark' },
-    { id: 'power', name: 'Power', place: 'Mechanical', zone: 'Down Deep', out: 'The generator is failing' },
-    { id: 'medicine', name: 'Medicine', place: 'Medical', zone: 'Mid', out: 'The medical shelves are empty' },
+    { id: 'oxygen', name: 'Oxygen', place: 'Air Handling', zone: 'Up Top', out: 'The air is going stale', who: 'Walker',
+      say: { low: 'Air’s getting thin up there. Don’t make me climb all those stairs to check.', crit: 'I can taste the stale air from Down Deep. Send something.', out: 'The fans are down. That posting won’t send itself.' } },
+    { id: 'water', name: 'Water', place: 'Water Treatment', zone: 'Down Deep', out: 'The pumps have run dry', who: 'Shirley',
+      say: { low: 'Pumps are slowing. We could use a refill soon.', crit: 'Pressure’s dropping fast. We need that application.', out: 'Tanks are dry. Get one out today.' } },
+    { id: 'food', name: 'Food', place: 'Hydroponics', zone: 'Mid', out: 'The grow lights are going dark', who: 'Mayor Jahns',
+      say: { low: 'We may have to start rationing the grow lights.', crit: 'I’m drafting a rationing order. Please make it unnecessary.', out: 'The farms are dark. The whole silo is counting on you.' } },
+    { id: 'power', name: 'Power', place: 'Mechanical', zone: 'Down Deep', out: 'The generator is failing', who: 'Knox',
+      say: { low: 'Generator’s running rough. Find us a posting.', crit: 'She’s coughing. Mechanical needs that refill now.', out: 'Generator’s down. Send one and we’ll get her turning again.' } },
+    { id: 'medicine', name: 'Medicine', place: 'Medical', zone: 'Mid', out: 'The medical shelves are empty', who: 'Dr. Nichols',
+      say: { low: 'The shelves are thinning. A posting would help.', crit: 'I’m down to the last of the supplies. Please hurry.', out: 'Medical is empty. One application is the cure.' } },
   ];
 
   // The climb: he starts Down Deep on level 144. Every application sent is one flight of stairs (6 levels) up,
   // an interview is two more, and an offer opens the airlock: outside, to Utopia.
   const LEVELS = 144;
   const FLIGHT = 6;
+  // His rank on the way up, by flights climbed. Like Juliette, he starts as a mechanic Down Deep.
+  const RANKS = [
+    { at: 0, n: 'Mechanic', d: 'Down Deep, where Juliette started' },
+    { at: 2, n: 'Porter', d: 'Carrying the load up the stairs' },
+    { at: 5, n: 'Shadow', d: 'Learning the job above your station' },
+    { at: 8, n: 'Deputy', d: 'Mid levels. People are starting to notice.' },
+    { at: 16, n: 'Sheriff', d: 'Up Top. The badge Holston wore.' },
+    { at: 23, n: 'At the airlock', d: 'One door left' },
+  ];
+  const rankOf = s => s.offers ? { n: 'Outside', d: 'You said the words and walked out' } : [...RANKS].reverse().find(r => (LEVELS - s.level) / FLIGHT >= r.at);
   const needOf = id => NEEDS.find(n => n.id === id);
 
   // The four phases between finding a posting and getting it in front of a hiring manager.
@@ -41,8 +56,18 @@
     { id: 'submitted', n: 'Phase 4', t: 'Submit the application', by: 1 },
   ];
 
-  // Transmissions from outside: one a day.
+  // One note a day. Lines in a character's name are written in their spirit, not quoted from the show.
   const TRANSMISSIONS = [
+    ['Fix the thing in front of you. Then fix the next thing. That’s how you get anywhere.', 'Walker, Mechanical'],
+    ['Somebody always has to be the first one up the stairs.', 'Juliette, Mechanical'],
+    ['Ask the question. Even when everyone tells you not to.', 'Allison, IT'],
+    ['The view they show you isn’t the whole truth. Go find out what is.', 'Holston, Sheriff’s office'],
+    ['Find one clear patch of sky. That’s enough to keep going.', 'Lukas, IT'],
+    ['A good mechanic doesn’t wait for the generator to quit.', 'Knox, Mechanical'],
+    ['Relics are proof there was more out there. There still is.', 'George, Up Top'],
+    ['They told us to keep our heads down. Keep your eyes up anyway.', 'Dr. Nichols, Medical'],
+    ['Hold on to what you’re fighting for. Then go get it.', 'Shirley, Mechanical'],
+    ['Nobody hands you the keys to the airlock. You build your own way out.', 'Juliette, Sheriff'],
     'Somebody always has to be the first one up the stairs.',
     'Down Deep they fix what’s broken. Up Top they dream about the view. Do both.',
     'The Pact says don’t talk about outside. You’re allowed to want more than this.',
@@ -68,16 +93,16 @@
   ];
 
   const BADGES = [
-    { id: 'first', n: 'First Flight', d: 'First application sent', ic: 'stairs' },
-    { id: 'quick', n: 'Quick Hands', d: 'Sent within 2 days of finding it', ic: 'wrench' },
-    { id: 'lens', n: 'Clean Lens', d: '5 sent in one cycle: the view is clear', ic: 'lens' },
-    { id: 'full', n: 'Full Life Support', d: 'All 5 rooms refilled within 3 weeks', ic: 'gauge' },
+    { id: 'first', n: 'Allison’s Question', d: 'First application sent: you asked what’s out there', ic: 'stairs' },
+    { id: 'quick', n: 'Walker’s Toolbox', d: 'Sent within 2 days of finding it', ic: 'wrench' },
+    { id: 'lens', n: 'Lukas’s Stars', d: '5 sent in one cycle: the lens is clear enough to see the sky', ic: 'lens' },
+    { id: 'full', n: 'Knox’s Crew', d: 'All 5 rooms refilled within 3 weeks', ic: 'gauge' },
     { id: 'bonus', n: 'Porter', d: 'First bonus supply run delivered', ic: 'crate' },
-    { id: 'mid', n: 'Mid Levels', d: 'Climbed above level 96', ic: 'stairs' },
+    { id: 'mid', n: 'Deputy’s Badge', d: 'Climbed into the Mid levels', ic: 'stairs' },
     { id: 'signal', n: 'Signal From Outside', d: 'First interview', ic: 'signal' },
-    { id: 'uptop', n: 'Up Top', d: 'Climbed above level 48', ic: 'stairs' },
-    { id: 'quarter', n: 'Quarter Century', d: '25 applications sent', ic: 'stairs' },
-    { id: 'utopia', n: 'Utopia', d: 'Got the offer. You’re outside.', ic: 'sun' },
+    { id: 'uptop', n: 'Sheriff’s Star', d: 'Climbed Up Top, past level 48', ic: 'star' },
+    { id: 'quarter', n: 'Porter’s Legs', d: '25 applications sent', ic: 'stairs' },
+    { id: 'utopia', n: 'I Want to Go Out', d: 'Got the offer. You’re outside.', ic: 'sun' },
   ];
 
   // ---------- Helpers ----------
@@ -206,7 +231,7 @@
   function renderTop() {
     const day = Math.floor((fromKey(todayKey()) - fromKey(keyOf(new Date(state.started)))) / DAY) + 1;
     const lvl = stats().level;
-    $('hello').textContent = `${state.name ? state.name + ' · ' : ''}${lvl ? `Level ${lvl}` : 'Outside'} · Day ${day}`;
+    $('hello').textContent = `${state.name ? state.name + ' · ' : ''}${rankOf(stats()).n} · ${lvl ? `Level ${lvl}` : 'Outside'} · Day ${day}`;
   }
 
   function lifeSupport() {
@@ -220,10 +245,18 @@
     const out = NEEDS.filter((n, i) => ls.infos[i].st === 'out');
     if (out.length === 1) return `${out[0].out}. Send one application and the lights come back on.`;
     if (out.length) return `${out.map(n => n.name).join(', ')} are out. One application at a time brings them back.`;
+    if (NEEDS.some(n => jobInRoom(n.id) && roomInfo(n.id).left <= 0)) return 'Judicial has flagged an overdue posting. Send it and Sims closes the file.';
     if (ls.worst === 'crit') return 'A room is running on fumes. Today’s the day to send one.';
     if (ls.worst === 'low') return 'Supplies are getting low. Scout a posting or finish the one you’ve got.';
     return 'All systems holding. Keep the search moving.';
   }
+
+  // The room's keeper calls up on the radio when supplies run low.
+  function radio(n, st) {
+    if (st === 'ok') return '';
+    return `<div class="radio">${icon('radio')}<span><b>${n.who}</b> on the radio: “${n.say[st]}”</span></div>`;
+  }
+  const judicial = () => `<div class="judicial"><b>Judicial notice</b> · This posting is overdue and Sims has opened a file. Send it and the file closes.</div>`;
 
   function roomCard(n) {
     const r = roomInfo(n.id);
@@ -237,11 +270,13 @@
           <span>${r.left > 0 ? 'Send in' : 'Overdue'} <span class="clock ${r.left <= 0 ? 'over' : ''}" data-dl="${r.deadline}">${fmtLeft(r.left)}</span></span></div>
         <div class="job-mini"><b>${esc(j.title)}</b>${j.company ? ` <span class="co">· ${esc(j.company)}</span>` : ''}</div>
         <div class="pips">${PHASES.map((p, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('')}</div>
-        ${nx ? `<div class="next">Next: ${nx.t.toLowerCase()} · aim for ${niceDate(phaseTarget(j, nx))}</div>` : ''}`;
+        ${nx ? `<div class="next">Next: ${nx.t.toLowerCase()} · aim for ${niceDate(phaseTarget(j, nx))}</div>` : ''}
+        ${r.left <= 0 ? judicial() : radio(n, r.st)}`;
     } else {
       body = `
         <div class="room-line"><span class="tag ${r.st}">${ST_LABEL[r.st]}</span>
           <span>No posting · ${r.left > 0 ? 'lasts' : 'empty for'} <span class="clock ${r.left <= 0 ? 'over' : ''}" data-dl="${r.deadline}">${fmtLeft(r.left)}</span></span></div>
+        ${radio(n, r.st)}
         <div class="scout">${icon('plus')} Scout a job for this room</div>`;
     }
     return `
@@ -269,6 +304,7 @@
           <div class="job-mini"><b>${esc(j.title)}</b>${j.company ? ` <span class="co">· ${esc(j.company)}</span>` : ''}</div>
           <div class="pips">${PHASES.map((p, i) => `<i class="${i < done ? 'on' : ''}"></i>`).join('')}</div>
           ${nx ? `<div class="next">Next: ${nx.t.toLowerCase()} · aim for ${niceDate(phaseTarget(j, nx))}</div>` : ''}
+          ${left <= 0 ? judicial() : ''}
         </div>
       </button>`;
   }
@@ -398,8 +434,8 @@
       </div>
 
       <div class="transmission">
-        <div>&gt; ${esc(TRANSMISSIONS[dayIdx % TRANSMISSIONS.length])}</div>
-        <div class="from">— transmission from outside</div>
+        ${(() => { const t = TRANSMISSIONS[dayIdx % TRANSMISSIONS.length]; const [line, who] = Array.isArray(t) ? t : [t, 'transmission from outside'];
+          return `<div>&gt; ${esc(line)}</div><div class="from">— ${esc(who)}</div>`; })()}
       </div>
 
       <button class="btn fab" id="fab">${icon('plus')} New posting</button>`;
@@ -478,6 +514,10 @@
         <div><div class="num">${s.sent.length}</div><div class="cap">Sent</div></div>
         <div><div class="num">${s.interviews}</div><div class="cap">Interviews</div></div>
       </div>
+      <div class="card rank">
+        <div class="rank-now">${icon(s.offers ? 'sun' : 'star')}<div><div class="room-name">${rankOf(s).n}</div><div class="hint" style="margin:0">${rankOf(s).d}</div></div></div>
+        <div class="ranks">${RANKS.map(r => `<span class="${(LEVELS - s.level) / FLIGHT >= r.at || s.offers ? 'on' : ''}">${r.n}</span>`).join('<i>›</i>')}<i>›</i><span class="${s.offers ? 'on' : ''}">Outside</span></div>
+      </div>
       <div class="card shaft">${shaft(s)}
         <p class="hint">You start Down Deep, on level 144. Every application sent climbs one flight (${FLIGHT} levels). An interview climbs two more. The offer opens the airlock.${s.level > 1 ? ` ${Math.ceil((s.level - 1) / FLIGHT)} flights to the top.` : ''}</p>
       </div>
@@ -495,7 +535,7 @@
       <h2 class="sec">Sent per week</h2>
       <div class="card chart">${weeklyChart(s.sent)}</div>
 
-      <h2 class="sec">Logbook</h2>
+      <h2 class="sec">Logbook <span class="count">IT · Bernard’s files</span></h2>
       <div class="tiles">
         <div class="card tile"><div class="v">${s.best}</div><div class="k">Best cycle (sent in 3 wks)</div></div>
         <div class="card tile"><div class="v">${s.sent.length ? Math.round(100 * s.onTime / s.sent.length) + '%' : '—'}</div><div class="k">Sent on time</div></div>
@@ -618,7 +658,8 @@
       <h3>${esc(j.title)}</h3>
       <p class="sub">${j.company ? esc(j.company) + ' · ' : ''}${where}${j.link ? ` · <a href="${esc(j.link)}" target="_blank" rel="noopener">Open posting</a>` : ''}</p>
       ${active ? `<div class="countdown"><span class="clock ${left <= 0 ? 'over' : ''}" data-dl="${dl}">${fmtLeft(left)}</span>
-        <span class="by">${left > 0 ? `Send by end of ${niceDate(dl)}` : `Was due ${niceDate(dl)}. Late still counts. Send it.`}</span></div>` : ''}
+        <span class="by">${left > 0 ? `Send by end of ${niceDate(dl)}` : `Was due ${niceDate(dl)}. Late still counts. Send it.`}</span>
+        ${left <= 0 ? judicial() : ''}</div>` : ''}
       ${j.status === 'submitted' ? `<div class="countdown"><span class="tag ok">${icon('check')} Sent ${niceDate(j.steps.submitted)}</span>
         <div class="by" style="margin-top:8px">Heard back?</div>
         <div class="row" style="margin-top:8px">
@@ -691,7 +732,7 @@
     if (j.outcome === 'interview') {
       confetti(); chime(true);
       openModal(`<div class="refill"><svg class="ico" viewBox="0 0 24 24"><use href="#i-signal" /></svg>
-        <h3>Signal from outside!</h3><p class="sub">${esc(j.company || j.title)} wants to talk. Someone out there has seen the silo, and they’re answering. You climb two more flights. Prep, breathe, and go show them who you are.</p>
+        <h3>Signal from outside!</h3><p class="sub">${esc(j.company || j.title)} wants to talk. Like Lukas finding a star through the haze, someone out there answered. You climb two more flights. Prep, breathe, and go show them who you are.</p>
         <button class="btn block" id="ok">Back to the silo</button></div>`);
       $('ok').onclick = closeModal;
       checkBadges();
@@ -699,7 +740,7 @@
       confetti(); setTimeout(confetti, 900); chime(true);
       openModal(`<div class="refill outside">
         <div class="viewscreen">${viewScreen(1, 'o')}</div>
-        <h3>The airlock opens</h3><p class="sub">${esc(j.company || j.title)} made an offer. You climbed every stair, cleaned every lens, and walked out. This is Utopia. Welcome outside.</p>
+        <h3>“I want to go out.”</h3><p class="sub">In the silo, those were the words nobody dared say. You said them, and you meant it. ${esc(j.company || j.title)} made an offer. You climbed every stair, cleaned every lens, and the airlock is open. This is Utopia. Welcome outside.</p>
         <button class="btn block" id="ok">Step outside</button></div>`);
       $('ok').onclick = closeModal;
       checkBadges();
@@ -739,7 +780,7 @@
     openModal(`
       ${first ? '' : '<button class="close-x" id="mX" aria-label="Close">×</button>'}
       <h3>${first ? 'The Pact' : 'Settings'}</h3>
-      ${first ? `<p class="sub">Your current job is the silo: 144 levels down, and a screen in the cafeteria showing hills that look dead. They aren’t. Out there is something better. These are the rules for getting out.</p>
+      ${first ? `<p class="sub">Your current job is the silo: 144 levels down, and a screen in the cafeteria showing hills that look dead. They aren’t. Like Juliette Nichols, you start Down Deep in Mechanical. Out there is something better. These are the rules for getting out.</p>
         <div class="pact">
           <p><b>Article I.</b> Five rooms keep the silo alive: Oxygen, Water, Food, Power and Medicine.</p>
           <p><b>Article II.</b> When you find a job posting, assign it to a room. You then have <b>${state.turnaround} days</b> to send it, and the room drains on that clock.</p>
@@ -747,6 +788,7 @@
           <p><b>Article IV.</b> Submitting refills the room. An empty room lasts <b>${state.drain} days</b>, so find its next posting before then.</p>
           <p><b>Article V.</b> Extra postings are porter runs to Supply. They have the same deadline, but once sent they never need refilling.</p>
           <p><b>Article VI.</b> Every application cleans the lens and climbs a flight of stairs. An offer opens the airlock.</p>
+          <p class="sig">Witnessed by Mayor Jahns · Filed with IT · Enforced by Judicial</p>
         </div>` : ''}
       <label class="field"><span>Your name</span><input id="sName" maxlength="40" placeholder="Name" value="${esc(state.name)}" /></label>
       <label class="field"><span>Send applications within</span><select id="sTurn">${turnOpts}</select></label>

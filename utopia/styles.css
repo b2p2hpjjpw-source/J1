@@ -314,7 +314,7 @@ h2.sec .count { color: var(--dim); font-family: 'Share Tech Mono', monospace; le
 .pact b { font-variant: small-caps; letter-spacing: .5px; }
 
 /* ---------- The climb ---------- */
-.climb-head { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: 8px; padding: 16px 8px; }
+.climb-head { margin-bottom: 10px; display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: 8px; padding: 16px 8px; }
 .climb-head .num { font: 700 36px/1 'Share Tech Mono', monospace; color: var(--amber); }
 .climb-head .cap { font: 600 11px Oswald, sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
 .shaft { margin-top: 10px; }
@@ -335,3 +335,18 @@ h2.sec .count { color: var(--dim); font-family: 'Share Tech Mono', monospace; le
 .shaft .me .halo { fill: var(--term); opacity: .25; animation: pulse 1.8s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .shaft .me-l { fill: var(--term); font: 12px 'Share Tech Mono', monospace; }
 @keyframes pulse { 50% { transform: scale(1.6); opacity: .05; } }
+
+/* ---------- Voices of the silo ---------- */
+.radio { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: #16120d; border: 1px solid var(--line); font-size: 13.5px; color: var(--text); line-height: 1.35; }
+.radio svg { width: 16px; height: 16px; flex: none; margin-top: 1px; color: var(--amber); }
+.radio b { color: var(--amber); font-weight: 600; }
+.st-crit .radio, .st-out .radio { border-color: rgba(229, 96, 74, .5); }
+.judicial { margin-top: 8px; padding: 8px 10px; border-radius: 8px; font-size: 13px; text-align: left; color: #f3d9d2; background: rgba(229, 96, 74, .1); border: 1px dashed rgba(229, 96, 74, .7); }
+.judicial b { font: 600 11px Oswald, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: var(--crit); }
+.pact .sig { font-style: italic; font-size: 12.5px; text-align: right; color: #6b5538; border-top: 1px solid #c9b48f; padding-top: 8px; }
+.rank { margin-bottom: 10px; }
+.rank-now { display: flex; gap: 12px; align-items: center; }
+.rank-now svg { width: 34px; height: 34px; color: var(--amber); flex: none; }
+.ranks { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; margin-top: 12px; font: 600 11px Oswald, sans-serif; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+.ranks span.on { color: var(--amber); }
+.ranks i { font-style: normal; color: var(--line); }

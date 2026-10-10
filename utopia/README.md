@@ -8,7 +8,12 @@ A job application tracker for a phone, inspired by the TV series *Silo*. His cur
 - **The view.** The top of the Silo screen is the cafeteria wall screen. With no applications sent, the lens is filthy: a brown sky, dead hills, a bare tree and a dark city on the horizon. Each application sent this cycle cleans the lens 20%. At 5, the sky is blue, the hills are green, the tree is in leaf and the city's lights are on. If he stops applying, the dust settles back over 3 weeks.
 - **The stairs.** The Climb tab draws the silo from the side: Up Top, Mid and Down Deep, with the spiral stairs as 24 flights. He starts on level 144 by Mechanical. Each application climbs one flight (6 levels), and each interview climbs two more. Marking an application **Offer!** opens the airlock: *Welcome outside.* His level shows in the header.
 - **Departments.** Rooms are labeled with where they are in the silo: Air Handling (Up Top), Hydroponics and Medical (Mid), Water Treatment and Mechanical (Down Deep). Extra postings are **porter runs** that deliver crates to Supply.
-- **Badges** include First Flight, Clean Lens, Porter, Mid Levels, Up Top, Signal From Outside and Utopia.
+- **The people of the silo.** Each room's keeper calls on the radio when supplies run low: Walker (Oxygen), Shirley (Water), Mayor Jahns (Food), Knox (Power) and Dr. Nichols (Medicine). If a posting goes overdue, a **Judicial notice** says Sims has opened a file, which closes when he sends it.
+- **Ranks.** Like Juliette, he starts as a **Mechanic** Down Deep. As he climbs he becomes a **Porter**, then a **Shadow**, a **Deputy** (Mid) and a **Sheriff** (Up Top, Holston's old badge). Then he reaches the airlock. His rank shows in the header and on the Climb tab.
+- **Daily notes** in the spirit of Juliette, Walker, Allison, Holston, Lukas, Knox, George, Dr. Nichols and Shirley. These are original lines written for the app, not quotes from the show.
+- **"I want to go out."** Marking an offer brings up the words nobody in the silo dared say, and the airlock opens.
+- **Badges:** Allison's Question, Walker's Toolbox, Lukas's Stars, Knox's Crew, Porter, Deputy's Badge, Signal From Outside, Sheriff's Star, Porter's Legs and I Want to Go Out.
+- **The Pact** is witnessed by Mayor Jahns, filed with IT and enforced by Judicial. The logbook is kept in Bernard's IT files.
 
 ## How it works
 
