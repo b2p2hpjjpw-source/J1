@@ -42,7 +42,7 @@
     spent: 0,
     prizesWon: [], // [{ name, emoji, cost, date }]
     celebratedPrize: '', // prize signature already celebrated, so the "you earned it" party plays once
-    // Potty training: a dino for every dry day (in underwear or a pull-up, no pee on the rug, couch or floor).
+    // Potty training: a dino for every day with no pee on the rug, couch or anywhere else in the house.
     potty: {},    // 'YYYY-MM-DD' -> 'dry' | 'oops'
     dinoGoal: 30,
     dinoPrize: 'A new Lucas book',
@@ -592,7 +592,7 @@
       ? `<div class="card done-card">
           <div class="done-star" ${justDone ? '' : 'style="animation-name:glow;animation-delay:0s"'}>🦖</div>
           <h2>You got a dino!</h2>
-          <p class="muted" style="font-size:18px;margin:6px 0 0">Dry pants all day! 🩲</p>
+          <p class="muted" style="font-size:18px;margin:6px 0 0">No pee on the floor today! 🏠</p>
           <button class="link-btn" data-act="potty-undo" data-day="${tk}">Oops, change it (grown-ups)</button>
         </div>`
       : v === 'oops'
@@ -630,7 +630,7 @@
   }
   function pottyButtons(key, small) {
     return `<div class="dose-grid ${small ? 'small' : ''}">
-      <button class="dose-btn dry" data-act="potty" data-val="dry" data-day="${key}"><span class="potty-ico">🩲🦖</span>DRY!<span class="sub">no pee on the floor</span></button>
+      <button class="dose-btn dry" data-act="potty" data-val="dry" data-day="${key}"><span class="potty-ico">🦖</span>DRY!<span class="sub">no pee on the floor</span></button>
       <button class="dose-btn oops" data-act="potty" data-val="oops" data-day="${key}"><span class="potty-ico">💧</span>OOPS<span class="sub">an accident</span></button>
     </div>`;
   }
@@ -737,7 +737,7 @@
       </div>
       <div class="card" data-act="go-potty">
         <div class="step-head"><h3>🦖 Potty dinos</h3><b>${dinoStats().dinos} <span class="muted" style="font-size:18px">/ ${state.dinoGoal}</span></b></div>
-        <p class="hint" style="margin:4px 0 0">${state.potty[keyOf(today())] ? (state.potty[keyOf(today())] === 'dry' ? 'Got a dino today! 🦖' : 'Try again tomorrow! 💛') : 'Tap for potty check! 🩲'}</p>
+        <p class="hint" style="margin:4px 0 0">${state.potty[keyOf(today())] ? (state.potty[keyOf(today())] === 'dry' ? 'Got a dino today! 🦖' : 'Try again tomorrow! 💛') : 'Tap for potty check! 🚽'}</p>
       </div>
       <div class="card" data-act="go-steps">
         <div class="step-head"><h3>🐎 My step</h3><b>${state.step} <span class="muted" style="font-size:18px">of ${state.totalSteps}</span></b></div>
@@ -993,7 +993,7 @@
 
       <div class="card">
         <h3>🦖 Potty dinos</h3>
-        <p class="hint" style="margin-top:0">One dino for each day in underwear or a pull-up with no pee on the rug, couch or anywhere else in the apartment. Dinos are separate from the OIT stars.</p>
+        <p class="hint" style="margin-top:0">One dino for each day with no pee on the rug, couch or anywhere else in the apartment. Dinos are separate from the OIT stars.</p>
         <div class="field"><label>Dino prize</label><input type="text" id="gDinoPrize" maxlength="40" value="${esc(state.dinoPrize)}" /></div>
         <div class="field"><label>Dinos needed</label>
           <div class="stepper"><button id="gDinoMinus" aria-label="Fewer dinos">−</button><b>${state.dinoGoal} 🦖</b><button id="gDinoPlus" aria-label="More dinos">+</button></div>

@@ -10,7 +10,7 @@ A horse-and-farm themed phone app for Lucas (3) to track daily allergy immunothe
 - Farm touches everywhere: a horse buddy (he can pick other farm animals), clip-clop sounds when he earns a star, a horse whinny for big celebrations, cheers like "Yee-haw!" and "Giddy-up!", and horses, carrots and sunflowers in the confetti.
 
 ## 🦖 Potty dinos
-- **🦖 Potty tab:** two big buttons, **DRY!** (underwear and a dino) or **OOPS** (a water drop). A dry day means he wore underwear or a pull-up and didn't pee on the rug, the couch or anywhere else in the apartment. A dry day earns a dino with a roar and dino confetti. An accident gets a kind "That's okay! Try again tomorrow!" with no dino.
+- **🦖 Potty tab:** two big buttons, **DRY!** (a dino) or **OOPS** (a water drop). A dry day means he didn't pee on the rug, the couch or anywhere else in the apartment. A dry day earns a dino with a roar and dino confetti. An accident gets a kind "That's okay! Try again tomorrow!" with no dino.
 - If yesterday wasn't logged, there's a smaller "What about yesterday?" question, for nights when you check in the next morning.
 - Dinos fill up a collection of 30 colorful dino spots toward **a new Lucas book**. At 30 there's a big celebration. A grown-up taps **Prize given!**, and the next 30 start.
 - Dinos are separate from the OIT stars. The count in the top corner shows 🦖 on the Potty tab and ⭐ everywhere else.
