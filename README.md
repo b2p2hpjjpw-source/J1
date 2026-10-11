@@ -75,3 +75,5 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 **Also in this repo:** [Utopia](utopia/), a Silo-inspired job application tracker where every application sent refills the silo's supplies. See [utopia/README.md](utopia/README.md).
 
 **Also in this repo:** [Daily $80 Tracker](expenses/), a daily spending allowance tracker with a grove of trees that grows as you save. See [expenses/README.md](expenses/README.md).
+
+**Also in this repo:** [Our To-Do List](todo/), a shared to-do list for the two of us, in the same look as the Daily $80 Tracker. See [todo/README.md](todo/README.md).
