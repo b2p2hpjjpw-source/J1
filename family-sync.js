@@ -93,9 +93,19 @@
 
   const apps = {};      // key -> { get, apply, unsub, timer, pushing, pendingRev, choosing }
   let user = null;
-  let status = 'idle';  // idle | out | synced | syncing | offline | error
+  let status = 'idle';  // idle | out | synced | syncing | offline | error | denied | unavailable | stuck
+  let lastError = '';   // the database's own words for the last failure, shown in settings to help fix it
 
-  function setStatus(s) { status = s; drawWidgets(); }
+  // "Syncing" that never finishes means the database can't be reached (often: it hasn't been created yet).
+  let stuckT;
+  function setStatus(s) {
+    status = s;
+    if (s === 'synced') lastError = '';
+    clearTimeout(stuckT);
+    if (s === 'syncing') stuckT = setTimeout(() => { if (status === 'syncing' && !Object.values(apps).some(x => x.choosing)) setStatus('stuck'); }, 20000);
+    drawWidgets(); drawPill();
+  }
+  const noteError = e => { lastError = [e && e.code, e && e.message].filter(Boolean).join(': ').slice(0, 180); };
 
   async function readRemote(fb, key, meta, tx) {
     const parts = [];
@@ -117,7 +127,7 @@
   // Something arrived from the database (including our own writes coming back).
   async function onRemote(key, snap) {
     const a = apps[key];
-    if (!a || a.choosing || snap.metadata.hasPendingWrites) return;
+    if (!a || a.choosing || snap.metadata.hasPendingWrites || snap.metadata.fromCache) return; // only trust the server's answer
     const fb = await firebase();
     const base = await baseGet(key);
     if (!snap.exists()) { flag('dirty:' + key, '1'); return schedulePush(key, 0); } // first phone to sync this app
@@ -191,7 +201,8 @@
       setStatus('synced');
     } catch (e) {
       console.warn('Family sync: will try again', e);
-      setStatus(navigator.onLine ? 'error' : 'offline');
+      noteError(e);
+      setStatus(e && e.code === 'permission-denied' ? 'denied' : navigator.onLine ? 'error' : 'offline');
     } finally {
       a.pushing = false;
     }
@@ -203,7 +214,7 @@
     const fb = await firebase();
     a.unsub = fb.fs.onSnapshot(fb.fs.doc(fb.db, `${ROOT}/${key}`),
       snap => onRemote(key, snap).catch(e => { console.warn('Family sync', e); setStatus('error'); }),
-      e => { console.warn('Family sync', e); a.unsub = null; setStatus(e && e.code === 'permission-denied' ? 'denied' : 'error'); });
+      e => { console.warn('Family sync', e); noteError(e); a.unsub = null; setStatus(e && e.code === 'permission-denied' ? 'denied' : 'error'); });
   }
   function stopApps() { Object.values(apps).forEach(a => { if (a.unsub) a.unsub(); a.unsub = null; }); }
 
@@ -216,7 +227,10 @@
         else { stopApps(); setStatus('out'); maybeAsk(); }
       });
     } catch (e) {
-      setStatus('offline'); // no network on first load: try again when it comes back
+      // No network on first load: try again when it comes back. Online but still failing means something
+      // (a content blocker, an old iOS) stopped the Firebase library from loading.
+      console.warn('Family sync: could not load', e);
+      setStatus(navigator.onLine ? 'unavailable' : 'offline');
     }
   }
   const retry = () => {
@@ -242,7 +256,11 @@
   .fs-widget{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
   .fs-widget .fs-dot{width:9px;height:9px;border-radius:50%;background:#9aa0aa;flex:none}
   .fs-widget .fs-dot.ok{background:#2fa84f}.fs-widget .fs-dot.warn{background:#e0a020}.fs-widget .fs-dot.bad{background:#d23b30}
-  .fs-widget .fs-btn{padding:7px 12px;font-size:13px}`;
+  .fs-widget .fs-btn{padding:7px 12px;font-size:13px}
+  .fs-pill{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:9998;display:flex;align-items:center;background:#2f6fde;color:#fff;border-radius:999px;box-shadow:0 6px 22px rgba(0,0,0,.3);font:600 14px system-ui,-apple-system,sans-serif;max-width:calc(100% - 32px)}
+  .fs-pill button{background:none;border:0;color:inherit;font:inherit;cursor:pointer}
+  .fs-pill-go{padding:10px 4px 10px 16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fs-pill-x{padding:10px 14px 10px 10px;font-size:18px;line-height:1;opacity:.8}`;
   const style = document.createElement('style'); style.textContent = css;
   document.head.appendChild(style);
 
@@ -259,7 +277,7 @@
     if (document.querySelector('.fs-back')) return;
     const b = sheet(`
       <h3>Share with the family</h3>
-      <p>Sign in to keep this app in sync between your phones. Everything still works without signing in, it just stays on this phone.</p>
+      <p>Sign in to keep this app in sync between your phones. Use the email and the password set up for family sync in Firebase. Everything still works without signing in, it just stays on this phone.</p>
       <form>
         <input type="email" name="email" autocomplete="username" placeholder="Email" required />
         <input type="password" name="pw" autocomplete="current-password" placeholder="Password" required />
@@ -319,11 +337,39 @@
     idle: ['', 'Family sync: starting…'], syncing: ['warn', 'Syncing…'], synced: ['ok', 'Synced'],
     offline: ['warn', 'Offline. Changes will sync when you’re back online.'], error: ['bad', 'Couldn’t sync just now. Will keep trying.'],
     denied: ['bad', 'This account isn’t allowed in the family database.'], out: ['', 'Not signed in. Data stays on this phone.'],
+    unavailable: ['bad', 'Sync couldn’t load on this phone. Check the connection, then reopen the app.'],
+    stuck: ['bad', 'Can’t reach the family database. Check that the Firestore database is created and the rules are published.'],
   };
+
+  // A small button above the app that stays until the phone is signed in, so sync is never hidden in settings.
+  // It also says so when sync can't load. The × hides it until the app is next opened.
+  let pillHidden = false;
+  function drawPill() {
+    let p = document.querySelector('.fs-pill');
+    const slow = status === 'idle' && performance.now() > 9000;
+    const text = status === 'out' ? '☁︎ Sign in to sync with the family'
+      : status === 'unavailable' || slow ? '☁︎ Sync couldn’t load · tap to retry'
+      : status === 'stuck' ? '☁︎ Can’t reach the family database · tap to retry'
+      : status === 'denied' ? '☁︎ This account can’t sync · tap to switch'
+      : '';
+    if (!text || pillHidden || !Object.keys(apps).length) { if (p) p.remove(); return; }
+    if (!p) {
+      p = document.createElement('div'); p.className = 'fs-pill';
+      p.innerHTML = '<button type="button" class="fs-pill-go"></button><button type="button" class="fs-pill-x" aria-label="Hide">×</button>';
+      p.querySelector('.fs-pill-x').onclick = () => { pillHidden = true; p.remove(); };
+      document.body.appendChild(p);
+    }
+    const go = p.querySelector('.fs-pill-go');
+    go.textContent = text;
+    go.onclick = status === 'out' ? openSignIn
+      : status === 'denied' ? async () => { const fb = await firebase(); await fb.au.signOut(fb.auth); openSignIn(); }
+      : () => location.reload();
+  }
+  setTimeout(drawPill, 9500); // catches a library load that hangs without failing
   function drawWidgets() {
     document.querySelectorAll('[data-family-sync]').forEach(el => {
       const [cls, text] = STATUS[status] || STATUS.idle;
-      el.innerHTML = `<div class="fs-widget"><span class="fs-dot ${cls}"></span><span>${esc(text)}${user && status !== 'out' ? ` · ${esc(user.email)}` : ''}</span>
+      el.innerHTML = `<div class="fs-widget"><span class="fs-dot ${cls}"></span><span>${esc(text)}${user && status !== 'out' ? ` · ${esc(user.email)}` : ''}${lastError && status !== 'synced' ? `<br><small style="opacity:.75">${esc(lastError)}</small>` : ''}</span>
         ${user ? '<button type="button" class="fs-btn fs-ghost" data-fs-out>Sign out</button>' : '<button type="button" class="fs-btn" data-fs-in>Sign in to share</button>'}</div>`;
       const i = el.querySelector('[data-fs-in]'); if (i) i.onclick = openSignIn;
       const o = el.querySelector('[data-fs-out]'); if (o) o.onclick = async () => { const fb = await firebase(); await fb.au.signOut(fb.auth); toast('Signed out. Data stays on this phone.'); };

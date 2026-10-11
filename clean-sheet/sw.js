@@ -1,6 +1,6 @@
 // Offline support. Online: always fetch the latest files (so updates show up right away)
 // and keep a copy. Offline: serve the saved copy.
-const CACHE = 'clean-sheet-v3';
+const CACHE = 'clean-sheet-v5';
 const ASSETS = [
   './', 'index.html', '../family-sync.js', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
