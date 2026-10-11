@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A shiny gold coin -->
+  <ellipse cx="64" cy="64" rx="44" ry="58" fill="#c98500"/>
+  <ellipse cx="60" cy="64" rx="42" ry="56" fill="#ffc81a" stroke="#a86a00" stroke-width="4"/>
+  <ellipse cx="60" cy="64" rx="31" ry="44" fill="#ffdb4d" stroke="#e0a000" stroke-width="4"/>
+  <rect x="54" y="36" width="12" height="56" rx="6" fill="#c98a00"/>
+  <path d="M34 36 C40 24 50 18 58 17" stroke="#fff6c4" stroke-width="6" stroke-linecap="round" fill="none" opacity=".85"/>
+</svg>

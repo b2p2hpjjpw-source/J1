@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Fruit salad: a bowl piled with strawberries, orange, kiwi, pineapple, grapes and blueberries -->
+  <ellipse cx="64" cy="116" rx="46" ry="7" fill="#000" opacity=".13"/>
+  <ellipse cx="64" cy="66" rx="56" ry="14" fill="#3d8fc4"/>
+  <!-- pineapple cubes -->
+  <rect x="70" y="40" width="18" height="18" rx="3" fill="#ffd84d" stroke="#e0ab12" stroke-width="2" transform="rotate(12 79 49)"/>
+  <rect x="28" y="46" width="16" height="16" rx="3" fill="#ffe066" stroke="#e0ab12" stroke-width="2" transform="rotate(-10 36 54)"/>
+  <!-- orange slice -->
+  <path d="M14 62 A20 20 0 0 1 54 62 Z" fill="#ff9f1a" stroke="#e07800" stroke-width="2"/>
+  <path d="M18 61 A16 16 0 0 1 50 61 Z" fill="#ffc266"/>
+  <g stroke="#ff9f1a" stroke-width="1.6"><path d="M34 61 L22 51"/><path d="M34 61 L34 46"/><path d="M34 61 L46 51"/></g>
+  <!-- kiwi slice -->
+  <circle cx="94" cy="54" r="15" fill="#7a5a2a"/><circle cx="94" cy="54" r="12.5" fill="#8cc63f"/><circle cx="94" cy="54" r="5" fill="#eef7c8"/>
+  <g fill="#2b2b1a"><circle cx="94" cy="45" r="1.3"/><circle cx="101" cy="49" r="1.3"/><circle cx="101" cy="59" r="1.3"/><circle cx="94" cy="63" r="1.3"/><circle cx="87" cy="59" r="1.3"/><circle cx="87" cy="49" r="1.3"/></g>
+  <!-- strawberries -->
+  <path d="M50 30 C42 30 40 40 46 48 C50 54 56 58 58 58 C60 58 66 52 68 46 C72 38 68 30 60 31 C57 31 54 32 50 30 Z" fill="#e8344a" stroke="#b81d33" stroke-width="2"/>
+  <g fill="#ffd9a0"><circle cx="52" cy="40" r="1.3"/><circle cx="60" cy="38" r="1.3"/><circle cx="56" cy="47" r="1.3"/><circle cx="63" cy="45" r="1.3"/></g>
+  <path d="M48 31 C52 25 58 25 62 31 C58 29 54 29 48 31 Z" fill="#3fa34d"/>
+  <path d="M100 66 C94 66 92 72 96 77 C98 80 102 82 103 82 C104 82 108 78 109 74 C111 69 108 65 103 66 Z" fill="#e8344a" stroke="#b81d33" stroke-width="2"/>
+  <!-- grapes and blueberries -->
+  <g fill="#8e4fc4" stroke="#5e2c8c" stroke-width="1.5"><circle cx="20" cy="66" r="6"/><circle cx="28" cy="70" r="6"/></g>
+  <g fill="#3b4fb8" stroke="#24317a" stroke-width="1.5"><circle cx="66" cy="62" r="5.5"/><circle cx="76" cy="66" r="5.5"/><circle cx="58" cy="68" r="5"/><circle cx="86" cy="70" r="5"/></g>
+  <g fill="#c7d2ff"><circle cx="65" cy="60.5" r="1.2"/><circle cx="75" cy="64.5" r="1.2"/></g>
+  <!-- bowl front -->
+  <path d="M8 66 C8 96 32 114 64 114 C96 114 120 96 120 66 C112 76 90 82 64 82 C38 82 16 76 8 66 Z" fill="#7ec8f0" stroke="#3d8fc4" stroke-width="2.5"/>
+  <path d="M20 86 C34 98 52 102 64 102" stroke="#d4efff" stroke-width="5" stroke-linecap="round" fill="none" opacity=".8"/>
+  <path d="M8 66 C16 76 38 82 64 82 C90 82 112 76 120 66" stroke="#bfe6fb" stroke-width="4" fill="none"/>
+</svg>

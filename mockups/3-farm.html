@@ -1,0 +1,86 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="frame.css">
+<style>
+.farm { background:linear-gradient(#ffe8a3,#fff6d8); }
+.dots { display:flex; justify-content:center; gap:8px; padding:34px 0 6px; }
+.dots i { width:40px; height:12px; border-radius:6px; background:#e8d48a; display:block; }
+.dots i.on { background:#e76f51; }
+.buddy { display:flex; align-items:flex-end; gap:8px; padding:4px 14px 8px; }
+.buddy .e { font-size:64px; line-height:1; }
+.say { background:#fff; border-radius:18px 18px 18px 4px; padding:10px 14px; font-size:20px; font-weight:700; box-shadow:0 3px 0 rgba(0,0,0,.08); }
+.say .spk { font-size:14px; color:#e76f51; display:block; font-weight:600; }
+.big { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:6px 14px; }
+.ch { height:150px; border-radius:26px; background:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 6px 0 rgba(0,0,0,.12); position:relative; }
+.ch .e { font-size:72px; line-height:1.05; }
+.ch .n { font-size:18px; font-weight:700; }
+.ch.out { background:#eee; box-shadow:none; }
+.ch.out .e,.ch.out .n { opacity:.35; filter:grayscale(1); }
+.ch.out .s { position:absolute; inset:auto 10px 50px; background:#fff; border:3px solid #999; color:#666; font-size:14px; font-weight:700; text-align:center; border-radius:12px; padding:4px; }
+.ch.sel { outline:6px solid #2a9d8f; }
+.ch.sel::after { content:'⭐'; font-family:'Noto Color Emoji'; position:absolute; top:-12px; right:-8px; font-size:34px; }
+.nav { display:flex; justify-content:space-between; padding:12px 14px; }
+.nav div { background:#e76f51; color:#fff; font-size:20px; font-weight:700; border-radius:20px; padding:10px 22px; box-shadow:0 5px 0 #b24a30; }
+.nav .bk { background:#fff; color:#e76f51; box-shadow:0 5px 0 #e2c9a3; }
+/* admin */
+.adm { background:#f6f4ef; }
+.adm .bar { background:#264653; color:#fff; padding:30px 16px 12px; }
+.adm .bar .t { font-size:22px; font-weight:700; }
+.adm .bar .k { font-size:13px; opacity:.8; }
+.sec { margin:10px 12px 0; background:#fff; border-radius:16px; padding:8px 12px; }
+.sec h4 { font-size:14px; color:#264653; margin:2px 0 4px; letter-spacing:.3px; }
+.r { display:flex; align-items:center; gap:8px; padding:6px 0; border-top:1px solid #f0ece4; font-size:15px; }
+.r:first-of-type { border-top:none; }
+.r .e { font-size:22px; }
+.r .nm { flex:1; }
+.tg { width:42px; height:24px; border-radius:12px; background:#2a9d8f; position:relative; }
+.tg::after { content:''; position:absolute; right:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; }
+.tg.off { background:#ccc; }
+.tg.off::after { right:auto; left:3px; }
+.av-l { font-size:11px; color:#888; width:56px; text-align:right; }
+.x { color:#c1121f; font-weight:700; font-size:16px; width:18px; text-align:center; }
+.add { color:#2a9d8f; font-weight:600; font-size:15px; padding:6px 0 2px; border-top:1px solid #f0ece4; }
+.kids { display:flex; gap:10px; align-items:center; padding:4px 0; }
+.kc { text-align:center; font-size:12px; font-weight:600; }
+.kc .e { font-size:26px; width:44px; height:44px; border-radius:50%; display:grid; place-items:center; margin:0 auto 2px; }
+.kc.plus .e { border:2px dashed #2a9d8f; color:#2a9d8f; font-family:'Fredoka'; font-size:26px; }
+</style></head><body>
+<div class="head"><div class="num">3</div><h1>Barnyard Breakfast <span class="e">🐴</span></h1></div>
+<p class="sub">A friendly farm buddy (matching Lucas's horse theme in Star Steps) asks one question at a time: <i>What to eat? What to drink? A treat?</i> Only 4 giant choices per screen, and the buddy reads everything aloud. Simple for a 3-year-old, still fun for a 7-year-old.</p>
+<div class="row">
+  <div class="col"><div class="phone"><div class="inner farm">
+    <div class="dots"><i class="on"></i><i></i><i></i></div>
+    <div class="buddy"><span class="e">🐴</span><div class="say"><span class="spk">🔊 tap to hear</span>What do you want to eat, Lucas?</div></div>
+    <div class="big">
+      <div class="ch sel"><span class="e">🥞</span><span class="n">Pancakes</span></div>
+      <div class="ch"><span class="e">🥣</span><span class="n">Cereal</span></div>
+      <div class="ch out"><span class="e">🧇</span><span class="n">Waffles</span><span class="s">Not today</span></div>
+      <div class="ch"><span class="e">🍳</span><span class="n">Eggs</span></div>
+    </div>
+    <div class="nav"><div class="bk">◀</div><div>Next ▶</div></div>
+  </div></div><div class="cap">Kid: one question at a time</div></div>
+
+  <div class="col"><div class="phone"><div class="inner adm">
+    <div class="bar"><div class="t"><span class="e">🔒</span> Grown-ups</div><div class="k">Edit the menu · mark items available</div></div>
+    <div class="sec"><h4>CHILDREN</h4><div class="kids">
+      <div class="kc"><span class="e" style="background:#ffe5d9">🐴</span>Lucas</div>
+      <div class="kc"><span class="e" style="background:#dde7ff">🦄</span>Maya</div>
+      <div class="kc plus"><span class="e">+</span>Add</div></div></div>
+    <div class="sec"><h4>FOOD</h4>
+      <div class="r"><span class="e">🥞</span><span class="nm">Pancakes</span><span class="av-l">available</span><span class="tg"></span><span class="x">✕</span></div>
+      <div class="r"><span class="e">🥣</span><span class="nm">Cereal</span><span class="av-l">available</span><span class="tg"></span><span class="x">✕</span></div>
+      <div class="r"><span class="e">🧇</span><span class="nm">Waffles</span><span class="av-l">not today</span><span class="tg off"></span><span class="x">✕</span></div>
+      <div class="r"><span class="e">🍳</span><span class="nm">Eggs</span><span class="av-l">available</span><span class="tg"></span><span class="x">✕</span></div>
+      <div class="add">+ Add food (pick an emoji or photo)</div></div>
+    <div class="sec"><h4>DRINKS</h4>
+      <div class="r"><span class="e">🥛</span><span class="nm">Milk</span><span class="av-l">available</span><span class="tg"></span><span class="x">✕</span></div>
+      <div class="r"><span class="e">🧃</span><span class="nm">Apple juice</span><span class="av-l">out of stock</span><span class="tg off"></span><span class="x">✕</span></div>
+      <div class="add">+ Add drink</div></div>
+  </div></div><div class="cap">Grown-up: menu, availability, kids</div></div>
+
+  <div class="notes"><h3>Why it might work</h3><ul>
+    <li>Fewest decisions per screen, the easiest layout for a 3-year-old.</li>
+    <li>The buddy talks, and a progress bar shows how many steps are left.</li>
+    <li>“Not today” items stay visible so kids learn they exist.</li>
+    <li>A summary screen at the end, “Your breakfast!”, ends in a happy dance.</li>
+  </ul><h3 style="margin-top:12px">Trade-off</h3><ul><li>More taps for the 7-year-old, who may want a faster mode.</li></ul></div>
+</div>
+</body></html>

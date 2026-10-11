@@ -43,7 +43,7 @@ The app is a plain web app (HTML/CSS/JS, nothing to build). You can add it to th
 After that it opens full-screen with its own icon, like a regular app.
 
 ### About saved data
-Progress is saved **only on that phone**, in the browser's storage. There's no account and nothing is sent anywhere. Use *Grown-ups → Download backup* every so often. The same backup file can be restored on another phone.
+Progress is saved on the phone, in the browser's storage. To share it between both parents' phones, sign in under *Grown-ups → Family sync*. This works for every app in this repo; see [FAMILY-SYNC.md](FAMILY-SYNC.md). You can also use *Grown-ups → Download backup* every so often. The same backup file can be restored on another phone.
 
 ## Trying it on a computer
 
@@ -67,3 +67,13 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 ---
 
 **Also in this repo:** [Star Steps](star-steps/), a daily allergy-medicine star chart for a 3-year-old. See [star-steps/README.md](star-steps/README.md).
+
+**Also in this repo:** [Build-a-Plate](breakfast/), where the kids order tomorrow's breakfast the night before. See [breakfast/README.md](breakfast/README.md).
+
+**Also in this repo:** [Clean Sheet](clean-sheet/), an Arsenal-themed sobriety tracker with a nightly breathalyzer log and savings kitty. See [clean-sheet/README.md](clean-sheet/README.md).
+
+**Also in this repo:** [Utopia](utopia/), a Silo-inspired job application tracker where every application sent refills the silo's supplies. See [utopia/README.md](utopia/README.md).
+
+**Also in this repo:** [Daily $80 Tracker](expenses/), a daily spending allowance tracker with a grove of trees that grows as you save. See [expenses/README.md](expenses/README.md).
+
+**Also in this repo:** [Our To-Do List](todo/), a shared to-do list for the two of us, in the same look as the Daily $80 Tracker. See [todo/README.md](todo/README.md).

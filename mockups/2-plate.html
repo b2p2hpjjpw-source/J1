@@ -1,0 +1,66 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="frame.css">
+<style>
+.k1 { background:linear-gradient(#bde0fe,#e7f4ff 55%,#c9e8a5 55%); }
+.hdr { padding:30px 14px 4px; display:flex; align-items:center; gap:10px; }
+.hdr .av { font-size:34px; background:#fff; border-radius:50%; width:52px; height:52px; display:grid; place-items:center; border:4px solid #f4a261; }
+.bub { background:#fff; border-radius:16px; padding:8px 12px; font-size:17px; font-weight:600; position:relative; }
+.bub small { display:block; font-weight:400; font-size:12px; color:#888; }
+.table { flex:1; display:grid; place-items:center; position:relative; }
+.plate { width:240px; height:240px; border-radius:50%; background:#fff; border:12px solid #f1f1f1; box-shadow:0 10px 0 rgba(0,0,0,.08), inset 0 0 0 10px #fafafa; position:relative; }
+.plate .e { position:absolute; font-size:62px; }
+.cup { position:absolute; right:10px; top:40px; font-size:56px; }
+.drag { position:absolute; left:26px; bottom:6px; font-size:13px; color:#3a5a1f; font-weight:600; background:rgba(255,255,255,.7); padding:2px 8px; border-radius:10px; }
+.shelf { background:#8d5524; padding:10px 8px 12px; border-top:6px solid #6b3e17; }
+.shelf .lab { color:#ffe8cc; font-size:13px; font-weight:600; margin:0 0 6px 4px; }
+.items { display:flex; gap:7px; overflow:hidden; }
+.it { flex:0 0 62px; height:70px; background:#fff3e0; border-radius:16px; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; }
+.it .e { font-size:36px; line-height:1; }
+.it span.n { font-size:11px; font-weight:600; }
+.it.out { background:#ddd; }
+.it.out .e { filter:grayscale(1); opacity:.4; }
+.it.out .z { position:absolute; top:-6px; right:-4px; background:#6c757d; color:#fff; font-size:10px; font-weight:700; padding:2px 5px; border-radius:8px; }
+.go { background:#2a9d8f; color:#fff; text-align:center; font-size:22px; font-weight:700; padding:13px; margin:10px; border-radius:22px; box-shadow:0 5px 0 #1d7065; }
+/* picker */
+.pick { background:radial-gradient(circle at 50% 30%,#fff5d6,#ffd6a5); align-items:center; }
+.pick h2 { margin-top:60px; font-size:30px; text-align:center; }
+.pick p { font-size:16px; color:#7a5230; margin-bottom:24px; }
+.kid { width:250px; border-radius:28px; padding:18px; margin-bottom:18px; display:flex; align-items:center; gap:16px; font-size:28px; font-weight:700; color:#fff; box-shadow:0 7px 0 rgba(0,0,0,.18); }
+.kid .e { font-size:54px; background:rgba(255,255,255,.35); border-radius:50%; width:78px; height:78px; display:grid; place-items:center; }
+.kid small { display:block; font-size:13px; font-weight:500; opacity:.95; }
+.lock { position:absolute; bottom:22px; font-size:14px; color:#7a5230; background:rgba(255,255,255,.6); padding:6px 14px; border-radius:14px; }
+</style></head><body>
+<div class="head"><div class="num">2</div><h1>Build-a-Plate <span class="e">🍽️</span></h1></div>
+<p class="sub">Picture-first and hands-on. Each child taps their own face to start, then drags (or taps) food from a kitchen shelf onto a big plate. Hardly any reading needed, so it's ideal for a 3-year-old. Item names are read aloud when tapped.</p>
+<div class="row">
+  <div class="col"><div class="phone"><div class="inner pick">
+    <h2>Who's ordering?</h2><p>Tap your picture!</p>
+    <div class="kid" style="background:#f4a261"><span class="e">🐴</span><div>Lucas<small>Ordered ✓</small></div></div>
+    <div class="kid" style="background:#6c8cff"><span class="e">🦄</span><div>Maya<small>Not yet. Tap me!</small></div></div>
+    <div class="lock"><span class="e">🔒</span> Grown-ups: add kids &amp; edit menu</div>
+  </div></div><div class="cap">Step 1: pick your picture</div></div>
+
+  <div class="col"><div class="phone"><div class="inner k1">
+    <div class="hdr"><div class="av e">🦄</div><div class="bub">Fill your plate, Maya!<small>Breakfast for tomorrow</small></div></div>
+    <div class="table">
+      <div class="plate"><span class="e" style="left:28px;top:44px">🧇</span><span class="e" style="left:110px;top:70px">🍓</span><span class="e" style="left:60px;top:120px">🍓</span></div>
+      <div class="cup e">🧃</div>
+      <div class="drag">drag food onto the plate ↑</div>
+    </div>
+    <div class="shelf"><div class="lab">KITCHEN SHELF</div><div class="items">
+      <div class="it"><span class="e">🥞</span><span class="n">Pancakes</span></div>
+      <div class="it"><span class="e">🥣</span><span class="n">Cereal</span></div>
+      <div class="it out"><span class="e">🥚</span><span class="n">Eggs</span><span class="z">zzz</span></div>
+      <div class="it"><span class="e">🍌</span><span class="n">Banana</span></div>
+      <div class="it"><span class="e">🥛</span><span class="n">Milk</span></div>
+    </div></div>
+    <div class="go">I'm done! <span class="e">👍</span></div>
+  </div></div><div class="cap">Step 2: fill the plate</div></div>
+
+  <div class="notes"><h3>Why it might work</h3><ul>
+    <li>Big faces and pictures, so no reading needed.</li>
+    <li>Dragging food onto a plate feels like play, not a form.</li>
+    <li>Items that aren't available are greyed out and “sleeping” (zzz), and they wiggle “no” if tapped.</li>
+    <li>Each child has their own colour and buddy.</li>
+  </ul><h3 style="margin-top:12px">Trade-off</h3><ul><li>Dragging takes more fine-motor skill, so tapping will work too.</li></ul></div>
+</div>
+</body></html>

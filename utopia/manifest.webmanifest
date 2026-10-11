@@ -1,0 +1,17 @@
+{
+  "name": "Utopia",
+  "short_name": "Utopia",
+  "description": "A Silo-inspired job application tracker. Every application sent refills the silo's supplies on the climb toward something better.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14110d",
+  "theme_color": "#14110d",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
