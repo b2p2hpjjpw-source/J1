@@ -130,6 +130,21 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
 .done-card .dose-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 600; background: #fff3d6; border-radius: 999px; padding: 6px 14px; margin-top: 4px; }
 .done-card .dose-chip svg { width: 30px; height: 30px; }
 
+/* ---------- Potty ---------- */
+.dose-btn.dry { background: var(--green); box-shadow: 0 8px 0 var(--green-dark); }
+.dose-btn.oops { background: #8fa7c4; box-shadow: 0 8px 0 #6b84a3; }
+.potty-ico { font-size: 52px; line-height: 110px; height: 110px; white-space: nowrap; letter-spacing: -6px; }
+.dose-grid.small { margin-bottom: 4px; }
+.dose-grid.small .dose-btn { font-size: 22px; padding: 10px 6px; }
+.dose-grid.small .potty-ico { font-size: 38px; line-height: 56px; height: 56px; }
+.potty-week { grid-template-columns: repeat(7, 1fr); }
+.pday { display: grid; place-items: center; width: 40px; height: 40px; margin: 4px auto 0; border-radius: 50%; border: 3px dashed #d9cde4; font-size: 26px; font-style: normal; }
+.pday i { font-style: normal; }
+.pday.dry { border: 3px solid var(--green); background: #e8f9ee; }
+.pday.oops { border: 3px solid #b9c8da; background: #f0f4f9; font-size: 20px; }
+.slot.dino:not(.on) { filter: grayscale(1); opacity: .25; color: inherit; background: none; }
+.pcal { font-size: 22px; }
+
 /* ---------- Week strip ---------- */
 .week { display: grid; grid-template-columns: repeat(7, 1fr) 1.15fr; gap: 4px; align-items: end; }
 .wday { text-align: center; font-size: 14px; font-weight: 600; color: var(--ink-soft); }
@@ -193,7 +208,7 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
 /* ---------- Tab bar ---------- */
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: rgba(255, 255, 255, 0.92);
@@ -201,7 +216,7 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
   box-shadow: 0 -2px 0 rgba(58, 42, 74, 0.06);
 }
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 600; color: var(--ink-soft); }
-.tab-ico { font-size: 36px; line-height: 1; transition: transform .15s; }
+.tab-ico { font-size: 32px; line-height: 1; transition: transform .15s; }
 .tab.active { color: var(--pink-dark); }
 .tab.active .tab-ico { transform: scale(1.18) translateY(-2px); }
 .tab[data-view="grownups"] .tab-ico { font-size: 24px; opacity: .7; }

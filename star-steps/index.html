@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <title>Star Steps</title>
-  <meta name="description" content="A fun daily OIT (allergy immunotherapy) star chart for little kids." />
+  <meta name="description" content="A fun daily OIT (allergy immunotherapy) and potty training star chart for little kids." />
   <meta name="theme-color" content="#8fd3ff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
@@ -33,11 +33,12 @@
       <div class="hello-small" id="helloSmall">Hi there!</div>
       <div class="hello-big" id="helloBig">Star Steps</div>
     </div>
-    <div class="star-pill" id="starPill" aria-label="Stars"><span>⭐</span><b id="starCount">0</b></div>
+    <div class="star-pill" id="starPill" aria-label="Stars"><span id="starIcon">⭐</span><b id="starCount">0</b></div>
   </header>
 
   <main id="app">
     <section id="view-today" class="view active" aria-label="Today"></section>
+    <section id="view-potty" class="view" aria-label="Potty"></section>
     <section id="view-jar" class="view" aria-label="My prize"></section>
     <section id="view-steps" class="view" aria-label="My steps"></section>
     <section id="view-grownups" class="view" aria-label="Grown-ups"></section>
@@ -45,6 +46,7 @@
 
   <nav class="tabbar">
     <button class="tab active" data-view="today" aria-label="Today"><span class="tab-ico">🏡</span><span>Today</span></button>
+    <button class="tab" data-view="potty" aria-label="Potty"><span class="tab-ico">🦖</span><span>Potty</span></button>
     <button class="tab" data-view="jar" aria-label="My prize"><span class="tab-ico">🎁</span><span>Prize</span></button>
     <button class="tab" data-view="steps" aria-label="My steps"><span class="tab-ico">🐎</span><span>Steps</span></button>
     <button class="tab" data-view="grownups" aria-label="Grown-ups"><span class="tab-ico">🔒</span><span>Grown-ups</span></button>

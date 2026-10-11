@@ -1,6 +1,6 @@
 # Star Steps ⭐🐴
 
-A horse-and-farm themed phone app for Lucas (3) to track daily allergy immunotherapy doses and earn stars toward a prize.
+A horse-and-farm themed phone app for Lucas (3) to track daily allergy immunotherapy (OIT) doses and earn stars toward a prize, plus a potty-training dino tracker.
 
 ## For the kid (big pictures, a talking buddy, no reading needed)
 - **🏠 Today:** two giant buttons: **FULL** (a whole smiley circle) or **HALF** (a half smiley circle). Tapping one plays sounds and confetti, and a star flies into his star count. The buddy says what happened out loud (tap the buddy or 🔊 to hear it again).
@@ -8,6 +8,13 @@ A horse-and-farm themed phone app for Lucas (3) to track daily allergy immunothe
 - **🎁 Prize:** a photo or picture of the prize and one star slot for each star needed, filling up as he earns them. Below that is a calendar of every dose.
 - **🐎 Steps:** a dirt trail through a farm field (sunflowers, sheep, chickens, carrots) with his horse buddy standing on his current step (starts at 7 of 13), riding up to a red barn at the top.
 - Farm touches everywhere: a horse buddy (he can pick other farm animals), clip-clop sounds when he earns a star, a horse whinny for big celebrations, cheers like "Yee-haw!" and "Giddy-up!", and horses, carrots and sunflowers in the confetti.
+
+## 🦖 Potty dinos
+- **🦖 Potty tab:** two big buttons, **DRY!** (underwear and a dino) or **OOPS** (a water drop). A dry day means he wore underwear or a pull-up and didn't pee on the rug, the couch or anywhere else in the apartment. A dry day earns a dino with a roar and dino confetti. An accident gets a kind "That's okay! Try again tomorrow!" with no dino.
+- If yesterday wasn't logged, there's a smaller "What about yesterday?" question, for nights when you check in the next morning.
+- Dinos fill up a collection of 30 colorful dino spots toward **a new Lucas book**. At 30 there's a big celebration. A grown-up taps **Prize given!**, and the next 30 start.
+- Dinos are separate from the OIT stars. The count in the top corner shows 🦖 on the Potty tab and ⭐ everywhere else.
+- Grown-ups can change the prize name or the number of dinos needed, and fix any day in the **Potty days** calendar.
 
 ## Stars
 | Earn | Stars |

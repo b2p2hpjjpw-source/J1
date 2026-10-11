@@ -42,6 +42,13 @@
     spent: 0,
     prizesWon: [], // [{ name, emoji, cost, date }]
     celebratedPrize: '', // prize signature already celebrated, so the "you earned it" party plays once
+    // Potty training: a dino for every dry day (in underwear or a pull-up, no pee on the rug, couch or floor).
+    potty: {},    // 'YYYY-MM-DD' -> 'dry' | 'oops'
+    dinoGoal: 30,
+    dinoPrize: 'A new Lucas book',
+    dinoSpent: 0,
+    booksWon: [], // [{ name, cost, date }]
+    celebratedBook: '',
   };
 
   let state = load();
@@ -53,6 +60,7 @@
         const s = Object.assign(structuredClone(DEFAULT_STATE), JSON.parse(raw));
         s.prize = Object.assign(structuredClone(DEFAULT_STATE.prize), s.prize);
         if (!s.name) s.name = DEFAULT_STATE.name;
+        if (!s.potty || typeof s.potty !== 'object') s.potty = {};
         if (s.avatar === '🦁') s.avatar = DEFAULT_STATE.avatar; // old default buddy, before the farm theme
         return s;
       }
@@ -98,6 +106,23 @@
     while (state.doses[keyOf(d)]) { n++; d = addDays(d, -1); }
     return n;
   }
+
+  // ---------- Dinos (potty) ----------
+  function dinoStats() {
+    const days = Object.values(state.potty);
+    const dry = days.filter(v => v === 'dry').length;
+    return { dry, oops: days.length - dry, dinos: Math.max(0, dry - state.dinoSpent), streak: dryStreak() };
+  }
+  function dryStreak() {
+    let d = today(), n = 0;
+    if (!state.potty[keyOf(d)]) d = addDays(d, -1);
+    while (state.potty[keyOf(d)] === 'dry') { n++; d = addDays(d, -1); }
+    return n;
+  }
+  const bookSig = () => `${state.dinoPrize}|${state.dinoGoal}|${state.dinoSpent}`;
+  // Each dino in the collection gets its own color.
+  const dinoEmoji = i => (i % 3 === 1 ? '🦕' : '🦖');
+  const dinoStyle = i => `filter:hue-rotate(${(i * 67) % 360}deg) saturate(1.3)`;
 
   const prizeSig = () => `${state.prize.name}|${state.prize.cost}|${state.spent}`;
   const prizeSet = () => !!(state.prize.name || state.prize.photo);
@@ -149,9 +174,31 @@
     clop: () => [0, 0.14, 0.32, 0.46].forEach((t, i) => tone(i % 2 ? 620 : 880, t, 0.06, 'triangle', 0.22)),
     star: () => { sfx.clop(); [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.6 + i * 0.09, 0.25, 'triangle')); },
     neigh: () => neigh(),
+    roar: () => roar(),
     fanfare: () => { neigh(); [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.13, i === 5 ? 0.6 : 0.2, 'square', 0.1)); },
     nope: () => tone(220, 0, 0.2, 'sawtooth', 0.08),
   };
+  // A friendly dino roar: a low growl that rises and falls, run through a muffling filter.
+  function roar() {
+    if (!state.sound) return;
+    try {
+      const ctx = getCtx(), t0 = ctx.currentTime;
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      const lfo = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(110, t0);
+      o.frequency.linearRampToValueAtTime(190, t0 + 0.25);
+      o.frequency.linearRampToValueAtTime(80, t0 + 0.9);
+      lfo.frequency.value = 28; lg.gain.value = 25;
+      lfo.connect(lg).connect(o.frequency);
+      f.type = 'lowpass'; f.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1);
+      o.connect(f).connect(g).connect(ctx.destination);
+      o.start(t0); lfo.start(t0); o.stop(t0 + 1.05); lfo.stop(t0 + 1.05);
+    } catch (e) { /* no audio */ }
+  }
   // A little horse whinny: a wobbly pitch that rises then falls.
   function neigh() {
     if (!state.sound) return;
@@ -228,6 +275,11 @@
     { id: 'barn', label: 'Reached the last step', script: () => '"You made it all the way to the barn! Yee-haw!"' },
     { id: 'prize', label: 'Earned the prize', script: () => '"You earned your prize! Go show me!"' },
     { id: 'keepgoing', label: 'Tapping the prize or trail', script: () => '"Keep going, cowboy! More stars to get your prize!"' },
+    { id: 'potty', label: 'Potty check', script: () => `"Potty check, ${state.name || 'buddy'}! Did you stay dry today?"` },
+    { id: 'dino', label: 'Dry day (got a dino)', script: () => '"Roar! You stayed dry! You got a dino!"' },
+    { id: 'oops', label: 'Accident day', script: () => '"That\'s okay! Accidents happen. We\'ll try again tomorrow!"' },
+    { id: 'book', label: 'Earned the dino prize', script: () => `"You got ${state.dinoGoal} dinos! You earned ${state.dinoPrize.toLowerCase()}!"` },
+    { id: 'dinogo', label: 'Tapping the dino collection', script: () => '"Look at all your dinos! Keep staying dry!"' },
   ];
   const clips = {}; // slot -> { buffer, start, end }
   let clipPlaying = null;
@@ -361,11 +413,11 @@
       setTimeout(() => s.remove(), 4500);
     }
   }
-  function flyStar(fromEl) {
+  function flyStar(fromEl, emoji = '⭐') {
     const pill = $('starPill');
     const a = fromEl.getBoundingClientRect(), b = pill.getBoundingClientRect();
     const s = document.createElement('div');
-    s.className = 'fly-star'; s.textContent = '⭐';
+    s.className = 'fly-star'; s.textContent = emoji;
     s.style.left = a.left + a.width / 2 - 35 + 'px';
     s.style.top = a.top + a.height / 2 - 35 + 'px';
     document.body.appendChild(s);
@@ -402,7 +454,7 @@
     if (!list.length) return;
     const [c, ...rest] = list;
     (c.sound || sfx.fanfare)();
-    confetti(c.confetti || 50);
+    confetti(c.confetti || 50, c.bits);
     buzz([60, 40, 120]);
     say(c.speak || c.title, c.slot);
     openModal(`
@@ -485,13 +537,151 @@
     if (extra.length) setTimeout(() => celebrate(extra), 1500);
   }
 
+  // ---------- Potty ----------
+  const DINO_BITS = ['🦖', '🦕', '🌿', '🥚', '⭐', '🌋', '💚'];
+  function setPotty(key, val) {
+    const before = dinoStats();
+    if (val) state.potty[key] = val; else delete state.potty[key];
+    save();
+    return bookCheck(before);
+  }
+  function bookCheck(before) {
+    const d = dinoStats();
+    if (d.dinos < state.dinoGoal || (before && before.dinos >= state.dinoGoal) || state.celebratedBook === bookSig()) return [];
+    state.celebratedBook = bookSig(); save();
+    return [{
+      emoji: '📚🦖', title: `${state.dinoGoal} dinos!`,
+      text: `You earned <b>${esc(state.dinoPrize)}</b>! Go show a grown-up! 🎉`,
+      speak: `Roar! You got ${state.dinoGoal} dinos! You earned ${state.dinoPrize}!`,
+      slot: 'book', confetti: 90, bits: DINO_BITS, sound: () => { sfx.roar(); sfx.fanfare(); },
+    }];
+  }
+  function kidLogPotty(key, val, btn) {
+    if (state.potty[key]) return;
+    const extra = setPotty(key, val);
+    if (val === 'dry') {
+      sfx.roar(); buzz(80); confetti(30, DINO_BITS);
+      flyStar(btn, '🦖');
+      say(`Roar! You stayed dry! You got a dino!`, 'dino');
+    } else {
+      sfx.tap();
+      say(`That's okay, ${state.name}! Accidents happen. We'll try again tomorrow!`, 'oops');
+    }
+    renderPotty(true);
+    if (extra.length) setTimeout(() => celebrate(extra), 1500);
+  }
+
+  function pottyWeekStrip() {
+    const ws = weekStartOf(today()), tk = keyOf(today());
+    let cells = '', n = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(ws, i), k = keyOf(d), v = state.potty[k];
+      if (v === 'dry') n++;
+      cells += `<div class="wday ${k === tk ? 'today' : ''}">${DAY_LETTERS[d.getDay()]}<span class="pday ${v || ''}">${v === 'dry' ? `<i style="${dinoStyle(n - 1)}">${dinoEmoji(n - 1)}</i>` : v === 'oops' ? '💧' : ''}</span></div>`;
+    }
+    return `<div class="week potty-week">${cells}</div>`;
+  }
+
+  function renderPotty(justDone) {
+    const tk = keyOf(today()), v = state.potty[tk], d = dinoStats();
+    const yk = keyOf(addDays(today(), -1));
+    const started = Object.keys(state.potty).some(k => k < yk);
+    const askYesterday = !state.potty[yk] && started;
+    const top = v === 'dry'
+      ? `<div class="card done-card">
+          <div class="done-star" ${justDone ? '' : 'style="animation-name:glow;animation-delay:0s"'}>🦖</div>
+          <h2>You got a dino!</h2>
+          <p class="muted" style="font-size:18px;margin:6px 0 0">Dry pants all day! 🩲</p>
+          <button class="link-btn" data-act="potty-undo" data-day="${tk}">Oops, change it (grown-ups)</button>
+        </div>`
+      : v === 'oops'
+        ? `<div class="card done-card">
+          <div class="done-star" style="animation-name:spin-in">💛</div>
+          <h2>That's okay!</h2>
+          <p class="muted" style="font-size:18px;margin:6px 0 0">Try again tomorrow! 🦖</p>
+          <button class="link-btn" data-act="potty-undo" data-day="${tk}">Change it (grown-ups)</button>
+        </div>`
+        : pottyButtons(tk, false);
+    const goal = state.dinoGoal, have = Math.min(d.dinos, goal), left = Math.max(0, goal - d.dinos);
+    const slots = goal <= 60
+      ? `<div class="slots ${goal > 30 ? 'small' : ''}">${Array.from({ length: goal }, (_, i) => `<span class="slot dino ${i < have ? 'on' : ''}" style="${i < have ? dinoStyle(i) + ';' : ''}animation-delay:${Math.min(i, 30) * 0.03}s">${dinoEmoji(i)}</span>`).join('')}</div>`
+      : `<div class="progress"><div style="width:${(have / goal) * 100}%"></div></div>`;
+    const books = state.booksWon.slice(-8).reverse();
+    $('view-potty').innerHTML = `
+      <div class="buddy-row">
+        <div class="buddy-big">🦖</div>
+        <div class="bubble">${v === 'dry' ? 'Roar! A dino for you!' : v === 'oops' ? 'Accidents happen! 💛' : `Potty check${state.name ? ', ' + esc(state.name) : ''}!`} <button class="speak-btn" data-act="potty-speak" aria-label="Say it">🔊</button></div>
+      </div>
+      ${top}
+      ${askYesterday ? `<div class="card"><h3 class="center">What about yesterday?</h3>${pottyButtons(yk, true)}</div>` : ''}
+      <div class="card prize-hero" data-act="dino-say">
+        <div class="prize-pic ${left === 0 ? 'won' : ''}">📚</div>
+        <div class="prize-name">${esc(state.dinoPrize)}</div>
+        <div class="prize-left">${left === 0 ? '🎉 You earned it! 🎉' : `${left} more 🦖 to go!`}</div>
+        ${slots}
+        <div class="muted" style="font-size:18px;font-weight:600">${have} / ${goal} 🦖</div>
+      </div>
+      <div class="card">
+        <h3>My dry week ${d.streak >= 2 ? `<span class="muted" style="font-size:16px">· 🔥 ${d.streak} dry days in a row</span>` : ''}</h3>
+        ${pottyWeekStrip()}
+      </div>
+      ${books.length ? `<div class="card"><h3>📚 Books I earned</h3><ul class="history">${books.map(b => `<li>📚 ${esc(b.name)} <span class="muted">· ${shortDate(fromKey(b.date))}</span></li>`).join('')}</ul></div>` : ''}`;
+  }
+  function pottyButtons(key, small) {
+    return `<div class="dose-grid ${small ? 'small' : ''}">
+      <button class="dose-btn dry" data-act="potty" data-val="dry" data-day="${key}"><span class="potty-ico">🩲🦖</span>DRY!<span class="sub">no pee on the floor</span></button>
+      <button class="dose-btn oops" data-act="potty" data-val="oops" data-day="${key}"><span class="potty-ico">💧</span>OOPS<span class="sub">an accident</span></button>
+    </div>`;
+  }
+  $('view-potty').addEventListener('click', e => {
+    const t = e.target.closest('[data-act]');
+    if (!t) return;
+    const act = t.dataset.act;
+    if (act === 'potty') kidLogPotty(t.dataset.day, t.dataset.val, t);
+    if (act === 'potty-speak') {
+      const v = state.potty[keyOf(today())];
+      if (v === 'dry') say('You stayed dry today! You got a dino!', 'dino');
+      else if (v === 'oops') say(`That's okay! We'll try again tomorrow!`, 'oops');
+      else say(`Potty check, ${state.name}! Did you stay dry today? No pee on the rug, the couch, or the floor?`, 'potty');
+    }
+    if (act === 'dino-say') {
+      const left = Math.max(0, state.dinoGoal - dinoStats().dinos);
+      say(left ? `${left} more dinos to get ${state.dinoPrize}!` : `You earned ${state.dinoPrize}!`, left ? 'dinogo' : 'book');
+    }
+    if (act === 'potty-undo') askGrownup(() => { grownupUnlocked = false; pottyChooser(t.dataset.day); });
+  });
+
+  // Grown-up picker for one potty day: Dry / Accident / Not logged.
+  function pottyChooser(key) {
+    const cur = state.potty[key];
+    const d = fromKey(key);
+    openModal(`
+      <h2>${DAY_NAMES[d.getDay()]}, ${shortDate(d)}</h2>
+      <p class="muted">Potty day</p>
+      <div class="choice-grid">
+        <button data-pick="dry" class="${cur === 'dry' ? 'sel' : ''}"><span style="font-size:40px">🦖</span>Dry</button>
+        <button data-pick="oops" class="${cur === 'oops' ? 'sel' : ''}"><span style="font-size:40px">💧</span>Accident</button>
+        <button data-pick="" class="${!cur ? 'sel' : ''}"><span style="font-size:40px">⚪</span>Not logged</button>
+      </div>
+      <button class="link-btn" data-act="close">Cancel</button>`);
+    modalCard.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => {
+      const extra = setPotty(key, b.dataset.pick || null);
+      closeModal();
+      renderAll();
+      if (extra.length) celebrate(extra);
+    });
+  }
+
   // ---------- Top bar ----------
   function renderTop() {
     $('avatar').textContent = state.avatar;
     const h = new Date().getHours();
     $('helloSmall').textContent = h < 12 ? 'Good morning!' : h < 17 ? 'Good afternoon!' : 'Good evening!';
     $('helloBig').textContent = state.name ? `Hi, ${state.name}!` : 'Star Steps';
-    $('starCount').textContent = stats().stars;
+    const potty = currentView === 'potty';
+    $('starIcon').textContent = potty ? '🦖' : '⭐';
+    $('starCount').textContent = potty ? dinoStats().dinos : stats().stars;
+    $('starPill').setAttribute('aria-label', potty ? 'Dinos' : 'Stars');
   }
   $('avatarBtn').onclick = () => {
     sfx.tap();
@@ -544,6 +734,10 @@
         ${weekStrip()}
         <p class="hint center">Every day this week = bonus 🌟</p>
       </div>
+      <div class="card" data-act="go-potty">
+        <div class="step-head"><h3>🦖 Potty dinos</h3><b>${dinoStats().dinos} <span class="muted" style="font-size:18px">/ ${state.dinoGoal}</span></b></div>
+        <p class="hint" style="margin:4px 0 0">${state.potty[keyOf(today())] ? (state.potty[keyOf(today())] === 'dry' ? 'Got a dino today! 🦖' : 'Try again tomorrow! 💛') : 'Tap for potty check! 🩲'}</p>
+      </div>
       <div class="card" data-act="go-steps">
         <div class="step-head"><h3>🐎 My step</h3><b>${state.step} <span class="muted" style="font-size:18px">of ${state.totalSteps}</span></b></div>
         <div class="mini-steps">${miniSteps()}</div>
@@ -560,6 +754,7 @@
       say(dose ? 'You got your star for today! Great job!' : `O.I.T. time, ${state.name}! Did you take a full dose or a half dose? Tap one!`, dose ? 'done' : 'oit');
     }
     if (act === 'go-steps') showView('steps');
+    if (act === 'go-potty') showView('potty');
     if (act === 'undo') askGrownup(() => { grownupUnlocked = false; doseChooser(keyOf(today())); });
   });
 
@@ -634,7 +829,7 @@
 
   // ---------- Calendar (shared by Prize page and Grown-ups) ----------
   let calMonth = (() => { const t = today(); return new Date(t.getFullYear(), t.getMonth(), 1); })();
-  function calendarCard(edit) {
+  function calendarCard(edit, kind = 'dose') {
     const y = calMonth.getFullYear(), m = calMonth.getMonth();
     const first = new Date(y, m, 1), days = new Date(y, m + 1, 0).getDate();
     const lead = (first.getDay() - WEEK_START + 7) % 7;
@@ -644,16 +839,19 @@
     for (let i = 0; i < 7; i++) cells += `<div class="dow">${DAY_LETTERS[(i + WEEK_START) % 7]}</div>`;
     for (let i = 0; i < lead; i++) cells += '<div class="d blank"></div>';
     for (let day = 1; day <= days; day++) {
-      const d = new Date(y, m, day), k = keyOf(d), dose = state.doses[k];
+      const d = new Date(y, m, day), k = keyOf(d), dose = state.doses[k], pv = state.potty[k];
       const future = d > now;
-      cells += `<div class="d ${k === tk ? 'today' : ''} ${future ? 'future' : ''}" ${edit && !future ? `data-day="${k}"` : ''}>
-        ${dose ? doseSvg(dose.t) : `<span>${day}</span>`}${ups.has(k) ? '<span class="up">🐎</span>' : ''}</div>`;
+      const inner = kind === 'potty'
+        ? (pv ? `<span class="pcal">${pv === 'dry' ? '🦖' : '💧'}</span>` : `<span>${day}</span>`)
+        : (dose ? doseSvg(dose.t) : `<span>${day}</span>`) + (ups.has(k) ? '<span class="up">🐎</span>' : '');
+      cells += `<div class="d ${k === tk ? 'today' : ''} ${future ? 'future' : ''}" ${edit && !future ? `data-${kind === 'potty' ? 'pday' : 'day'}="${k}"` : ''}>${inner}</div>`;
     }
     const atNow = y === now.getFullYear() && m === now.getMonth();
     return `<div class="card">
+      ${kind === 'potty' ? '<h3>🦖 Potty days</h3>' : edit ? '<h3>⭐ OIT days</h3>' : ''}
       <div class="cal-head"><button class="arrow" data-cal="-1" aria-label="Previous month">◀</button><b>${MONTHS[m]} ${y}</b><button class="arrow" data-cal="1" ${atNow ? 'disabled' : ''} aria-label="Next month">▶</button></div>
       <div class="cal ${edit ? 'edit' : ''}">${cells}</div>
-      ${edit ? '<p class="hint">Tap a day to fix it (full, half or none). 🐎 = moved up a step that day.</p>' : ''}
+      ${edit ? (kind === 'potty' ? '<p class="hint">Tap a day to fix it (dry, accident or not logged).</p>' : '<p class="hint">Tap a day to fix it (full, half or none). 🐎 = moved up a step that day.</p>') : ''}
     </div>`;
   }
   function calendarNav(t, rerender) {
@@ -748,7 +946,7 @@
         <div class="card center">
           <div style="font-size:70px">🔒</div>
           <h3 style="font-size:24px">Grown-ups only</h3>
-          <p class="muted">Set the step, the prize and fix past days here.</p>
+          <p class="muted">Set the step, the prizes and fix past days here.</p>
           <button class="big-btn" id="unlock">Unlock</button>
         </div>`;
       $('unlock').onclick = () => askGrownup(renderGrownups);
@@ -791,6 +989,20 @@
       </div>
 
       ${calendarCard(true)}
+
+      <div class="card">
+        <h3>🦖 Potty dinos</h3>
+        <p class="hint" style="margin-top:0">One dino for each day in underwear or a pull-up with no pee on the rug, couch or anywhere else in the apartment. Dinos are separate from the OIT stars.</p>
+        <div class="field"><label>Dino prize</label><input type="text" id="gDinoPrize" maxlength="40" value="${esc(state.dinoPrize)}" /></div>
+        <div class="field"><label>Dinos needed</label>
+          <div class="stepper"><button id="gDinoMinus" aria-label="Fewer dinos">−</button><b>${state.dinoGoal} 🦖</b><button id="gDinoPlus" aria-label="More dinos">+</button></div>
+        </div>
+        <p class="hint center">${dinoStats().dry} dry day${dinoStats().dry === 1 ? '' : 's'}, ${dinoStats().oops} accident day${dinoStats().oops === 1 ? '' : 's'} · ${dinoStats().dinos} 🦖 now</p>
+        <button class="big-btn" id="gBookGive" ${dinoStats().dinos < state.dinoGoal ? 'disabled' : ''}>📚 Prize given! (uses ${state.dinoGoal} 🦖)</button>
+        ${state.booksWon.length ? `<ul class="history">${state.booksWon.slice().reverse().map(b => `<li>📚 ${esc(b.name)} · ${shortDate(fromKey(b.date))}</li>`).join('')}</ul>` : ''}
+      </div>
+
+      ${calendarCard(true, 'potty')}
 
       <div class="card">
         <h3>⭐ Stars</h3>
@@ -880,6 +1092,16 @@
     };
 
     $('view-grownups').querySelectorAll('[data-day]').forEach(el => el.onclick = () => doseChooser(el.dataset.day));
+    $('view-grownups').querySelectorAll('[data-pday]').forEach(el => el.onclick = () => pottyChooser(el.dataset.pday));
+    $('gDinoPrize').onchange = e => { state.dinoPrize = e.target.value.trim() || DEFAULT_STATE.dinoPrize; save(); renderAll(); };
+    $('gDinoMinus').onclick = set(() => { state.dinoGoal = Math.max(1, state.dinoGoal - (state.dinoGoal > 30 ? 5 : 1)); });
+    $('gDinoPlus').onclick = set(() => { state.dinoGoal = Math.min(200, state.dinoGoal + (state.dinoGoal >= 30 ? 5 : 1)); });
+    $('gBookGive').onclick = () => {
+      state.booksWon.push({ name: state.dinoPrize, cost: state.dinoGoal, date: keyOf(today()) });
+      state.dinoSpent += state.dinoGoal;
+      save();
+      openModal(`<div class="huge">📚</div><h2>Happy reading!</h2><p>${state.dinoGoal} 🦖 used. The next ${state.dinoGoal} dinos start now.</p><button class="big-btn" data-act="close">OK</button>`, renderAll);
+    };
     $('view-grownups').querySelectorAll('[data-cal]').forEach(el => el.onclick = () => calendarNav(el, renderGrownups));
 
     $('gName').onchange = e => { state.name = e.target.value.trim(); save(); renderAll(); };
@@ -914,11 +1136,12 @@
         if (!data || typeof data.doses !== 'object') throw new Error('bad');
         state = Object.assign(structuredClone(DEFAULT_STATE), data);
         state.prize = Object.assign(structuredClone(DEFAULT_STATE.prize), data.prize);
+        if (!state.potty || typeof state.potty !== 'object') state.potty = {};
         save(); renderAll(); toast('Backup restored!');
       }).catch(() => toast("That file isn't a Star Steps backup."));
     };
     $('gReset').onclick = () => {
-      if (confirm('Erase all stars, doses and settings on this phone? This cannot be undone.')) {
+      if (confirm('Erase all stars, dinos, doses, potty days and settings on this phone? This cannot be undone.')) {
         state = structuredClone(DEFAULT_STATE); save(); Object.keys(clips).forEach(k => delete clips[k]); clipClearAll().catch(() => { /* none */ }); renderAll();
       }
     };
@@ -949,11 +1172,12 @@
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
     document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.view === name));
     if (name !== 'grownups' && grownupUnlocked) grownupUnlocked = false; // re-lock when leaving
+    renderTop();
     renderView(name);
     window.scrollTo({ top: 0 });
   }
   function renderView(name) {
-    ({ today: renderToday, jar: renderJar, steps: renderSteps, grownups: renderGrownups })[name]();
+    ({ today: renderToday, potty: renderPotty, jar: renderJar, steps: renderSteps, grownups: renderGrownups })[name]();
   }
   function renderAll() { renderTop(); renderView(currentView); }
   document.querySelector('.tabbar').addEventListener('click', e => {
