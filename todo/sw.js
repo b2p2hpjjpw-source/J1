@@ -1,6 +1,6 @@
 // Offline support. Online: always fetch the latest files (so updates show up right away)
 // and keep a copy. Offline: serve the saved copy.
-const CACHE = 'our-todo-v1';
+const CACHE = 'our-todo-v2';
 const ASSETS = [
   './', 'index.html', '../family-sync.js', 'styles.css', 'app.js', 'manifest.webmanifest',
   'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',

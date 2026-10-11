@@ -63,17 +63,18 @@
   <div class="stats">
     <div class="stat"><span class="label" id="sALabel">Mom</span><span id="sA" class="v">0</span></div>
     <div class="stat"><span class="label" id="sBLabel">Dad</span><span id="sB" class="v">0</span></div>
-    <div class="stat"><span class="label">Either of us</span><span id="sBoth" class="v">0</span></div>
+    <div class="stat"><span class="label">High priority</span><span id="sHigh" class="v neg">0</span></div>
     <div class="stat"><span class="label">Done this week</span><span id="sWeek" class="v pos">0</span></div>
   </div>
 
   <section class="card">
     <form id="form" autocomplete="off">
       <div class="field"><label class="label" for="title" id="formLabel">New task</label><input id="title" type="text" maxlength="120" placeholder="e.g. Call the pediatrician" required></div>
-      <div class="field"><span class="label">Who</span><div class="chips" id="who" role="group" aria-label="Who"></div></div>
+      <div class="field"><span class="label">Who’s handling it</span><div class="chips" id="who" role="group" aria-label="Who’s handling it"></div></div>
+      <div class="field"><span class="label">Priority</span><div class="chips" id="prio" role="group" aria-label="Priority"></div></div>
       <div class="field"><span class="label">List</span><div class="chips" id="lists" role="group" aria-label="List"></div></div>
       <div class="row">
-        <div class="field"><label class="label" for="due">Due (optional)</label><input id="due" type="date"></div>
+        <div class="field"><label class="label" for="due">Deadline (optional)</label><input id="due" type="date"></div>
         <div class="field"><label class="label" for="note">Note (optional)</label><input id="note" type="text" maxlength="120" placeholder="Details"></div>
       </div>
       <div class="btns">
@@ -87,6 +88,13 @@
   <section class="stack">
     <div class="sechead">
       <h2>To do</h2>
+      <div class="seg" id="sort" aria-label="Sort by">
+        <button type="button" data-s="due" aria-pressed="true">By deadline</button>
+        <button type="button" data-s="prio" aria-pressed="false">By priority</button>
+      </div>
+    </div>
+    <div class="sechead">
+      <span class="label">Showing</span>
       <div class="seg" id="filter">
         <button type="button" data-f="all" aria-pressed="true">Everyone</button>
         <button type="button" data-f="a" aria-pressed="false" id="fA">Mom</button>

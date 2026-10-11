@@ -8,6 +8,8 @@
   // ---------- Config ----------
   const STORE_KEY = 'our-todo-v1';
   const LISTS = ['Home', 'Kids', 'Errands', 'Groceries', 'Money', 'Work', 'Other'];
+  const PRIOS = [['high', 'High'], ['normal', 'Normal'], ['low', 'Low']];
+  const RANK = { high: 0, normal: 1, low: 2 };
   const DONE_SHOWN = 30; // most recent finished tasks listed under Done
 
   // ---------- Helpers ----------
@@ -24,7 +26,7 @@
   const DEFAULT_STATE = {
     version: 1,
     names: { a: 'Mom', b: 'Dad' },
-    tasks: [], // [{ id, title, who: 'both'|'a'|'b', list, due: 'YYYY-MM-DD'|'', note, done, doneAt, createdAt }]
+    tasks: [], // [{ id, title, who: 'both'|'a'|'b', priority: 'high'|'normal'|'low', list, due: 'YYYY-MM-DD'|'', note, done, doneAt, createdAt }]
   };
   function load() {
     try {
@@ -32,6 +34,7 @@
       if (raw && Array.isArray(raw.tasks)) {
         const s = Object.assign(structuredClone(DEFAULT_STATE), raw);
         s.names = Object.assign({ a: '', b: '' }, raw.names || {});
+        s.tasks.forEach(x => { if (!RANK.hasOwnProperty(x.priority)) x.priority = 'normal'; });
         return s;
       }
     } catch (e) { /* start fresh */ }
@@ -45,7 +48,7 @@
   }
 
   const nameOf = w => w === 'a' ? (state.names.a || 'First') : w === 'b' ? (state.names.b || 'Second') : 'Either of us';
-  let selWho = 'both', selList = 'Home', filter = 'all', editing = null;
+  let selWho = 'both', selPrio = 'normal', selList = 'Home', filter = 'all', sortBy = 'due', editing = null;
 
   function chips(el, items, sel, pick) {
     el.innerHTML = '';
@@ -59,23 +62,23 @@
   }
   function buildChips() {
     chips($('who'), [['both', 'Either of us'], ['a', nameOf('a')], ['b', nameOf('b')]], selWho, v => { selWho = v; buildChips(); });
+    chips($('prio'), PRIOS, selPrio, v => { selPrio = v; buildChips(); });
     chips($('lists'), LISTS.map(l => [l, l]), selList, v => { selList = v; buildChips(); });
   }
 
   // ---------- Rendering ----------
   const CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   function dueText(due) {
-    const t = today();
-    if (due === t) return 'Today';
-    const d = parse(due), tm = new Date(); tm.setDate(tm.getDate() + 1);
-    if (due === ymd(tm)) return 'Tomorrow';
-    const days = Math.round((d - parse(t)) / 864e5);
-    return d.toLocaleDateString('en-US', days > 0 && days < 7 ? { weekday: 'short' } : { weekday: 'short', month: 'short', day: 'numeric' });
+    const d = parse(due), days = Math.round((d - parse(today())) / 864e5);
+    if (days < 0) return days === -1 ? 'Due yesterday' : `${-days} days overdue`;
+    if (days === 0) return 'Due today';
+    if (days === 1) return 'Due tomorrow';
+    return 'Due ' + d.toLocaleDateString('en-US', days < 7 ? { weekday: 'short' } : { weekday: 'short', month: 'short', day: 'numeric' });
   }
 
   function taskRow(task) {
     const li = document.createElement('div');
-    li.className = 'task' + (task.done ? ' done' : '');
+    li.className = 'task' + (task.done ? ' done' : '') + (task.priority === 'high' ? ' high' : '');
     const c = document.createElement('button');
     c.type = 'button'; c.className = 'check'; c.innerHTML = CHECK;
     c.setAttribute('aria-label', task.done ? `Mark “${task.title}” not done` : `Mark “${task.title}” done`);
@@ -87,7 +90,8 @@
     const t = document.createElement('span'); t.className = 't'; t.textContent = task.title;
     const m = document.createElement('span'); m.className = 'meta';
     const pill = (text, cls) => { const p = document.createElement('span'); p.className = 'pill' + (cls ? ' ' + cls : ''); p.textContent = text; m.appendChild(p); };
-    if (task.who !== 'both') pill(nameOf(task.who), 'who');
+    if (task.priority !== 'normal' && !task.done) pill(task.priority === 'high' ? 'High' : 'Low', 'p-' + task.priority);
+    pill(task.who === 'both' ? 'Either of us' : nameOf(task.who), 'who' + (task.who === 'both' ? ' both' : ''));
     if (task.due && !task.done) pill(dueText(task.due), task.due < today() ? 'late' : '');
     const l = document.createElement('span'); l.textContent = task.list; m.appendChild(l);
     if (task.note) { const n = document.createElement('span'); n.className = 'note'; n.textContent = '· ' + task.note; m.appendChild(n); }
@@ -131,7 +135,7 @@
     $('sALabel').textContent = nameOf('a'); $('sBLabel').textContent = nameOf('b');
     $('sA').textContent = open.filter(x => x.who === 'a').length;
     $('sB').textContent = open.filter(x => x.who === 'b').length;
-    $('sBoth').textContent = open.filter(x => x.who === 'both').length;
+    $('sHigh').textContent = open.filter(x => x.priority === 'high').length;
     $('sWeek').textContent = weekDone;
     $('fA').textContent = nameOf('a'); $('fB').textContent = nameOf('b');
     $('growCap').textContent = weekDone ? `${plural(weekDone, 'task')} done this week` : 'Every task you finish adds fruit to the tree';
@@ -139,14 +143,22 @@
 
     // Open tasks, grouped by when they're due. A filter for one of us also shows the "either of us" tasks.
     const mine = open.filter(x => filter === 'all' || x.who === filter || x.who === 'both');
-    const byDue = (a, b) => a.due.localeCompare(b.due) || a.createdAt - b.createdAt;
+    // By deadline: grouped by when it's due, most important first within each group.
+    // By priority: grouped High / Normal / Low, soonest deadline first (no deadline last).
+    const byPrio = (a, b) => RANK[a.priority] - RANK[b.priority];
+    const byDue = (a, b) => (a.due || '9999').localeCompare(b.due || '9999');
+    const newest = (a, b) => b.createdAt - a.createdAt;
     const O = $('openList'); O.innerHTML = '';
-    const groups = [
-      ['Overdue', mine.filter(x => x.due && x.due < t).sort(byDue), 'late'],
-      ['Today', mine.filter(x => x.due === t).sort(byDue)],
-      ['Coming up', mine.filter(x => x.due > t).sort(byDue)],
-      ['Anytime', mine.filter(x => !x.due).sort((a, b) => b.createdAt - a.createdAt)],
-    ].filter(g => g[1].length);
+    const groups = (sortBy === 'prio' ? [
+      ['High priority', mine.filter(x => x.priority === 'high'), 'hi'],
+      ['Normal', mine.filter(x => x.priority === 'normal')],
+      ['Low priority', mine.filter(x => x.priority === 'low')],
+    ].map(g => (g[1].sort((a, b) => byDue(a, b) || newest(a, b)), g)) : [
+      ['Overdue', mine.filter(x => x.due && x.due < t), 'late'],
+      ['Today', mine.filter(x => x.due === t)],
+      ['Coming up', mine.filter(x => x.due > t)],
+      ['No deadline', mine.filter(x => !x.due)],
+    ].map(g => (g[1].sort((a, b) => byPrio(a, b) || byDue(a, b) || newest(a, b)), g))).filter(g => g[1].length);
     if (!groups.length) {
       O.innerHTML = `<div class="empty">${open.length ? `Nothing on ${filter === 'all' ? 'the list' : nameOf(filter) + '’s list'} right now.` : state.tasks.length ? 'Everything’s done. Nice work, you two.' : 'Nothing here yet. Add a task above and it shows up on both phones once you’re signed in.'}</div>`;
     } else groups.forEach(([label, list, cls]) => O.appendChild(group(label, list, cls)));
@@ -201,7 +213,7 @@
     const x = state.tasks.find(y => y.id === id); if (!x) return;
     editing = id;
     $('title').value = x.title; $('due').value = x.due || ''; $('note').value = x.note || '';
-    selWho = x.who; selList = x.list; buildChips();
+    selWho = x.who; selPrio = x.priority || 'normal'; selList = x.list; buildChips();
     $('formLabel').textContent = 'Edit task'; $('addBtn').textContent = 'Save changes'; $('cancelEdit').hidden = false;
     $('form').parentElement.classList.add('editing');
     $('form').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -212,18 +224,20 @@
     $('title').value = ''; $('due').value = ''; $('note').value = '';
     $('formLabel').textContent = 'New task'; $('addBtn').textContent = 'Add task'; $('cancelEdit').hidden = true;
     $('form').parentElement.classList.remove('editing');
+    selPrio = 'normal'; buildChips();
   }
   $('cancelEdit').onclick = stopEdit;
   $('form').addEventListener('submit', ev => {
     ev.preventDefault();
     const title = $('title').value.trim();
     if (!title) { flash('Type what needs doing first.'); return; }
-    const fields = { title, who: selWho, list: selList, due: $('due').value || '', note: $('note').value.trim() };
+    const fields = { title, who: selWho, priority: selPrio, list: selList, due: $('due').value || '', note: $('note').value.trim() };
     const x = editing && state.tasks.find(y => y.id === editing);
     if (x) { Object.assign(x, fields); flash('Saved.'); stopEdit(); }
     else {
       state.tasks.push({ id: uid(), ...fields, done: false, doneAt: null, createdAt: Date.now() });
       $('title').value = ''; $('note').value = ''; $('due').value = '';
+      selPrio = 'normal'; buildChips();
       flash(`Added for ${selWho === 'both' ? 'either of you' : nameOf(selWho)}.`);
       $('title').focus();
     }
@@ -232,6 +246,10 @@
   $('filter').onclick = e => {
     const b = e.target.closest('button'); if (!b) return;
     filter = b.dataset.f; [...$('filter').children].forEach(x => x.setAttribute('aria-pressed', x === b)); render();
+  };
+  $('sort').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    sortBy = b.dataset.s; [...$('sort').children].forEach(x => x.setAttribute('aria-pressed', x === b)); render();
   };
   $('clearDone').onclick = () => {
     const b = $('clearDone');

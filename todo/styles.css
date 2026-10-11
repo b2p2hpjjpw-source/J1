@@ -97,3 +97,8 @@ form > .field{flex:none}
 .sechead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .hint{font-size:13px;color:var(--muted);margin:0}
 @media (prefers-reduced-motion:reduce){.bloom.new{animation:none}}
+.task.high{box-shadow:inset 3px 0 0 var(--over);padding-left:10px}
+.group.hi > .label{color:var(--over)}
+.pill.p-high{background:var(--over-soft);color:var(--over);font-family:var(--f-body);font-weight:700}
+.pill.p-low{font-family:var(--f-body)}
+.pill.who.both{background:var(--chip);color:var(--muted)}
