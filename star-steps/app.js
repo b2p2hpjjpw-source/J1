@@ -44,6 +44,7 @@
     celebratedPrize: '', // prize signature already celebrated, so the "you earned it" party plays once
     // Potty training: a dino for every day with no pee on the rug, couch or anywhere else in the house.
     potty: {},    // 'YYYY-MM-DD' -> 'dry' | 'oops'
+    pottyUses: [], // [{ id, t: 'pee' | 'poop', at: ISO time }] — every 5 grows a baby dino into a grown-up dino
     dinoGoal: 30,
     dinoPrize: 'A new Lucas book',
     dinoSpent: 0,
@@ -61,6 +62,7 @@
         s.prize = Object.assign(structuredClone(DEFAULT_STATE.prize), s.prize);
         if (!s.name) s.name = DEFAULT_STATE.name;
         if (!s.potty || typeof s.potty !== 'object') s.potty = {};
+        if (!Array.isArray(s.pottyUses)) s.pottyUses = [];
         if (s.avatar === '🦁') s.avatar = DEFAULT_STATE.avatar; // old default buddy, before the farm theme
         return s;
       }
@@ -109,10 +111,20 @@
   }
 
   // ---------- Dinos (potty) ----------
+  // Potty trips grow a dino: 1 mommy lays an egg, 2 it hatches, 3 toddler, 4 kid, 5 grown-up (joins the dino count).
+  const USES_PER_DINO = 5;
+  const GROW_STAGES = [
+    { name: 'Egg', line: 'Mommy dino laid an egg!', slot: 'egg' },
+    { name: 'Hatched', line: 'The egg hatched! It\'s a baby dino!', slot: 'hatch' },
+    { name: 'Toddler', line: 'The baby dino grew into a toddler dino!', slot: 'toddler' },
+    { name: 'Kid', line: 'The toddler dino grew into a kid dino!', slot: 'kiddino' },
+    { name: 'Grown-up', line: 'Your dino is all grown up! It joins your dino family!', slot: 'grown' },
+  ];
   function dinoStats() {
     const days = Object.values(state.potty);
     const dry = days.filter(v => v === 'dry').length;
-    return { dry, oops: days.length - dry, dinos: Math.max(0, dry - state.dinoSpent), streak: dryStreak() };
+    const uses = state.pottyUses.length, grown = Math.floor(uses / USES_PER_DINO);
+    return { dry, oops: days.length - dry, uses, grown, stage: uses % USES_PER_DINO, dinos: Math.max(0, dry + grown - state.dinoSpent), streak: dryStreak() };
   }
   function dryStreak() {
     let d = today(), n = 0;
@@ -176,6 +188,7 @@
     star: () => { sfx.clop(); [784, 988, 1175, 1568].forEach((f, i) => tone(f, 0.6 + i * 0.09, 0.25, 'triangle')); },
     neigh: () => neigh(),
     roar: () => roar(),
+    grow: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.07, 0.18, 'sine', 0.16)),
     fanfare: () => { neigh(); [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, i * 0.13, i === 5 ? 0.6 : 0.2, 'square', 0.1)); },
     nope: () => tone(220, 0, 0.2, 'sawtooth', 0.08),
   };
@@ -281,6 +294,12 @@
     { id: 'oops', label: 'Accident day', script: () => '"That\'s okay! Accidents happen. We\'ll try again tomorrow!"' },
     { id: 'book', label: 'Earned the dino prize', script: () => `"You got ${state.dinoGoal} dinos! You earned ${state.dinoPrize.toLowerCase()}!"` },
     { id: 'dinogo', label: 'Tapping the dino collection', script: () => '"Look at all your dinos! Keep staying dry!"' },
+    { id: 'pottytime', label: 'Potty trip question', script: () => '"Did you go pee or poop in the potty? Tap it!"' },
+    { id: 'egg', label: 'Potty trip 1: egg', script: () => '"You went in the potty! Mommy dino laid an egg!"' },
+    { id: 'hatch', label: 'Potty trip 2: hatch', script: () => '"Potty again! The egg hatched! It\'s a baby dino!"' },
+    { id: 'toddler', label: 'Potty trip 3: toddler', script: () => '"Great potty job! The baby dino grew into a toddler!"' },
+    { id: 'kiddino', label: 'Potty trip 4: kid', script: () => '"Potty again! Now it\'s a big kid dino!"' },
+    { id: 'grown', label: 'Potty trip 5: grown-up', script: () => '"Roar! Your dino is all grown up! It joins your dino family!"' },
   ];
   const clips = {}; // slot -> { buffer, start, end }
   let clipPlaying = null;
@@ -572,6 +591,64 @@
     if (extra.length) setTimeout(() => celebrate(extra), 1500);
   }
 
+  // ---------- Potty trips: growing a dino ----------
+  const useId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const tripsOn = key => state.pottyUses.filter(u => keyOf(new Date(u.at)) === key);
+  // Stop a 3-year-old from tapping the same button over and over: one pee and one poop per couple of minutes.
+  const LOCK_MS = 2 * 60 * 1000;
+  function lockedType(type) {
+    const last = state.pottyUses.filter(u => u.t === type).pop();
+    return last && Date.now() - new Date(last.at).getTime() < LOCK_MS;
+  }
+  function addPottyUse(type) {
+    const before = dinoStats();
+    state.pottyUses.push({ id: useId(), t: type, at: new Date().toISOString() });
+    save();
+    return { after: dinoStats(), extra: bookCheck(before) };
+  }
+  function kidPottyUse(type, btn) {
+    if (lockedType(type)) { sfx.nope(); say('Great job! Come back next time you go potty!'); return; }
+    const { after, extra } = addPottyUse(type);
+    setTimeout(() => { if (currentView === 'potty' && modal.classList.contains('hidden')) renderPotty(); }, LOCK_MS + 500);
+    const did = type === 'pee' ? 'You went pee in the potty!' : 'You went poop in the potty!';
+    if (after.stage === 0) {
+      renderPotty();
+      setTimeout(() => flyStar(btn, '🦖'), 200);
+      celebrate([{
+        emoji: `<span style="${dinoStyle(after.dinos - 1)}">${dinoEmoji(after.dinos - 1)}</span>`,
+        title: 'All grown up!',
+        text: `${did} Your dino is a grown-up and joins your dino family! <b>+1 🦖</b>`,
+        speak: `Roar! ${did} Your dino is all grown up! It joins your dino family!`,
+        slot: 'grown', confetti: 80, bits: DINO_BITS, sound: () => { sfx.roar(); sfx.fanfare(); },
+      }, ...extra]);
+    } else {
+      const st = GROW_STAGES[after.stage - 1];
+      sfx.grow(); buzz(60); confetti(25, after.stage === 1 ? ['🥚', '💚', '✨', '🌿'] : DINO_BITS);
+      say(`${did} ${st.line}`, st.slot);
+      renderPotty(false, true);
+      if (extra.length) setTimeout(() => celebrate(extra), 1500);
+    }
+  }
+
+  // The growing dino, drawn bigger at each stage. stage = trips since the last grown-up dino (0–4).
+  function nurseryScene(stage, idx, grew) {
+    const look = `style="${dinoStyle(idx)}"`, dino = dinoEmoji(idx), pop = grew ? 'grow-pop' : '';
+    const nest = '<span class="nest">🪹</span>';
+    let art, caption;
+    if (stage === 0) { art = `<span class="nursery-mom faded" ${look}>🦕</span>${nest}`; caption = 'Go potty and Mommy dino will lay an egg!'; }
+    else if (stage === 1) { art = `<span class="nursery-mom" ${look}>🦕</span><span class="nest-wrap ${pop}"><span class="egg">🥚</span>${nest}</span>`; caption = 'Mommy dino laid an egg!'; }
+    else if (stage === 2) {
+      art = `<span class="nest-wrap ${pop}"><span class="baby" ${look}>${dino}</span>
+        <svg class="shell" viewBox="0 0 60 34" aria-hidden="true"><path d="M2 4 L12 14 L20 3 L30 14 L40 3 L48 14 L58 4 Q60 34 30 34 Q0 34 2 4 Z" fill="#fff6e0" stroke="#e8d7b5" stroke-width="2"/></svg>${nest}</span>`;
+      caption = 'The egg hatched! A baby dino!';
+    }
+    else if (stage === 3) { art = `<span class="grow-dino ${pop}" style="font-size:64px;${dinoStyle(idx)}">${dino}</span>`; caption = 'Now a toddler dino!'; }
+    else { art = `<span class="grow-dino ${pop}" style="font-size:92px;${dinoStyle(idx)}">${dino}</span>`; caption = 'Now a kid dino! One more to grow up!'; }
+    const steps = ['🥚', '🐾', '🧸', '🎒', '🦖'];
+    const dots = GROW_STAGES.map((g, i) => `<div class="gstep ${i < stage ? 'on' : ''}"><span>${steps[i]}</span><small>${g.name}</small></div>`).join('');
+    return `<div class="nursery">${art}</div><div class="nursery-cap">${caption}</div><div class="gsteps">${dots}</div>`;
+  }
+
   function pottyWeekStrip() {
     const ws = weekStartOf(today()), tk = keyOf(today());
     let cells = '', n = 0;
@@ -583,7 +660,7 @@
     return `<div class="week potty-week">${cells}</div>`;
   }
 
-  function renderPotty(justDone) {
+  function renderPotty(justDone, grew) {
     const tk = keyOf(today()), v = state.potty[tk], d = dinoStats();
     const yk = keyOf(addDays(today(), -1));
     const started = Object.keys(state.potty).some(k => k < yk);
@@ -608,11 +685,22 @@
       ? `<div class="slots ${goal > 30 ? 'small' : ''}">${Array.from({ length: goal }, (_, i) => `<span class="slot dino ${i < have ? 'on' : ''}" style="${i < have ? dinoStyle(i) + ';' : ''}animation-delay:${Math.min(i, 30) * 0.03}s">${dinoEmoji(i)}</span>`).join('')}</div>`
       : `<div class="progress"><div style="width:${(have / goal) * 100}%"></div></div>`;
     const books = state.booksWon.slice(-8).reverse();
+    const trips = tripsOn(tk), pees = trips.filter(u => u.t === 'pee').length, poops = trips.length - pees;
     $('view-potty').innerHTML = `
       <div class="buddy-row">
         <div class="buddy-big">🦖</div>
-        <div class="bubble">${v === 'dry' ? 'Roar! A dino for you!' : v === 'oops' ? 'Accidents happen! 💛' : `Potty check${state.name ? ', ' + esc(state.name) : ''}!`} <button class="speak-btn" data-act="potty-speak" aria-label="Say it">🔊</button></div>
+        <div class="bubble">${`Potty time${state.name ? ', ' + esc(state.name) : ''}!`} <button class="speak-btn" data-act="potty-speak" aria-label="Say it">🔊</button></div>
       </div>
+      <div class="card nursery-card">
+        <h3 class="center">🚽 Grow a dino!</h3>
+        ${nurseryScene(d.stage, d.dinos, grew)}
+        <div class="dose-grid potty-trip">
+          <button class="dose-btn pee ${lockedType('pee') ? 'locked' : ''}" data-act="use" data-type="pee"><span class="trip-ico">💦</span>PEE<span class="sub">in the potty</span></button>
+          <button class="dose-btn poop ${lockedType('poop') ? 'locked' : ''}" data-act="use" data-type="poop"><span class="trip-ico">💩</span>POOP<span class="sub">in the potty</span></button>
+        </div>
+        ${trips.length ? `<p class="hint center" style="margin:0">Today: ${pees ? `💦 ${pees}` : ''}${pees && poops ? ' · ' : ''}${poops ? `💩 ${poops}` : ''}</p>` : ''}
+      </div>
+      <h3 class="section-title">No pee on the floor today?</h3>
       ${top}
       ${askYesterday ? `<div class="card"><h3 class="center">What about yesterday?</h3>${pottyButtons(yk, true)}</div>` : ''}
       <div class="card prize-hero" data-act="dino-say">
@@ -639,11 +727,12 @@
     if (!t) return;
     const act = t.dataset.act;
     if (act === 'potty') kidLogPotty(t.dataset.day, t.dataset.val, t);
+    if (act === 'use') kidPottyUse(t.dataset.type, t);
     if (act === 'potty-speak') {
       const v = state.potty[keyOf(today())];
       if (v === 'dry') say('You stayed dry today! You got a dino!', 'dino');
       else if (v === 'oops') say(`That's okay! We'll try again tomorrow!`, 'oops');
-      else say(`Potty check, ${state.name}! Did you stay dry today? No pee on the rug, the couch, or the floor?`, 'potty');
+      else say(`Potty time, ${state.name}! Did you go pee or poop in the potty? Tap it!`, 'pottytime');
     }
     if (act === 'dino-say') {
       const left = Math.max(0, state.dinoGoal - dinoStats().dinos);
@@ -737,7 +826,7 @@
       </div>
       <div class="card" data-act="go-potty">
         <div class="step-head"><h3>🦖 Potty dinos</h3><b>${dinoStats().dinos} <span class="muted" style="font-size:18px">/ ${state.dinoGoal}</span></b></div>
-        <p class="hint" style="margin:4px 0 0">${state.potty[keyOf(today())] ? (state.potty[keyOf(today())] === 'dry' ? 'Got a dino today! 🦖' : 'Try again tomorrow! 💛') : 'Tap for potty check! 🚽'}</p>
+        <p class="hint" style="margin:4px 0 0">${state.potty[keyOf(today())] ? (state.potty[keyOf(today())] === 'dry' ? 'Got a dino today! 🦖' : 'Try again tomorrow! 💛') : (dinoStats().stage ? `Baby dino growing: ${dinoStats().stage} of 5 🥚` : 'Tap for potty time! 🚽')}</p>
       </div>
       <div class="card" data-act="go-steps">
         <div class="step-head"><h3>🐎 My step</h3><b>${state.step} <span class="muted" style="font-size:18px">of ${state.totalSteps}</span></b></div>
@@ -993,12 +1082,16 @@
 
       <div class="card">
         <h3>🦖 Potty dinos</h3>
-        <p class="hint" style="margin-top:0">One dino for each day with no pee on the rug, couch or anywhere else in the apartment. Dinos are separate from the OIT stars.</p>
+        <p class="hint" style="margin-top:0">One dino for each day with no pee on the rug, couch or anywhere else in the apartment, and one for every 5 pees or poops in the potty. Dinos are separate from the OIT stars.</p>
         <div class="field"><label>Dino prize</label><input type="text" id="gDinoPrize" maxlength="40" value="${esc(state.dinoPrize)}" /></div>
         <div class="field"><label>Dinos needed</label>
           <div class="stepper"><button id="gDinoMinus" aria-label="Fewer dinos">−</button><b>${state.dinoGoal} 🦖</b><button id="gDinoPlus" aria-label="More dinos">+</button></div>
         </div>
-        <p class="hint center">${dinoStats().dry} dry day${dinoStats().dry === 1 ? '' : 's'}, ${dinoStats().oops} accident day${dinoStats().oops === 1 ? '' : 's'} · ${dinoStats().dinos} 🦖 now</p>
+        <p class="hint center">${dinoStats().dry} dry day${dinoStats().dry === 1 ? '' : 's'}, ${dinoStats().oops} accident day${dinoStats().oops === 1 ? '' : 's'}, ${dinoStats().uses} potty trip${dinoStats().uses === 1 ? '' : 's'} (${dinoStats().grown} grown dino${dinoStats().grown === 1 ? '' : 's'}) · ${dinoStats().dinos} 🦖 now</p>
+        <div class="field"><label>🚽 Potty trips (every 5 grows a dino: ${dinoStats().stage} of 5 now)</label>
+          <div class="row"><button class="big-btn blue" id="gAddPee" style="margin:0;font-size:18px">+ 💦 Pee</button><button class="big-btn blue" id="gAddPoop" style="margin:0;font-size:18px">+ 💩 Poop</button></div>
+          ${state.pottyUses.length ? `<ul class="history">${state.pottyUses.slice(-8).reverse().map(u => `<li class="trip-row">${u.t === 'pee' ? '💦 Pee' : '💩 Poop'} · ${shortDate(new Date(u.at))} ${new Date(u.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}<button class="vbtn del" data-deluse="${u.id}" aria-label="Delete">🗑</button></li>`).join('')}</ul>` : ''}
+        </div>
         <button class="big-btn" id="gBookGive" ${dinoStats().dinos < state.dinoGoal ? 'disabled' : ''}>📚 Prize given! (uses ${state.dinoGoal} 🦖)</button>
         ${state.booksWon.length ? `<ul class="history">${state.booksWon.slice().reverse().map(b => `<li>📚 ${esc(b.name)} · ${shortDate(fromKey(b.date))}</li>`).join('')}</ul>` : ''}
       </div>
@@ -1102,6 +1195,14 @@
     $('gDinoPrize').onchange = e => { state.dinoPrize = e.target.value.trim() || DEFAULT_STATE.dinoPrize; save(); renderAll(); };
     $('gDinoMinus').onclick = set(() => { state.dinoGoal = Math.max(1, state.dinoGoal - (state.dinoGoal > 30 ? 5 : 1)); });
     $('gDinoPlus').onclick = set(() => { state.dinoGoal = Math.min(200, state.dinoGoal + (state.dinoGoal >= 30 ? 5 : 1)); });
+    const addUse = type => () => { const { extra } = addPottyUse(type); renderAll(); if (extra.length) celebrate(extra); };
+    $('gAddPee').onclick = addUse('pee');
+    $('gAddPoop').onclick = addUse('poop');
+    $('view-grownups').querySelectorAll('[data-deluse]').forEach(b => b.onclick = () => {
+      if (!confirm('Delete this potty trip?')) return;
+      state.pottyUses = state.pottyUses.filter(u => u.id !== b.dataset.deluse);
+      save(); renderAll();
+    });
     $('gBookGive').onclick = () => {
       state.booksWon.push({ name: state.dinoPrize, cost: state.dinoGoal, date: keyOf(today()) });
       state.dinoSpent += state.dinoGoal;
@@ -1143,6 +1244,7 @@
         state = Object.assign(structuredClone(DEFAULT_STATE), data);
         state.prize = Object.assign(structuredClone(DEFAULT_STATE.prize), data.prize);
         if (!state.potty || typeof state.potty !== 'object') state.potty = {};
+        if (!Array.isArray(state.pottyUses)) state.pottyUses = [];
         save(); renderAll(); toast('Backup restored!');
       }).catch(() => toast("That file isn't a Star Steps backup."));
     };

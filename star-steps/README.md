@@ -11,6 +11,7 @@ A horse-and-farm themed phone app for Lucas (3) to track daily allergy immunothe
 
 ## 🦖 Potty dinos
 - **🦖 Potty tab:** two big buttons, **DRY!** (a dino) or **OOPS** (a water drop). A dry day means he didn't pee on the rug, the couch or anywhere else in the apartment. A dry day earns a dino with a roar and dino confetti. An accident gets a kind "That's okay! Try again tomorrow!" with no dino.
+- **🚽 Grow a dino:** big **PEE** and **POOP** buttons for each time he goes in the potty. Every trip grows a dino: trip 1, Mommy dino lays an egg 🥚. Trip 2, the egg hatches into a baby dino. Trip 3, it grows into a toddler dino. Trip 4, a kid dino. Trip 5, it's a grown-up dino and joins his dino count (+1 🦖). Then Mommy lays a new egg. Each pee and each poop counts as a trip. Tapping the same button again within 2 minutes doesn't count, so taps can't pile up. Grown-ups can add a missed trip or delete a wrong one.
 - If yesterday wasn't logged, there's a smaller "What about yesterday?" question, for nights when you check in the next morning.
 - Dinos fill up a collection of 30 colorful dino spots toward **a new Lucas book**. At 30 there's a big celebration. A grown-up taps **Prize given!**, and the next 30 start.
 - Dinos are separate from the OIT stars. The count in the top corner shows 🦖 on the Potty tab and ⭐ everywhere else.

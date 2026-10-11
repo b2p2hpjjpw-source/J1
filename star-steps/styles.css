@@ -145,6 +145,35 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
 .slot.dino:not(.on) { filter: grayscale(1); opacity: .25; color: inherit; background: none; }
 .pcal { font-size: 22px; }
 
+/* ---------- Dino nursery (potty trips) ---------- */
+.nursery-card { background: linear-gradient(180deg, #fff 0%, #fff 55%, #e9f9df 100%); }
+.nursery { height: 140px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
+.nursery-mom { font-size: 92px; line-height: 1; }
+.nursery-mom.faded { opacity: .35; }
+.nest-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
+.nest { font-size: 64px; line-height: 1; }
+.egg { font-size: 40px; line-height: 1; position: absolute; bottom: 30px; animation: wobble 1.6s ease-in-out infinite; }
+@keyframes wobble { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+.baby { font-size: 40px; line-height: 1; position: absolute; bottom: 52px; animation: bob 1.4s ease-in-out infinite; }
+.shell { position: absolute; bottom: 26px; width: 58px; }
+.grow-dino { line-height: 1; display: inline-block; animation: bob 1.6s ease-in-out infinite; }
+.grow-pop { animation: grow-pop .7s cubic-bezier(.2, 1.6, .5, 1); }
+@keyframes grow-pop { from { transform: scale(.4); } }
+.nursery-cap { text-align: center; font-size: 20px; font-weight: 700; margin: 6px 0 8px; }
+.gsteps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 14px; }
+.gstep { text-align: center; border-radius: 14px; padding: 6px 2px; background: #f3ecf8; opacity: .45; filter: grayscale(1); }
+.gstep span { font-size: 24px; display: block; }
+.gstep small { font-size: 11px; font-weight: 600; color: var(--ink-soft); }
+.gstep.on { background: #e8f9ee; opacity: 1; filter: none; box-shadow: inset 0 0 0 3px var(--green); }
+.dose-btn.pee { background: #4fb8e6; box-shadow: 0 8px 0 #2f93c0; }
+.dose-btn.poop { background: #b07a4f; box-shadow: 0 8px 0 #8a5a33; }
+.dose-btn.locked { opacity: .45; }
+.trip-ico { font-size: 60px; line-height: 80px; height: 80px; }
+.potty-trip .dose-btn { padding-top: 10px; }
+.section-title { margin: 6px 4px 10px; font-size: 20px; text-align: center; }
+.trip-row { display: flex; align-items: center; justify-content: space-between; }
+.trip-row .vbtn { width: 36px; height: 36px; font-size: 16px; }
+
 /* ---------- Week strip ---------- */
 .week { display: grid; grid-template-columns: repeat(7, 1fr) 1.15fr; gap: 4px; align-items: end; }
 .wday { text-align: center; font-size: 14px; font-weight: 600; color: var(--ink-soft); }
