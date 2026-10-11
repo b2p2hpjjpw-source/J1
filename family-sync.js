@@ -93,9 +93,19 @@
 
   const apps = {};      // key -> { get, apply, unsub, timer, pushing, pendingRev, choosing }
   let user = null;
-  let status = 'idle';  // idle | out | synced | syncing | offline | error
+  let status = 'idle';  // idle | out | synced | syncing | offline | error | denied | unavailable | stuck
+  let lastError = '';   // the database's own words for the last failure, shown in settings to help fix it
 
-  function setStatus(s) { status = s; drawWidgets(); drawPill(); }
+  // "Syncing" that never finishes means the database can't be reached (often: it hasn't been created yet).
+  let stuckT;
+  function setStatus(s) {
+    status = s;
+    if (s === 'synced') lastError = '';
+    clearTimeout(stuckT);
+    if (s === 'syncing') stuckT = setTimeout(() => { if (status === 'syncing' && !Object.values(apps).some(x => x.choosing)) setStatus('stuck'); }, 20000);
+    drawWidgets(); drawPill();
+  }
+  const noteError = e => { lastError = [e && e.code, e && e.message].filter(Boolean).join(': ').slice(0, 180); };
 
   async function readRemote(fb, key, meta, tx) {
     const parts = [];
@@ -117,7 +127,7 @@
   // Something arrived from the database (including our own writes coming back).
   async function onRemote(key, snap) {
     const a = apps[key];
-    if (!a || a.choosing || snap.metadata.hasPendingWrites) return;
+    if (!a || a.choosing || snap.metadata.hasPendingWrites || snap.metadata.fromCache) return; // only trust the server's answer
     const fb = await firebase();
     const base = await baseGet(key);
     if (!snap.exists()) { flag('dirty:' + key, '1'); return schedulePush(key, 0); } // first phone to sync this app
@@ -191,7 +201,8 @@
       setStatus('synced');
     } catch (e) {
       console.warn('Family sync: will try again', e);
-      setStatus(navigator.onLine ? 'error' : 'offline');
+      noteError(e);
+      setStatus(e && e.code === 'permission-denied' ? 'denied' : navigator.onLine ? 'error' : 'offline');
     } finally {
       a.pushing = false;
     }
@@ -203,7 +214,7 @@
     const fb = await firebase();
     a.unsub = fb.fs.onSnapshot(fb.fs.doc(fb.db, `${ROOT}/${key}`),
       snap => onRemote(key, snap).catch(e => { console.warn('Family sync', e); setStatus('error'); }),
-      e => { console.warn('Family sync', e); a.unsub = null; setStatus(e && e.code === 'permission-denied' ? 'denied' : 'error'); });
+      e => { console.warn('Family sync', e); noteError(e); a.unsub = null; setStatus(e && e.code === 'permission-denied' ? 'denied' : 'error'); });
   }
   function stopApps() { Object.values(apps).forEach(a => { if (a.unsub) a.unsub(); a.unsub = null; }); }
 
@@ -327,6 +338,7 @@
     offline: ['warn', 'Offline. Changes will sync when you’re back online.'], error: ['bad', 'Couldn’t sync just now. Will keep trying.'],
     denied: ['bad', 'This account isn’t allowed in the family database.'], out: ['', 'Not signed in. Data stays on this phone.'],
     unavailable: ['bad', 'Sync couldn’t load on this phone. Check the connection, then reopen the app.'],
+    stuck: ['bad', 'Can’t reach the family database. Check that the Firestore database is created and the rules are published.'],
   };
 
   // A small button above the app that stays until the phone is signed in, so sync is never hidden in settings.
@@ -337,6 +349,7 @@
     const slow = status === 'idle' && performance.now() > 9000;
     const text = status === 'out' ? '☁︎ Sign in to sync with the family'
       : status === 'unavailable' || slow ? '☁︎ Sync couldn’t load · tap to retry'
+      : status === 'stuck' ? '☁︎ Can’t reach the family database · tap to retry'
       : status === 'denied' ? '☁︎ This account can’t sync · tap to switch'
       : '';
     if (!text || pillHidden || !Object.keys(apps).length) { if (p) p.remove(); return; }
@@ -356,7 +369,7 @@
   function drawWidgets() {
     document.querySelectorAll('[data-family-sync]').forEach(el => {
       const [cls, text] = STATUS[status] || STATUS.idle;
-      el.innerHTML = `<div class="fs-widget"><span class="fs-dot ${cls}"></span><span>${esc(text)}${user && status !== 'out' ? ` · ${esc(user.email)}` : ''}</span>
+      el.innerHTML = `<div class="fs-widget"><span class="fs-dot ${cls}"></span><span>${esc(text)}${user && status !== 'out' ? ` · ${esc(user.email)}` : ''}${lastError && status !== 'synced' ? `<br><small style="opacity:.75">${esc(lastError)}</small>` : ''}</span>
         ${user ? '<button type="button" class="fs-btn fs-ghost" data-fs-out>Sign out</button>' : '<button type="button" class="fs-btn" data-fs-in>Sign in to share</button>'}</div>`;
       const i = el.querySelector('[data-fs-in]'); if (i) i.onclick = openSignIn;
       const o = el.querySelector('[data-fs-out]'); if (o) o.onclick = async () => { const fb = await firebase(); await fb.au.signOut(fb.auth); toast('Signed out. Data stays on this phone.'); };
