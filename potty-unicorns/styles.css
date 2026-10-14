@@ -106,24 +106,17 @@ main { display: flex; flex-direction: column; gap: 16px; }
 .scene .actor.pop { animation: pop .9s cubic-bezier(.2, 1.6, .4, 1); transform-origin: 50% 100%; }
 @keyframes pop { 0% { transform: scale(.3); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
 .scene .actor.bob { animation: bob 2.8s ease-in-out infinite; transform-origin: 50% 100%; }
-@keyframes bob { 50% { transform: translateY(-4%) rotate(-1.5deg); } }
-.scene .actor.rock { animation: rock 2.4s ease-in-out infinite; transform-origin: 50% 95%; }
-@keyframes rock { 50% { transform: rotate(-5deg); } }
+@keyframes bob { 50% { transform: translateY(-2%); } }
 .actor.rock .paci { animation: suck .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 30% 50%; }
 @keyframes suck { 50% { transform: translateX(-4%) scale(.93); } }
-/* Unicorn dance: hop left, hop right, a little spin-flip, then a bow. */
-.dance { animation: dance 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); transform-origin: 50% 96%; }
-.dance.big { animation-duration: 1.6s; }
+/* Unicorn dance: a happy bounce, up and down, no turning. */
+.dance { animation: dance 1.4s ease-in-out infinite; animation-delay: var(--d, 0s); transform-origin: 50% 96%; }
+.dance.big { animation-duration: .9s; }
 @keyframes dance {
-  0%, 100% { transform: translateY(0) rotate(0) scaleX(1); }
-  12% { transform: translateY(-9%) rotate(-9deg) scaleX(1); }
-  24% { transform: translateY(0) rotate(0) scaleX(1); }
-  36% { transform: translateY(-9%) rotate(9deg) scaleX(1); }
-  48% { transform: translateY(0) rotate(0) scaleX(1); }
-  58% { transform: translateY(-14%) rotate(0) scaleX(-1); }
-  70% { transform: translateY(0) rotate(0) scaleX(-1); }
-  80% { transform: translateY(-14%) rotate(0) scaleX(1); }
-  90% { transform: translateY(0) rotate(4deg) scaleY(.94); }
+  0%, 50%, 100% { transform: translateY(0) scaleY(1); }
+  8%, 58% { transform: translateY(0) scaleY(.94); }
+  25% { transform: translateY(-10%) scaleY(1.03); }
+  75% { transform: translateY(-6%) scaleY(1.02); }
 }
 /* Music notes floating up while the unicorns dance */
 .scene .notes { position: absolute; inset: 0; pointer-events: none; }
@@ -296,39 +289,5 @@ input[type="text"] { font-size: 19px; text-align: left; }
 #glitter { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 40; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wordmark .ch, .logo, .dance, .scene .actor.rock, .actor.rock .paci, .scene .notes i, #stars-bg i, .scene .actor.bob, .scene .actor.rock { animation: rock 2.4s ease-in-out infinite; transform-origin: 50% 95%; }
-@keyframes rock { 50% { transform: rotate(-5deg); } }
-.actor.rock .paci { animation: suck .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 30% 50%; }
-@keyframes suck { 50% { transform: translateX(-4%) scale(.93); } }
-/* Unicorn dance: hop left, hop right, a little spin-flip, then a bow. */
-.dance { animation: dance 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); transform-origin: 50% 96%; }
-.dance.big { animation-duration: 1.6s; }
-@keyframes dance {
-  0%, 100% { transform: translateY(0) rotate(0) scaleX(1); }
-  12% { transform: translateY(-9%) rotate(-9deg) scaleX(1); }
-  24% { transform: translateY(0) rotate(0) scaleX(1); }
-  36% { transform: translateY(-9%) rotate(9deg) scaleX(1); }
-  48% { transform: translateY(0) rotate(0) scaleX(1); }
-  58% { transform: translateY(-14%) rotate(0) scaleX(-1); }
-  70% { transform: translateY(0) rotate(0) scaleX(-1); }
-  80% { transform: translateY(-14%) rotate(0) scaleX(1); }
-  90% { transform: translateY(0) rotate(4deg) scaleY(.94); }
-}
-/* Music notes floating up while the unicorns dance */
-.scene .notes { position: absolute; inset: 0; pointer-events: none; }
-.scene .notes i {
-  position: absolute; bottom: 30%; font-style: normal; font-weight: 800; font-size: clamp(18px, 6vw, 28px);
-  color: #a35cff; text-shadow: 0 0 0 #fff, 0 2px 0 #fff; opacity: 0;
-  animation: note 3.2s ease-out infinite;
-}
-.scene .notes i:nth-child(1) { left: 18%; }
-.scene .notes i:nth-child(2) { left: 42%; color: #ff4f8b; animation-delay: .8s; }
-.scene .notes i:nth-child(3) { left: 62%; color: #2fa8ff; animation-delay: 1.6s; }
-.scene .notes i:nth-child(4) { left: 80%; color: #ff9a3c; animation-delay: 2.4s; }
-@keyframes note {
-  0% { opacity: 0; transform: translate(0, 0) rotate(-10deg) scale(.6); }
-  15% { opacity: 1; }
-  100% { opacity: 0; transform: translate(14px, -120%) rotate(15deg) scale(1.1); }
-}
-.scene .actor.wobble { animation: none; }
+  .wordmark .ch, .logo, .dance, .actor.rock .paci, .scene .notes i, #stars-bg i, .scene .actor.bob, .scene .actor.wobble { animation: none; }
 }

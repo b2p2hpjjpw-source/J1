@@ -555,7 +555,7 @@
 
   function renderScene(animate) {
     const n = stageNow(), look = lookFor(earned());
-    const mom = unicornSVG('grown', MOM_LOOK, { flower: true, cls: 'actor mom dance' });
+    const mom = unicornSVG('grown', MOM_LOOK, { flower: true, cls: 'actor mom bob' });
     let kid;
     if (n === 0) kid = nestSVG();
     else if (n === 1) kid = eggSVG({ cls: 'actor kid wobble' });
@@ -864,7 +864,7 @@
   // ---------- First open: a quick setup for Mom ----------
   function firstRun() {
     openModal(`
-      <div class="hero-pic">${unicornSVG('grown', MOM_LOOK, { flower: true, cls: 'dance' })}</div>
+      <div class="hero-pic">${unicornSVG('grown', MOM_LOOK, { flower: true })}</div>
       <h2>Welcome to Unicorn Potty Party!</h2>
       <p class="muted">Each time she goes in the potty, her unicorn grows: egg, hatch, toddler, kid, grown-up. Every 5 trips makes a grown-up unicorn. ${state.goal} unicorns earn a prize.</p>
       <input id="fName" type="text" maxlength="24" placeholder="Her name" aria-label="Her name" autocomplete="off" />
