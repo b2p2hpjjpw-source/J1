@@ -13,7 +13,6 @@
   const LESS_CATS = ['Refined carbs', 'Sugar', 'Ultra-processed', 'Meat', 'Drinks', 'Habits', 'Your own'];
   const MAX_N = 35;
   const HISTORY_WEEKS = 8;
-  const BEFORE_BED = 3; // hours before bedtime that the kitchen closes
 
   // The guidance list. kind 'less': `n` is the suggested weekly allowance. kind 'more': `n` is the weekly target.
   // `on` puts it in a new tracker (and adds it once to existing trackers that haven't seen it).
@@ -70,12 +69,12 @@
       ex: 'Beef, pork, lamb (not processed). 1 serving = palm-sized',
       why: 'The world’s longest-lived populations eat meat only a few times a month. Planetary-health guidance is about 1 serving a week.',
       swap: 'Fish, chicken, beans, lentils or tofu' },
-    { id: 'alcohol', kind: 'less', name: 'Alcohol', cat: 'Drinks', n: 0, on: true,
+    { id: 'alcohol', kind: 'less', name: 'Alcohol', cat: 'Drinks', n: 3, on: true,
       ex: '1 serving = 1 drink (a glass of wine, a beer, a shot)',
-      why: 'Current guidance says no amount is risk-free: cancer, heart and liver risk rise with each drink, and it disturbs sleep. If you do drink, keep it to a few a week at most.',
+      why: 'Current guidance says no amount is risk-free: cancer, heart and liver risk rise with each drink, and it disturbs sleep. Keeping it to 2–3 drinks a week, never several at once, keeps the risk low.',
       swap: 'Sparkling water with bitters or lime, kombucha, or an alcohol-free beer' },
     { id: 'late-night', kind: 'less', name: 'Eating late', cat: 'Habits', n: 1, on: true,
-      ex: 'Any food or caloric drink after the kitchen closes (3 hours before bed). Water and herbal tea are fine',
+      ex: 'Any food or caloric drink after the kitchen closes (set the time in Settings). Water and herbal tea are fine',
       why: 'Eating close to bedtime is linked to worse sleep, reflux and higher blood sugar the next morning. Most guidance says stop 2–3 hours before bed.',
       swap: 'Herbal tea, or brush your teeth to close the kitchen' },
     { id: 'diet-soda', kind: 'less', name: 'Diet soda & sweeteners', cat: 'Drinks', n: 2, on: false,
@@ -148,8 +147,8 @@
 
   // ---------- State ----------
   const fromGuide = g => ({ id: g.id, kind: g.kind, name: g.name, cat: g.cat || '', n: g.n, ex: g.ex });
-  const newPerson = (id, name) => ({ id, name, started: today(), bedtime: '21:00', remindAt: '20:30', foods: [], log: [], seen: [] });
-  const freshState = () => ({ version: 2, people: [newPerson('a', 'Mom'), newPerson('b', 'Dad')] });
+  const newPerson = (id, name) => ({ id, name, started: today(), kitchen: '19:00', remindAt: '20:30', foods: [], log: [], seen: [] });
+  const freshState = () => ({ version: 3, people: [newPerson('a', 'Mom'), newPerson('b', 'Dad')] });
 
   // Adds each "on" guidance food once to a person who hasn't been offered it yet, so removing one sticks.
   function offerNew(p) {
@@ -170,7 +169,8 @@
       const g = GUIDE_BY_ID[f.id];
       if (g && f.id === 'ready-meals' && f.name === 'Ready meals & instant noodles') { f.name = g.name; f.ex = g.ex; }
     });
-    p.bedtime = /^\d\d:\d\d$/.test(p.bedtime || '') ? p.bedtime : '21:00';
+    p.kitchen = /^\d\d:\d\d$/.test(p.kitchen || '') ? p.kitchen : '19:00';
+    delete p.bedtime; // version 2 worked the cutoff out from bedtime
     p.remindAt = /^\d\d:\d\d$/.test(p.remindAt || '') ? p.remindAt : '20:30';
     p.started = p.started || today();
     offerNew(p);
@@ -181,6 +181,8 @@
       const raw = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
       if (raw && Array.isArray(raw.people)) {
         const s = Object.assign(freshState(), raw);
+        if ((raw.version || 0) < 3) s.people.forEach(p => (p.foods || []).forEach(f => { if (f.id === 'alcohol' && !f.n && !f.limit) f.n = 3; }));
+        s.version = 3;
         s.people = ['a', 'b'].map(id => tidyPerson(Object.assign(newPerson(id, id === 'a' ? 'Mom' : 'Dad'), s.people.find(p => p.id === id) || {})));
         return s;
       }
@@ -205,7 +207,7 @@
   let day = today();                 // the day the log buttons add to
   let kind = 'less';                 // which list the log shows
   const P = () => state.people.find(p => p.id === who);
-  const cutoff = p => fromMin(toMin(p.bedtime) - BEFORE_BED * 60);
+  const cutoff = p => p.kitchen;
   const nameOf = (f, p) => f.id === 'late-night' ? `Eating after ${fmtTime(cutoff(p))}` : f.name;
 
   // ---------- Counting ----------
@@ -358,7 +360,7 @@
     [...$('kind').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === kind));
     const kitchen = `Kitchen closes at ${fmtTime(cutoff(p))}`;
     $('kitchen').textContent = day === t && toMin(cutoff(p)) <= new Date().getHours() * 60 + new Date().getMinutes()
-      ? `${kitchen}. It’s closed for tonight.` : `${kitchen} (3 hours before a ${fmtTime(p.bedtime)} bedtime).`;
+      ? `${kitchen}. It’s closed for tonight.` : `${kitchen}.`;
     $('kitchen').hidden = kind !== 'less' || !p.foods.some(f => f.id === 'late-night');
     const dw = mondayOf(day) === mon ? w : weekStats(p, mondayOf(day));
     const L = $('foodList'); L.innerHTML = '';
@@ -469,7 +471,7 @@
     $('setOwner').textContent = `${p.name}’s settings`;
     if (document.activeElement !== $('nA')) $('nA').value = state.people[0].name;
     if (document.activeElement !== $('nB')) $('nB').value = state.people[1].name;
-    $('bedtime').value = p.bedtime;
+    $('kitchenAt').value = p.kitchen;
     $('remindAt').value = p.remindAt;
     $('cutoffNote').textContent = `Kitchen closes at ${fmtTime(cutoff(p))}.`;
     $('thisPhone').textContent = me ? `This phone is ${state.people.find(x => x.id === me).name}’s.` : 'This phone isn’t set to anyone yet.';
@@ -529,7 +531,7 @@
   const saveName = (i, input) => { const v = input.value.trim(); if (v && v !== state.people[i].name) { state.people[i].name = v; save(); render(); } };
   $('nA').onchange = () => saveName(0, $('nA'));
   $('nB').onchange = () => saveName(1, $('nB'));
-  $('bedtime').onchange = () => { if ($('bedtime').value) { P().bedtime = $('bedtime').value; save(); render(); } };
+  $('kitchenAt').onchange = () => { if ($('kitchenAt').value) { P().kitchen = $('kitchenAt').value; save(); render(); } };
   $('remindAt').onchange = () => { if ($('remindAt').value) { P().remindAt = $('remindAt').value; save(); render(); } };
 
   // ---------- Reminders: a calendar file with two daily alarms ----------
