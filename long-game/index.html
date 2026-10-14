@@ -34,13 +34,13 @@
 
   <section class="hero" aria-live="polite">
     <div class="scores">
-      <div class="score">
-        <span class="label">Cut back · on track</span>
-        <span class="big"><span id="onTrack">0</span><span class="of"> of <span id="lessN">0</span></span></span>
-      </div>
       <div class="score good">
         <span class="label">Eat more · targets met</span>
         <span class="big"><span id="met">0</span><span class="of"> of <span id="moreN">0</span></span></span>
+      </div>
+      <div class="score cutscore">
+        <span class="label">Limit &amp; avoid · on track</span>
+        <span class="big"><span id="onTrack">0</span><span class="of"> of <span id="lessN">0</span></span></span>
       </div>
     </div>
     <div class="weekhead"><span class="label" id="weekRange">This week</span><span class="sub" id="heroSub"></span></div>
@@ -66,13 +66,8 @@
         <button type="button" class="arrow" id="nextDay" aria-label="Next day">›</button>
       </div>
     </div>
-    <div class="seg kind" id="kind" role="group" aria-label="Which list">
-      <button type="button" data-k="less" aria-pressed="true">Cut back</button>
-      <button type="button" data-k="more" aria-pressed="false">Eat more</button>
-    </div>
-    <p class="hint">Tap <b>+</b> each time you have a serving. Cut-back foods have a weekly allowance (red means over). Eat-more foods have a weekly target.</p>
-    <p class="kitchen" id="kitchen" hidden></p>
-    <div id="foodList"></div>
+    <p class="hint">Tap <b>+</b> each time you have a serving. Tap a food’s name for serving sizes and swaps.</p>
+    <div class="zones" id="foodList"></div>
   </section>
 
   <details class="manage" id="manage">
@@ -83,7 +78,7 @@
     <div class="mbody stack">
     <p class="hint">Set how many servings a week each food gets. The suggested numbers come from longevity guidance; change them to whatever works for you.</p>
 
-    <h3>Cut back <small>· allowed per week, 0 = cut it</small></h3>
+    <h3>Limit &amp; avoid <small>· allowed per week. Set 0 to avoid it completely</small></h3>
     <div class="elist" id="editLess"></div>
     <div class="chips" id="libLess" aria-label="Add cut-back foods from the guidance list"></div>
 

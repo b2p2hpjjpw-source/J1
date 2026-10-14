@@ -205,7 +205,6 @@
   let me = flag(ME_KEY);             // whose phone this is ('a' or 'b'), null until picked
   let who = me || 'a';               // whose tracker is showing
   let day = today();                 // the day the log buttons add to
-  let kind = 'less';                 // which list the log shows
   const P = () => state.people.find(p => p.id === who);
   const cutoff = p => p.kitchen;
   const nameOf = (f, p) => f.id === 'late-night' ? `Eating after ${fmtTime(cutoff(p))}` : f.name;
@@ -280,17 +279,38 @@
     return fmt(d, { weekday: 'long', month: 'short', day: 'numeric' });
   }
 
-  function foodRow(p, f, c, onDay) {
+  // The three zones on the main page: what to eat more of, what to limit, what to avoid.
+  const ZONES = [
+    { key: 'more', title: 'Eat more', sub: 'Aim to hit these every week', test: f => f.kind === 'more',
+      score: (fs, w) => `${fs.filter(f => (w.count[f.id] || 0) >= f.n).length}/${fs.length} met`,
+      icon: '<path d="M12 19V6M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { key: 'limit', title: 'Limit', sub: 'OK a few times a week, up to the allowance', test: f => f.kind === 'less' && f.n > 0,
+      score: (fs, w) => `${fs.filter(f => (w.count[f.id] || 0) <= f.n).length}/${fs.length} on track`,
+      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>' },
+    { key: 'avoid', title: 'Avoid', sub: 'Aim for none at all', test: f => f.kind === 'less' && f.n === 0,
+      score: (fs, w) => `${fs.filter(f => !w.count[f.id]).length}/${fs.length} clear`,
+      icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M6.5 6.5l11 11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>' },
+  ];
+  const ORDER = Object.fromEntries(LESS_CATS.map((c, i) => [c, i]));
+
+  function foodRow(p, f, c, onDay, zone) {
     const st = statusOf(f, c), nm = nameOf(f, p);
     const row = el('div', 'food ' + st.cls);
     const info = el('div', 'info');
+    const name = el('button', 'name', nm); name.type = 'button';
+    name.setAttribute('aria-expanded', 'false');
     const meta = el('span', 'meta');
-    meta.append(meter(f, c), el('span', 'pill ' + st.cls, st.text),
-      el('span', 'allow num', f.kind === 'more' ? `${c}/${f.n} this week` : f.n === 0 ? '0 a week' : `${c}/${f.n} this week`));
-    info.append(el('span', 'name', nm), meta);
+    if (zone === 'avoid') meta.append(el('span', 'pill ' + (c ? 'over' : 'cut'), c ? `Had ${c} this week` : 'None this week'));
+    else meta.append(meter(f, c), el('span', 'pill ' + st.cls, st.text), el('span', 'allow num', `${c}/${f.n}`));
+    info.append(name, meta);
     const g = GUIDE_BY_ID[f.id];
-    if (g && g.swap && (st.cls === 'over' || st.cls === 'full' || (st.cls === 'cut' && onDay))) info.append(el('span', 'swap', 'Try instead: ' + g.swap));
-    if (f.ex) info.append(el('span', 'ex', f.ex));
+    if (g && g.swap && (st.cls === 'over' || st.cls === 'full')) info.append(el('span', 'swap', 'Try instead: ' + g.swap));
+    const more = el('div', 'more-info'); more.hidden = true;
+    if (f.ex) more.append(el('span', 'ex', f.ex));
+    if (g && g.swap && !(st.cls === 'over' || st.cls === 'full')) more.append(el('span', 'ex', 'Instead: ' + g.swap));
+    if (g) more.append(el('span', 'ex why-line', g.why));
+    if (more.children.length) info.append(more);
+    name.onclick = () => { more.hidden = !more.hidden; name.setAttribute('aria-expanded', String(!more.hidden)); };
 
     const ctr = el('div', 'ctr');
     const minus = el('button', 'cbtn minus', '−');
@@ -299,7 +319,7 @@
     minus.onclick = () => unlog(f.id);
     const shown = el('span', 'today num', String(onDay));
     shown.setAttribute('aria-label', `${onDay} on ${dayName(day)}`);
-    const plus = el('button', 'cbtn plus' + (f.kind === 'more' ? ' good' : ''), '+');
+    const plus = el('button', 'cbtn plus z-' + zone, '+');
     plus.type = 'button';
     plus.setAttribute('aria-label', `Log one ${nm} on ${dayName(day)}`);
     plus.onclick = () => logOne(f.id);
@@ -357,28 +377,26 @@
     // Logging list
     $('dayLabel').textContent = dayName(day).replace(/^./, c => c.toUpperCase());
     $('nextDay').disabled = day >= t;
-    [...$('kind').children].forEach(b => b.setAttribute('aria-pressed', b.dataset.k === kind));
-    const kitchen = `Kitchen closes at ${fmtTime(cutoff(p))}`;
-    $('kitchen').textContent = day === t && toMin(cutoff(p)) <= new Date().getHours() * 60 + new Date().getMinutes()
-      ? `${kitchen}. It’s closed for tonight.` : `${kitchen}.`;
-    $('kitchen').hidden = kind !== 'less' || !p.foods.some(f => f.id === 'late-night');
+    const closed = day === t && toMin(cutoff(p)) <= new Date().getHours() * 60 + new Date().getMinutes();
     const dw = mondayOf(day) === mon ? w : weekStats(p, mondayOf(day));
     const L = $('foodList'); L.innerHTML = '';
     const onDay = f => p.log.filter(x => x.f === f.id && x.d === day).length;
-    const list = p.foods.filter(f => f.kind === kind);
-    if (!list.length) L.append(el('div', 'empty', `Nothing on the ${kind === 'less' ? 'cut-back' : 'eat-more'} list. Add foods under “Your list” below.`));
-    if (kind === 'less') {
-      LESS_CATS.forEach(cat => {
-        const fs = list.filter(f => f.cat === cat); if (!fs.length) return;
-        const g = el('div', 'group'); g.append(el('span', 'label', cat));
-        fs.forEach(f => g.append(foodRow(p, f, dw.count[f.id] || 0, onDay(f))));
-        L.append(g);
-      });
-    } else if (list.length) {
-      const g = el('div', 'group'); g.append(el('span', 'label', 'Weekly targets'));
-      list.forEach(f => g.append(foodRow(p, f, dw.count[f.id] || 0, onDay(f))));
-      L.append(g);
-    }
+    ZONES.forEach(z => {
+      const fs = p.foods.filter(z.test);
+      if (z.key !== 'more') fs.sort((a, b) => (ORDER[a.cat] ?? 99) - (ORDER[b.cat] ?? 99));
+      const sec = el('section', 'zone z-' + z.key);
+      const head = el('div', 'zhead');
+      const ic = el('span', 'zicon'); ic.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${z.icon}</svg>`;
+      const tt = el('div', 'ztext'); tt.append(el('h3', '', z.title), el('span', 'zsub', z.sub));
+      head.append(ic, tt, el('span', 'zscore num', fs.length ? z.score(fs, dw) : ''));
+      sec.append(head);
+      if (z.key === 'limit' && p.foods.some(f => f.id === 'late-night')) {
+        sec.append(el('p', 'kitchen', closed ? `Kitchen closed at ${fmtTime(cutoff(p))}. Water and herbal tea only tonight.` : `Kitchen closes at ${fmtTime(cutoff(p))} tonight.`));
+      }
+      if (!fs.length) sec.append(el('div', 'empty', z.key === 'avoid' ? 'Nothing set to avoid. Set a food’s allowance to 0 to put it here.' : 'Nothing here yet. Add foods under the list below.'));
+      fs.forEach(f => sec.append(foodRow(p, f, dw.count[f.id] || 0, onDay(f), z.key)));
+      L.append(sec);
+    });
 
     renderEdit(p);
     renderHistory(p);
@@ -504,7 +522,6 @@
   $('closeList').onclick = () => { $('manage').open = false; $('manage').scrollIntoView({ block: 'nearest' }); };
   $('prevDay').onclick = () => { day = addDays(day, -1); render(); };
   $('nextDay').onclick = () => { if (day < today()) { day = addDays(day, 1); render(); } };
-  $('kind').onclick = e => { const b = e.target.closest('button'); if (!b) return; kind = b.dataset.k; render(); };
 
   let newKind = 'less';
   $('newKind').onclick = e => {

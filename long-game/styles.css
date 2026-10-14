@@ -165,3 +165,35 @@ h3 small{font-family:var(--f-body);font-size:12px;color:var(--muted)}
 .manage[open] .mgo{visibility:hidden}
 .manage[open] > summary{border-bottom:1px solid var(--line)}
 .manage .mbody{padding:14px 18px 18px}
+
+/* Three zones on the main page. Each has its own color and icon so a glance tells you which foods to reach for
+   (Eat more, green), which to keep to a few a week (Limit, amber) and which to skip (Avoid, red). */
+.zones{display:flex;flex-direction:column;gap:14px}
+.zone{--z:var(--accent);--z-soft:var(--accent-soft);background:var(--surface);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.zone.z-limit{--z:var(--full);--z-soft:var(--full-soft)}
+.zone.z-avoid{--z:var(--over);--z-soft:var(--over-soft)}
+.zhead{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;background:var(--z-soft)}
+.zicon{width:36px;height:36px;border-radius:50%;background:var(--z);color:var(--surface);display:grid;place-items:center}
+.zicon svg{width:22px;height:22px}
+.ztext{display:flex;flex-direction:column;min-width:0}
+.ztext h3{margin:0;font-size:20px;color:var(--z)}
+.zsub{font-size:12px;color:var(--muted)}
+.zscore{font-size:13px;font-weight:500;color:var(--z);white-space:nowrap}
+.zone .food{padding:10px 14px;border-bottom:1px solid var(--line)}
+.zone .food:last-child{border-bottom:0}
+.zone .food.over{box-shadow:inset 4px 0 0 var(--over);padding-left:14px;background:color-mix(in srgb, var(--over-soft) 45%, transparent)}
+.zone .empty{border-top:0;padding:14px}
+.zone .kitchen{margin:10px 14px 2px}
+.food .name{font:inherit;font-weight:600;font-size:15px;color:var(--ink);background:none;border:0;padding:0;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.food .name::after{content:" ⓘ";font-size:11px;color:var(--muted);font-weight:400}
+.more-info{display:flex;flex-direction:column;gap:3px;padding-top:2px}
+.why-line{font-style:italic}
+.cbtn.plus.z-more{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.cbtn.plus.z-limit{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.cbtn.plus.z-avoid{background:transparent;border:2px solid var(--over);color:var(--over)}
+.score.cutscore .big{color:var(--ink)}
+.pill.cut::before{content:"✓ "}
+.zone .meter.bar{width:auto;flex:1 1 60px;max-width:130px;min-width:50px}
+.zone .meta{flex-wrap:nowrap}
+.zone.z-limit .meta{flex-wrap:wrap}
+.food .name::after{content:"\00a0ⓘ"}
