@@ -82,6 +82,10 @@
     grown:   { rx: 54, ry: 33, leg: 40, lw: 14, hr: 27, horn: 31, neck: 22, tail: 7, scale: 1 },
   };
   const f1 = n => Math.round(n * 10) / 10;
+  // Little living touches (blinking, a swaying balloon) are skipped when the phone asks for less motion.
+  const CALM = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // A heart centered on (x, y), s wide-ish.
+  const heart = (x, y, s) => `M${f1(x)} ${f1(y + s * 0.6)} C${f1(x - s * 1.2)} ${f1(y - s * 0.1)} ${f1(x - s * 0.5)} ${f1(y - s * 0.95)} ${f1(x)} ${f1(y - s * 0.35)} C${f1(x + s * 0.5)} ${f1(y - s * 0.95)} ${f1(x + s * 1.2)} ${f1(y - s * 0.1)} ${f1(x)} ${f1(y + s * 0.6)} Z`;
 
   // A side-view unicorn facing right, standing on y=194 in a 200×200 box.
   function unicornSVG(age, look, o = {}) {
@@ -138,11 +142,21 @@
     const forelock = `<circle cx="${f1(hx - hr * 0.2)}" cy="${f1(hy - hr * 0.72)}" r="${f1(hr * 0.3)}" fill="${L.mane[1 % L.mane.length]}" stroke="${LINE}" stroke-width="3"/>`;
     // Face
     const ex = hx + hr * 0.16, ey = hy - hr * 0.06;
+    const live = !o.still && !CALM;
+    const blinkAt = (1 + Math.random() * 4).toFixed(1);
+    const blink = (attr, open, shut = 0.4) => live ? `<animate attributeName="${attr}" values="${open};${open};${shut};${open}" keyTimes="0;0.93;0.96;1" dur="5s" begin="${blinkAt}s" repeatCount="indefinite"/>` : '';
+    // The kid unicorn wears heart sunglasses (too cool to blink); everyone else has big blinking eyes.
+    const eye = age === 'kid' ? `
+      <path d="M${f1(ex - hr * 0.4)} ${f1(ey - hr * 0.14)} L${f1(hx - hr * 0.66)} ${f1(ey - hr * 0.3)}" stroke="${LINE}" stroke-width="5" stroke-linecap="round"/>
+      <path d="${heart(ex + hr * 0.04, ey, hr * 0.5)}" fill="#ff2f7d" stroke="${LINE}" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="${heart(ex + hr * 0.04, ey + hr * 0.03, hr * 0.36)}" fill="#3b1c63"/>
+      <path d="M${f1(ex - hr * 0.16)} ${f1(ey - hr * 0.08)} l${f1(hr * 0.1)} ${f1(-hr * 0.08)}" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>` : `
+      <ellipse cx="${f1(ex)}" cy="${f1(ey)}" rx="${f1(hr * 0.17)}" ry="${f1(hr * 0.23)}" fill="#2b1846">${blink('ry', f1(hr * 0.23))}</ellipse>
+      <circle cx="${f1(ex + hr * 0.06)}" cy="${f1(ey - hr * 0.09)}" r="${f1(hr * 0.07)}" fill="#fff">${blink('r', f1(hr * 0.07), 0)}</circle>
+      <circle cx="${f1(ex - hr * 0.06)}" cy="${f1(ey + hr * 0.08)}" r="${f1(hr * 0.035)}" fill="#fff">${blink('r', f1(hr * 0.035), 0)}</circle>
+      <path d="M${f1(ex - hr * 0.12)} ${f1(ey - hr * 0.2)} l-5 -6 M${f1(ex)} ${f1(ey - hr * 0.24)} l-1 -7 M${f1(ex + hr * 0.12)} ${f1(ey - hr * 0.2)} l3 -6" stroke="#2b1846" stroke-width="2.5" stroke-linecap="round"/>`;
     const face = `
-      <ellipse cx="${f1(ex)}" cy="${f1(ey)}" rx="${f1(hr * 0.17)}" ry="${f1(hr * 0.23)}" fill="#2b1846"/>
-      <circle cx="${f1(ex + hr * 0.06)}" cy="${f1(ey - hr * 0.09)}" r="${f1(hr * 0.07)}" fill="#fff"/>
-      <circle cx="${f1(ex - hr * 0.06)}" cy="${f1(ey + hr * 0.08)}" r="${f1(hr * 0.035)}" fill="#fff"/>
-      <path d="M${f1(ex - hr * 0.12)} ${f1(ey - hr * 0.2)} l-5 -6 M${f1(ex)} ${f1(ey - hr * 0.24)} l-1 -7 M${f1(ex + hr * 0.12)} ${f1(ey - hr * 0.2)} l3 -6" stroke="#2b1846" stroke-width="2.5" stroke-linecap="round"/>
+      ${eye}
       <circle cx="${f1(hx - hr * 0.12)}" cy="${f1(hy + hr * 0.36)}" r="${f1(hr * 0.17)}" fill="#ff8fc8" opacity=".6"/>
       <ellipse cx="${f1(hx + hr * 1.06)}" cy="${f1(hy + hr * 0.2)}" rx="2.5" ry="3.2" fill="${LINE}"/>
       ${o.paci ? '' : `<path d="M${f1(hx + hr * 0.62)} ${f1(hy + hr * 0.52)} Q${f1(hx + hr * 0.86)} ${f1(hy + hr * 0.7)} ${f1(hx + hr * 1.08)} ${f1(hy + hr * 0.5)}" fill="none" stroke="${LINE}" stroke-width="3" stroke-linecap="round"/>`}
@@ -165,12 +179,42 @@
       }
       return s + `<circle cx="${f1(fx)}" cy="${f1(fy)}" r="5" fill="#ffe066" stroke="${LINE}" stroke-width="2"/>`;
     })() : '';
+    // Toddler: a big polka-dot bow with a balloon tied to it that sways in the breeze.
+    let toddlerProps = '';
+    if (age === 'toddler') {
+      const bx = hx - hr * 0.72, by = hy - hr * 0.55;
+      const lx = hx - hr * 1.75, ly = hy - hr * 2.45;
+      const sway = live ? `<animateTransform attributeName="transform" type="rotate" values="-6 ${f1(bx)} ${f1(by)};6 ${f1(bx)} ${f1(by)};-6 ${f1(bx)} ${f1(by)}" dur="4s" repeatCount="indefinite"/>` : '';
+      toddlerProps = `
+        <g>${sway}
+          <path d="M${f1(bx)} ${f1(by)} Q${f1(bx - 18)} ${f1(by - 20)} ${f1(lx)} ${f1(ly + 20)}" fill="none" stroke="${LINE}" stroke-width="2"/>
+          <ellipse cx="${f1(lx)}" cy="${f1(ly)}" rx="17" ry="20" fill="#5fe0b0" stroke="${LINE}" stroke-width="3.5"/>
+          <path d="M${f1(lx - 4)} ${f1(ly + 23)} L${f1(lx)} ${f1(ly + 18)} L${f1(lx + 4)} ${f1(ly + 23)} Z" fill="#5fe0b0" stroke="${LINE}" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M${f1(lx - 8)} ${f1(ly - 9)} q3 -6 9 -7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        </g>
+        <path d="M${f1(bx)} ${f1(by)} L${f1(bx - 16)} ${f1(by - 11)} L${f1(bx - 14)} ${f1(by + 11)} Z M${f1(bx)} ${f1(by)} L${f1(bx + 15)} ${f1(by - 13)} L${f1(bx + 16)} ${f1(by + 9)} Z" fill="#ff5fae" stroke="${LINE}" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="${f1(bx - 10)}" cy="${f1(by - 2)}" r="2.2" fill="#fff"/><circle cx="${f1(bx - 9)}" cy="${f1(by + 5)}" r="1.8" fill="#fff"/>
+        <circle cx="${f1(bx + 10)}" cy="${f1(by - 4)}" r="2.2" fill="#fff"/><circle cx="${f1(bx + 11)}" cy="${f1(by + 3)}" r="1.8" fill="#fff"/>
+        <circle cx="${f1(bx)}" cy="${f1(by)}" r="5" fill="#ff8fc8" stroke="${LINE}" stroke-width="3"/>`;
+    }
+    // Kid: a school backpack with a star on the pocket.
+    let backpack = '';
+    if (age === 'kid') {
+      const px = cx - p.rx * 0.12, py = cy - p.ry - 8;
+      backpack = `
+        <path d="M${f1(px + 12)} ${f1(py + 10)} Q${f1(cx + p.rx * 0.45)} ${f1(cy - p.ry * 0.2)} ${f1(cx + p.rx * 0.5)} ${f1(cy + p.ry * 0.45)}" fill="none" stroke="${LINE}" stroke-width="8" stroke-linecap="round"/>
+        <path d="M${f1(px + 12)} ${f1(py + 10)} Q${f1(cx + p.rx * 0.45)} ${f1(cy - p.ry * 0.2)} ${f1(cx + p.rx * 0.5)} ${f1(cy + p.ry * 0.45)}" fill="none" stroke="#2f9bff" stroke-width="4" stroke-linecap="round"/>
+        <rect x="${f1(px - 17)}" y="${f1(py)}" width="34" height="34" rx="10" fill="#2f9bff" stroke="${LINE}" stroke-width="3.5"/>
+        <path d="M${f1(px - 17)} ${f1(py + 12)} Q${f1(px)} ${f1(py + 20)} ${f1(px + 17)} ${f1(py + 12)}" fill="none" stroke="${LINE}" stroke-width="3"/>
+        <rect x="${f1(px - 10)}" y="${f1(py + 18)}" width="20" height="12" rx="4" fill="#8fd0ff" stroke="${LINE}" stroke-width="2.5"/>
+        <path d="M${f1(px)} ${f1(py + 19.5)} l2 4 4.4 .5 -3.3 3 1 4.4 -4.1 -2.3 -4.1 2.3 1 -4.4 -3.3 -3 4.4 -.5z" fill="#ffe066"/>`;
+    }
     // A just-hatched baby sits in the bottom half of its shell.
     const shell = o.shell ? `
       <path d="M44 174 L56 164 L68 176 L82 162 L96 176 L110 162 L124 176 L138 162 L150 174 C152 192 128 199 98 199 C68 199 42 192 44 174 Z" fill="#fff4fb" stroke="${LINE}" stroke-width="4" stroke-linejoin="round"/>
       <circle cx="70" cy="187" r="5" fill="#ffb3da"/><circle cx="100" cy="190" r="4" fill="#c9b5ff"/><circle cx="128" cy="185" r="5" fill="#9fe8d2"/>` : '';
     const sc = o.noScale ? 1 : o.shell ? 0.85 : p.scale;
-    const body = `<g stroke="${LINE}" stroke-width="7" stroke-linejoin="round">${outline}</g>${tail}${shapes}${mane}${hoof(-0.3)}${hoof(0.68)}${hoof(-0.62)}${hoof(0.38)}${forelock}${horn}${face}${paci}${flower}`;
+    const body = `<g stroke="${LINE}" stroke-width="7" stroke-linejoin="round">${outline}</g>${tail}${shapes}${backpack}${mane}${hoof(-0.3)}${hoof(0.68)}${hoof(-0.62)}${hoof(0.38)}${forelock}${horn}${face}${paci}${flower}${toddlerProps}`;
     return `<svg viewBox="0 0 200 200" class="${o.cls || ''}" aria-hidden="true"><g transform="translate(100 ${gy - (o.shell ? 28 : 0)}) scale(${sc}) translate(-100 ${-gy})">${body}</g>${shell}</svg>`;
   }
 
@@ -575,7 +619,7 @@
     ][n];
     const pipPics = [
       eggSVG(), eggSVG({ cracked: true }),
-      unicornSVG('toddler', look, { noScale: true }), unicornSVG('kid', look, { noScale: true }), unicornSVG('grown', look),
+      unicornSVG('toddler', look, { noScale: true, still: true }), unicornSVG('kid', look, { noScale: true, still: true }), unicornSVG('grown', look, { still: true }),
     ];
     $('pips').innerHTML = STAGE_NAMES.map((name, i) => {
       const cls = i + 1 < n ? 'done' : i + 1 === n ? 'now' : '';
@@ -673,10 +717,19 @@
   $('scene').addEventListener('click', () => {
     sfx.tap();
     const k = $('scene').querySelector('.actor.kid');
-    if (k) glitter.fromEl(k, 25);
+    if (k) { glitter.fromEl(k, 25); jump(k); }
     sayLine(STAGE_SLOTS[stageNow()]);
   });
-  const tapFamily = () => { sfx.sparkle(); sayLine(prizeReady() ? 'prize' : 'family'); };
+  // One happy jump when tapped (the herd jumps one after another, like a wave).
+  function jump(el, delay = 0) {
+    el.style.setProperty('--jd', delay + 's');
+    el.classList.remove('jump'); void el.getBoundingClientRect(); el.classList.add('jump');
+    el.addEventListener('animationend', () => el.classList.remove('jump'), { once: true });
+  }
+  const tapFamily = () => {
+    sfx.sparkle(); sayLine(prizeReady() ? 'prize' : 'family');
+    $('herd').querySelectorAll('.slot.filled svg').forEach((el, i) => jump(el, i * 0.12));
+  };
   $('herdCard').addEventListener('click', tapFamily);
   $('herdPill').addEventListener('click', () => { $('herdCard').scrollIntoView({ behavior: 'smooth', block: 'center' }); tapFamily(); });
 

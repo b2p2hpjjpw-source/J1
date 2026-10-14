@@ -109,26 +109,31 @@ main { display: flex; flex-direction: column; gap: 16px; }
 @keyframes bob { 50% { transform: translateY(-2%); } }
 .actor.rock .paci { animation: suck .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 30% 50%; }
 @keyframes suck { 50% { transform: translateX(-4%) scale(.93); } }
-/* Unicorn dance: a happy bounce, up and down, no turning. */
-.dance { animation: dance 1.4s ease-in-out infinite; animation-delay: var(--d, 0s); transform-origin: 50% 96%; }
-.dance.big { animation-duration: .9s; }
+/* Unicorn dance: two little hops with a happy wiggle, then a rest, so it stays cheerful without being busy. */
+.dance { animation: dance 4.2s ease-in-out infinite; animation-delay: var(--d, 0s); transform-origin: 50% 96%; }
+.dance.big { animation-duration: 2s; }
 @keyframes dance {
-  0%, 50%, 100% { transform: translateY(0) scaleY(1); }
-  8%, 58% { transform: translateY(0) scaleY(.94); }
-  25% { transform: translateY(-10%) scaleY(1.03); }
-  75% { transform: translateY(-6%) scaleY(1.02); }
+  0%, 36%, 100% { transform: translateY(0) scaleY(1) rotate(0); }
+  4% { transform: translateY(0) scaleY(.94); }
+  11% { transform: translateY(-8%) scaleY(1.03) rotate(-3deg); }
+  18% { transform: translateY(0) scaleY(.95) rotate(0); }
+  25% { transform: translateY(-5%) scaleY(1.02) rotate(3deg); }
+  31% { transform: translateY(0) scaleY(.97) rotate(0); }
 }
+/* A single jump when she taps a unicorn. */
+.jump { animation: jump .55s cubic-bezier(.3, 1.6, .5, 1) var(--jd, 0s) 1 both !important; transform-origin: 50% 96%; }
+@keyframes jump { 0% { transform: translateY(0) scaleY(.9); } 45% { transform: translateY(-16%) scaleY(1.05); } 100% { transform: translateY(0); } }
 /* Music notes floating up while the unicorns dance */
 .scene .notes { position: absolute; inset: 0; pointer-events: none; }
 .scene .notes i {
   position: absolute; bottom: 30%; font-style: normal; font-weight: 800; font-size: clamp(18px, 6vw, 28px);
   color: #a35cff; text-shadow: 0 0 0 #fff, 0 2px 0 #fff; opacity: 0;
-  animation: note 3.2s ease-out infinite;
+  animation: note 6.4s ease-out infinite;
 }
 .scene .notes i:nth-child(1) { left: 18%; }
-.scene .notes i:nth-child(2) { left: 42%; color: #ff4f8b; animation-delay: .8s; }
-.scene .notes i:nth-child(3) { left: 62%; color: #2fa8ff; animation-delay: 1.6s; }
-.scene .notes i:nth-child(4) { left: 80%; color: #ff9a3c; animation-delay: 2.4s; }
+.scene .notes i:nth-child(2) { left: 42%; color: #ff4f8b; animation-delay: 1.6s; }
+.scene .notes i:nth-child(3) { left: 62%; color: #2fa8ff; animation-delay: 3.2s; }
+.scene .notes i:nth-child(4) { left: 80%; color: #ff9a3c; animation-delay: 4.8s; }
 @keyframes note {
   0% { opacity: 0; transform: translate(0, 0) rotate(-10deg) scale(.6); }
   15% { opacity: 1; }
@@ -289,5 +294,5 @@ input[type="text"] { font-size: 19px; text-align: left; }
 #glitter { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 40; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wordmark .ch, .logo, .dance, .actor.rock .paci, .scene .notes i, #stars-bg i, .scene .actor.bob, .scene .actor.wobble { animation: none; }
+  .wordmark .ch, .logo, .dance, .jump, .actor.rock .paci, .scene .notes i, #stars-bg i, .scene .actor.bob, .scene .actor.wobble { animation: none; }
 }
