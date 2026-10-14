@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Long Game</title>
+  <meta name="description" content="A weekly tracker for cutting refined carbs, processed food and the other foods that shorten a long, healthy life." />
+  <meta name="theme-color" content="#F2F3EE" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Long Game" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Long Game</h1>
+    <span class="label" id="weekRange">This week</span>
+  </header>
+
+  <section class="hero" aria-live="polite">
+    <div class="score">
+      <span class="label">On track this week</span>
+      <span class="big"><span id="onTrack">0</span><span class="of"> of <span id="tracked">0</span></span></span>
+      <span class="sub" id="heroSub">Log a food each time you have one. Allowances reset every Monday.</span>
+    </div>
+    <ol class="days" id="days" aria-label="This week, day by day"></ol>
+    <div class="legend"><span><i class="dot clean"></i>Clean day</span><span><i class="dot slip"></i>Went over an allowance</span></div>
+  </section>
+
+  <div class="stats">
+    <div class="stat"><span class="label">Clean-day streak</span><span id="sStreak" class="v pos">0</span></div>
+    <div class="stat"><span class="label">Logged this week</span><span id="sLogged" class="v">0</span></div>
+    <div class="stat"><span class="label">Cut to zero</span><span id="sZero" class="v pos">0</span></div>
+    <div class="stat"><span class="label">Over allowance</span><span id="sOver" class="v neg">0</span></div>
+  </div>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <section class="stack">
+    <div class="sechead">
+      <h2>Log what you had</h2>
+      <div class="daynav">
+        <button type="button" class="arrow" id="prevDay" aria-label="Previous day">‹</button>
+        <span id="dayLabel" class="daylabel">Today</span>
+        <button type="button" class="arrow" id="nextDay" aria-label="Next day">›</button>
+      </div>
+    </div>
+    <p class="hint">Tap <b>+</b> each time you have a serving. The bar shows this week’s allowance; red means over.</p>
+    <div id="foodList"></div>
+  </section>
+
+  <section class="card stack" id="manage">
+    <div class="sechead"><h2>Your list</h2></div>
+    <p class="hint">Set how many servings a week each food gets. 0 means cut it completely. The suggested number comes from longevity guidance; change it to whatever works for you.</p>
+    <div id="editList"></div>
+
+    <div class="sub-block">
+      <span class="label">Add from the guidance list</span>
+      <div class="chips" id="library"></div>
+      <p class="hint" id="libraryEmpty" hidden>Everything on the guidance list is already in your tracker.</p>
+    </div>
+
+    <form id="addForm" autocomplete="off" class="sub-block">
+      <span class="label">Add your own</span>
+      <div class="row">
+        <div class="field grow"><label class="label" for="newName">Food</label><input id="newName" type="text" maxlength="40" placeholder="e.g. Granola bars" required></div>
+        <div class="field small"><label class="label" for="newLimit">Per week</label><input id="newLimit" type="number" min="0" max="21" value="1" inputmode="numeric"></div>
+      </div>
+      <div class="field"><label class="label" for="newEx">Examples or serving size (optional)</label><input id="newEx" type="text" maxlength="80" placeholder="e.g. 1 bar"></div>
+      <div class="btns"><button class="btn" type="submit">Add to tracker</button></div>
+      <div class="msg" id="msg"></div>
+    </form>
+  </section>
+
+  <section class="stack">
+    <div class="sechead"><h2>Past weeks</h2></div>
+    <div id="history"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Family sync</h2>
+    <p class="hint">Sign in to keep your log on more than one phone.</p>
+    <div data-family-sync></div>
+  </section>
+
+  <section class="panel">
+    <h2>Backup</h2>
+    <p class="hint">Everything is saved on this phone (and in the family database once you sign in). Download a backup now and then.</p>
+    <div class="btns">
+      <button class="btn ghost" type="button" id="bDown">Download backup</button>
+      <label class="btn ghost" for="bUp">Restore backup</label><input type="file" id="bUp" accept="application/json,.json" hidden />
+      <button class="btn danger" type="button" id="bErase">Erase everything</button>
+    </div>
+  </section>
+
+  <p class="fine">The suggested allowances follow broad, well-supported guidance (WHO, the American Heart Association, Harvard’s Healthy Eating Plate and studies of long-lived populations). They’re general advice, not medical advice. If you have diabetes, kidney disease or another condition, check limits with your doctor.</p>
+</div>
+
+<script src="../family-sync.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

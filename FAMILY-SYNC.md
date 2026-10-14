@@ -1,6 +1,6 @@
 # Family sync
 
-All seven apps (Homework Hero, Star Steps, Build-a-Plate, Clean Sheet, Utopia, the Daily $80 Tracker and Our To-Do List) can share their data between phones through a free Firebase project (`family-apps-c8217`). The code is in [`family-sync.js`](family-sync.js).
+All eight apps (Homework Hero, Star Steps, Build-a-Plate, Clean Sheet, Utopia, the Daily $80 Tracker, Our To-Do List and Long Game) can share their data between phones through a free Firebase project (`family-apps-c8217`). The code is in [`family-sync.js`](family-sync.js).
 
 ## How it works
 

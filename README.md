@@ -77,3 +77,5 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 **Also in this repo:** [Daily $80 Tracker](expenses/), a daily spending allowance tracker with a grove of trees that grows as you save. See [expenses/README.md](expenses/README.md).
 
 **Also in this repo:** [Our To-Do List](todo/), a shared to-do list for the two of us, in the same look as the Daily $80 Tracker. See [todo/README.md](todo/README.md).
+
+**Also in this repo:** [Long Game](long-game/), a weekly tracker for cutting refined carbs, processed food and other foods that shorten a long life, with a per-food weekly allowance. See [long-game/README.md](long-game/README.md).
