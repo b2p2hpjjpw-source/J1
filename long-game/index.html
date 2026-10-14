@@ -75,8 +75,12 @@
     <div id="foodList"></div>
   </section>
 
-  <section class="card stack" id="manage">
-    <div class="sechead"><h2 id="listOwner">Your list</h2></div>
+  <details class="manage" id="manage">
+    <summary>
+      <span class="mt"><span class="mh" id="listOwner">Your list</span><span class="ms" id="listSum">Change allowances and targets, add or remove foods</span></span>
+      <span class="mgo" aria-hidden="true">Change ›</span>
+    </summary>
+    <div class="mbody stack">
     <p class="hint">Set how many servings a week each food gets. The suggested numbers come from longevity guidance; change them to whatever works for you.</p>
 
     <h3>Cut back <small>· allowed per week, 0 = cut it</small></h3>
@@ -101,7 +105,9 @@
       <div class="btns"><button class="btn" type="submit">Add to tracker</button></div>
       <div class="msg" id="msg"></div>
     </form>
-  </section>
+    <div class="btns"><button class="btn ghost" type="button" id="closeList">Done</button></div>
+    </div>
+  </details>
 
   <section class="stack">
     <div class="sechead"><h2>Past weeks</h2></div>

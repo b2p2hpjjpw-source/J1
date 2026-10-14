@@ -7,7 +7,7 @@ A weekly tracker for eating for a long life, for the two of us. Each of us has o
 - **The week at a glance:** cut-back foods on track, eat-more targets met, and a dot for each day: green for a clean day, red for a day where something on the cut-back list went over its allowance. Tap a day to log for it.
 - **Log what you had:** switch between *Cut back* and *Eat more*, then tap **+** every time you have a serving (use **−** to undo). Cut-back foods show what's left and a better swap once the allowance is used up. The ‹ › arrows let you log a day you forgot.
 - **Eating late:** counts any food after the kitchen closes (7 pm by default, 2 hours before a 9 pm bedtime, so there's time for dinner with the kids after work). Change the time in Settings.
-- **Your list:** raise or lower any allowance or target, read why it's on the list, go back to the suggested number, remove it, add more from the guidance list, or add your own.
+- **Your list** (folded away; tap *Change* to open it): raise or lower any allowance or target, read why it's on the list, go back to the suggested number, remove it, add more from the guidance list, or add your own.
 - **Whose phone:** the first time it opens, pick whose phone it is. Tap the other name at the top to see their tracker. Names can be changed in Settings.
 - **Reminders:** *Add reminders to my calendar* downloads a calendar file with two daily alarms: 15 minutes before the kitchen closes, and a nudge to log the day (8:30 pm by default). A web app can't send alerts on a schedule without a server, so the reminders live in the phone's calendar. To change a time, delete the old events and add them again.
 - **Past weeks**, **Family sync** and **Backup**, same as the other apps (see [../FAMILY-SYNC.md](../FAMILY-SYNC.md)).

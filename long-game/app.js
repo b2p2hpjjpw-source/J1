@@ -387,6 +387,7 @@
 
   function renderEdit(p) {
     $('listOwner').textContent = `${p.name}’s list`;
+    $('listSum').textContent = `${p.foods.filter(f => f.kind === 'less').length} to cut back · ${p.foods.filter(f => f.kind === 'more').length} to eat more · tap to change numbers`;
     [['less', 'editLess', 'libLess'], ['more', 'editMore', 'libMore']].forEach(([k, listId, libId]) => {
       const E = $(listId); E.innerHTML = '';
       p.foods.filter(f => f.kind === k).forEach(f => {
@@ -500,6 +501,7 @@
     f.n = clamp(n); save(); render();
   }
 
+  $('closeList').onclick = () => { $('manage').open = false; $('manage').scrollIntoView({ block: 'nearest' }); };
   $('prevDay').onclick = () => { day = addDays(day, -1); render(); };
   $('nextDay').onclick = () => { if (day < today()) { day = addDays(day, 1); render(); } };
   $('kind').onclick = e => { const b = e.target.closest('button'); if (!b) return; kind = b.dataset.k; render(); };

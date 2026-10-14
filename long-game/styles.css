@@ -153,3 +153,15 @@ h3 small{font-family:var(--f-body);font-size:12px;color:var(--muted)}
 .pill.togo{background:var(--chip);color:var(--ink)}
 .cbtn.plus.good{background:var(--accent);border-color:var(--accent);color:var(--surface)}
 .field input[type="time"]{min-height:44px}
+
+/* The list editor stays folded away until tapped */
+.manage{background:var(--surface);border:1px solid var(--line);border-radius:20px}
+.manage > summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:16px 18px}
+.manage > summary::-webkit-details-marker{display:none}
+.manage .mt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.manage .mh{font-family:var(--f-display);font-size:19px}
+.manage .ms{font-size:13px;color:var(--muted)}
+.manage .mgo{font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap}
+.manage[open] .mgo{visibility:hidden}
+.manage[open] > summary{border-bottom:1px solid var(--line)}
+.manage .mbody{padding:14px 18px 18px}
