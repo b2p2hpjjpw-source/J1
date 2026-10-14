@@ -145,9 +145,17 @@
       <path d="M${f1(ex - hr * 0.12)} ${f1(ey - hr * 0.2)} l-5 -6 M${f1(ex)} ${f1(ey - hr * 0.24)} l-1 -7 M${f1(ex + hr * 0.12)} ${f1(ey - hr * 0.2)} l3 -6" stroke="#2b1846" stroke-width="2.5" stroke-linecap="round"/>
       <circle cx="${f1(hx - hr * 0.12)}" cy="${f1(hy + hr * 0.36)}" r="${f1(hr * 0.17)}" fill="#ff8fc8" opacity=".6"/>
       <ellipse cx="${f1(hx + hr * 1.06)}" cy="${f1(hy + hr * 0.2)}" rx="2.5" ry="3.2" fill="${LINE}"/>
-      <path d="M${f1(hx + hr * 0.62)} ${f1(hy + hr * 0.52)} Q${f1(hx + hr * 0.86)} ${f1(hy + hr * 0.7)} ${f1(hx + hr * 1.08)} ${f1(hy + hr * 0.5)}" fill="none" stroke="${LINE}" stroke-width="3" stroke-linecap="round"/>
+      ${o.paci ? '' : `<path d="M${f1(hx + hr * 0.62)} ${f1(hy + hr * 0.52)} Q${f1(hx + hr * 0.86)} ${f1(hy + hr * 0.7)} ${f1(hx + hr * 1.08)} ${f1(hy + hr * 0.5)}" fill="none" stroke="${LINE}" stroke-width="3" stroke-linecap="round"/>`}
       <path d="M${f1(hx - hr * 0.48)} ${f1(hy - hr * 0.62)} L${f1(hx - hr * 0.4)} ${f1(hy - hr * 1.1)} L${f1(hx - hr * 0.2)} ${f1(hy - hr * 0.78)} Z" fill="#ffc2e0"/>`;
     // Mommy wears a flower behind her ear.
+    // The baby unicorn has a pacifier: a ring handle, a shield and a center button, right at the mouth.
+    const mx = hx + hr * 0.9, my = hy + hr * 0.58;
+    const paci = o.paci ? `<g class="paci">
+      <circle cx="${f1(mx + hr * 0.3)}" cy="${f1(my + hr * 0.42)}" r="${f1(hr * 0.27)}" fill="none" stroke="${LINE}" stroke-width="9"/>
+      <circle cx="${f1(mx + hr * 0.3)}" cy="${f1(my + hr * 0.42)}" r="${f1(hr * 0.27)}" fill="none" stroke="#ff5fae" stroke-width="5"/>
+      <ellipse cx="${f1(mx)}" cy="${f1(my)}" rx="${f1(hr * 0.24)}" ry="${f1(hr * 0.44)}" transform="rotate(-25 ${f1(mx)} ${f1(my)})" fill="#5fc4ff" stroke="${LINE}" stroke-width="3.5"/>
+      <circle cx="${f1(mx + hr * 0.06)}" cy="${f1(my + hr * 0.03)}" r="${f1(hr * 0.12)}" fill="#ffe066" stroke="${LINE}" stroke-width="2.5"/>
+    </g>` : '';
     const flower = o.flower ? (() => {
       const fx = hx - hr * 0.78, fy = hy - hr * 0.55;
       let s = '';
@@ -162,8 +170,8 @@
       <path d="M44 174 L56 164 L68 176 L82 162 L96 176 L110 162 L124 176 L138 162 L150 174 C152 192 128 199 98 199 C68 199 42 192 44 174 Z" fill="#fff4fb" stroke="${LINE}" stroke-width="4" stroke-linejoin="round"/>
       <circle cx="70" cy="187" r="5" fill="#ffb3da"/><circle cx="100" cy="190" r="4" fill="#c9b5ff"/><circle cx="128" cy="185" r="5" fill="#9fe8d2"/>` : '';
     const sc = o.noScale ? 1 : o.shell ? 0.85 : p.scale;
-    const body = `<g stroke="${LINE}" stroke-width="7" stroke-linejoin="round">${outline}</g>${tail}${shapes}${mane}${hoof(-0.3)}${hoof(0.68)}${hoof(-0.62)}${hoof(0.38)}${forelock}${horn}${face}${flower}`;
-    return `<svg viewBox="0 0 200 200" class="${o.cls || ''}" aria-hidden="true"><g transform="translate(100 ${gy}) scale(${sc}) translate(-100 ${-gy})">${body}</g>${shell}</svg>`;
+    const body = `<g stroke="${LINE}" stroke-width="7" stroke-linejoin="round">${outline}</g>${tail}${shapes}${mane}${hoof(-0.3)}${hoof(0.68)}${hoof(-0.62)}${hoof(0.38)}${forelock}${horn}${face}${paci}${flower}`;
+    return `<svg viewBox="0 0 200 200" class="${o.cls || ''}" aria-hidden="true"><g transform="translate(100 ${gy - (o.shell ? 28 : 0)}) scale(${sc}) translate(-100 ${-gy})">${body}</g>${shell}</svg>`;
   }
 
   function eggSVG(o = {}) {
@@ -547,13 +555,13 @@
 
   function renderScene(animate) {
     const n = stageNow(), look = lookFor(earned());
-    const mom = unicornSVG('grown', MOM_LOOK, { flower: true, cls: 'actor mom bob' });
+    const mom = unicornSVG('grown', MOM_LOOK, { flower: true, cls: 'actor mom dance' });
     let kid;
     if (n === 0) kid = nestSVG();
     else if (n === 1) kid = eggSVG({ cls: 'actor kid wobble' });
-    else if (n === 2) kid = unicornSVG('baby', look, { shell: true, cls: 'actor kid' });
-    else kid = unicornSVG(n === 3 ? 'toddler' : 'kid', look, { cls: 'actor kid' });
-    $('scene').innerHTML = `${SCENE_BG}<div class="actors">${mom}${kid}</div><span class="tap-hint" aria-hidden="true">🔊</span>`;
+    else if (n === 2) kid = unicornSVG('baby', look, { shell: true, paci: true, cls: 'actor kid rock' });
+    else kid = unicornSVG(n === 3 ? 'toddler' : 'kid', look, { cls: 'actor kid dance' });
+    $('scene').innerHTML = `${SCENE_BG}<div class="actors">${mom}${kid}</div><span class="notes" aria-hidden="true"><i>♪</i><i>♫</i><i>♪</i><i>♫</i></span><span class="tap-hint" aria-hidden="true">🔊</span>`;
     if (animate) {
       const k = $('scene').querySelector('.actor.kid');
       if (k) { k.classList.add('pop'); k.addEventListener('animationend', () => k.classList.remove('pop'), { once: true }); }
@@ -586,7 +594,7 @@
     const n = herdSize(), goal = state.goal;
     let html = '';
     for (let i = 0; i < Math.max(goal, Math.min(n, goal)); i++) {
-      if (i < n) html += `<div class="slot filled${i === newIndex ? ' new' : ''}">${unicornSVG('grown', lookFor(state.spent + i))}</div>`;
+      if (i < n) html += `<div class="slot filled${i === newIndex ? ' new' : ''}" style="--d:${(i * 0.37) % 1.4}s">${unicornSVG('grown', lookFor(state.spent + i), { cls: 'dance' })}</div>`;
       else html += `<div class="slot"><span class="empty">🦄</span></div>`;
     }
     $('herd').innerHTML = html;
@@ -635,7 +643,7 @@
       glitter.rain(240);
       sayLine('grown');
       openModal(`
-        <div class="hero-pic">${unicornSVG('grown', lookFor(idx))}</div>
+        <div class="hero-pic">${unicornSVG('grown', lookFor(idx), { cls: 'dance big' })}</div>
         <h2>${pick(CHEERS)} Your unicorn is all grown up!</h2>
         <p>It joins your unicorn family. You have <b>${herdSize()}</b> 🦄</p>
         <button class="big-btn pink" data-act="close">Yay! ✨</button>`, () => maybeCelebratePrize());
@@ -856,7 +864,7 @@
   // ---------- First open: a quick setup for Mom ----------
   function firstRun() {
     openModal(`
-      <div class="hero-pic">${unicornSVG('grown', MOM_LOOK, { flower: true })}</div>
+      <div class="hero-pic">${unicornSVG('grown', MOM_LOOK, { flower: true, cls: 'dance' })}</div>
       <h2>Welcome to Unicorn Potty Party!</h2>
       <p class="muted">Each time she goes in the potty, her unicorn grows: egg, hatch, toddler, kid, grown-up. Every 5 trips makes a grown-up unicorn. ${state.goal} unicorns earn a prize.</p>
       <input id="fName" type="text" maxlength="24" placeholder="Her name" aria-label="Her name" autocomplete="off" />
