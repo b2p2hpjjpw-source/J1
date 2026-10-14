@@ -10,7 +10,7 @@ A sparkly potty training app for a little girl. Every time she goes pee or poop 
   3. Trip 3: the baby grows into a toddler unicorn, with a big polka-dot bow and a balloon
   4. Trip 4: the toddler becomes a kid unicorn, with heart sunglasses and a school backpack
   5. Trip 5: the kid unicorn is all grown up. A big glitter shower, and it joins her unicorn family (+1 🦄). Then Mommy Unicorn is ready to lay a new egg.
-- Each pee and each poop counts as a trip. Tapping the same button again within 2 minutes doesn't count, so excited taps can't pile up.
+- Each pee and each poop counts as a trip. Tapping the same button again within 2 minutes doesn't count, so excited taps can't pile up. When that happens, a bubble at the top says so and how long until it's ready. Grown-ups can turn this rule off.
 - The toddler, the kid and the unicorns in her family do two little hops with a wiggle, then rest for a few seconds, so it's fun without being busy. The unicorns blink, and the toddler's balloon sways. Mommy Unicorn stays calm. Tapping the meadow makes the little unicorn jump; tapping the family makes them jump one after another, like a wave.
 - Five steps along the bottom (Egg, Hatch, Toddler, Kid, Grown-up) show how close the next unicorn is.
 - **My unicorn family:** 5 spots that fill with unicorns, each in its own colors. When all 5 are filled there's a giant glitter celebration for the prize.

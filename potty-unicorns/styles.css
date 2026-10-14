@@ -22,6 +22,8 @@
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* No double-tap-to-zoom: on iPhone it swallows quick taps on the buttons. */
+html, body, button, .scene, .herd-card { touch-action: manipulation; }
 html, body { margin: 0; }
 html { background: #c7a8ff; }
 body {
@@ -173,6 +175,21 @@ main { display: flex; flex-direction: column; gap: 16px; }
 .potty-btn.poop { background: linear-gradient(180deg, #f3c9a2, #d39260); color: #4d2a10; box-shadow: 0 8px 0 var(--brown-deep), 0 14px 24px rgba(120, 60, 20, .3); }
 .potty-btn:active { transform: translateY(6px); box-shadow: 0 2px 0 rgba(0, 0, 0, .25); }
 .potty-btn.waiting { filter: saturate(.4); }
+/* Friendly bubble when a button was just tapped */
+.nudge {
+  position: fixed; z-index: 30; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px));
+  pointer-events: none; /* never blocks a tap on the buttons */
+  transform: translateX(-50%); width: min(92vw, 420px);
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 3px solid var(--gold); border-radius: 24px; padding: 12px 16px;
+  box-shadow: 0 10px 30px rgba(59, 36, 102, .35);
+  animation: nudge-in .35s cubic-bezier(.2, 1.5, .4, 1);
+}
+.nudge .n-ico { font-size: 40px; line-height: 1; flex: none; }
+.nudge .n-text { min-width: 0; }
+.nudge b { display: block; font-size: 20px; line-height: 1.15; }
+.nudge small { display: block; font-size: 14px; color: var(--ink-soft); line-height: 1.25; margin-top: 2px; }
+@keyframes nudge-in { from { transform: translate(-50%, -30px); opacity: 0; } }
 .today-line { margin: -4px 0 0; text-align: center; font-size: 18px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(59, 36, 102, .4); min-height: 1.2em; }
 
 /* ---------- Herd ---------- */

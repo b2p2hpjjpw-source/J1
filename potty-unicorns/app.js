@@ -31,6 +31,7 @@
     spent: 0,           // unicorns already traded in for prizes
     prizesWon: [],      // [{ name, at }]
     celebrated: 0,      // highest "unicorns earned" count whose prize party already played
+    waitRule: true,     // ignore the same button again within 2 minutes
   };
 
   let state = load();
@@ -658,12 +659,18 @@
   function logTrip(kind, btn) {
     const now = Date.now();
     const last = [...state.trips].reverse().find(t => t.k === kind);
-    if (last && now - last.at < REPEAT_MS) {
+    if (state.waitRule && last && now - last.at < REPEAT_MS) {
       sfx.soft(); buzz(40);
       sayLine('again');
       btn.classList.add('waiting'); setTimeout(() => btn.classList.remove('waiting'), 600);
+      glitter.fromEl(btn, 12);
+      const secs = Math.ceil((REPEAT_MS - (now - last.at)) / 1000);
+      const wait = secs > 60 ? `${Math.ceil(secs / 60)} minutes` : `${secs} seconds`;
+      nudge(kind === 'pee' ? '💧' : '💩', `You already got a sparkle for that ${kind}!`,
+        `The same button only counts once every 2 minutes. Ready again in ${wait}. (Grown-ups can change this.)`);
       return;
     }
+    hideNudge();
     state.trips.push({ id: now.toString(36) + Math.random().toString(36).slice(2, 6), k: kind, at: now });
     save();
     const n = stageNow();
@@ -680,6 +687,18 @@
     renderAll({ animate: true, newIndex: herdSize() - 1 });
     celebrateGrown();
   }
+
+  // A friendly bubble at the bottom of the screen that goes away by itself.
+  let nudgeTimer = null;
+  function nudge(icon, title, detail) {
+    const el = $('nudge');
+    el.innerHTML = `<span class="n-ico" aria-hidden="true">${icon}</span><span class="n-text"><b>${esc(title)}</b>${detail ? `<small>${esc(detail)}</small>` : ''}</span>`;
+    el.hidden = false;
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    clearTimeout(nudgeTimer);
+    nudgeTimer = setTimeout(hideNudge, 4000);
+  }
+  function hideNudge() { clearTimeout(nudgeTimer); $('nudge').hidden = true; }
 
   function celebrateGrown() {
     const idx = earned() - 1;
@@ -829,6 +848,8 @@
         <h3>Sound</h3>
         <div class="toggle"><span>Sounds</span><button class="small-btn" id="gSound">${state.sound ? 'On' : 'Off'}</button></div>
         <div class="toggle"><span>Talking</span><button class="small-btn" id="gVoiceOn">${state.voice ? 'On' : 'Off'}</button></div>
+        <div class="toggle"><span>Ignore repeat taps (same button within 2 minutes)</span><button class="small-btn" id="gWait">${state.waitRule ? 'On' : 'Off'}</button></div>
+        <p class="help">Keeps excited extra taps from counting. Turn it off if she sometimes really goes twice in a row.</p>
       </section>
 
       <section>
@@ -885,11 +906,12 @@
       keepScroll();
     });
     $('gSound').onclick = () => { state.sound = !state.sound; save(); keepScroll(); };
+    $('gWait').onclick = () => { state.waitRule = !state.waitRule; save(); keepScroll(); };
     $('gVoiceOn').onclick = () => { state.voice = !state.voice; if (!state.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); save(); keepScroll(); };
     $('gErase').onclick = () => {
       if (!confirmErase) { confirmErase = true; keepScroll(); return; }
       confirmErase = false;
-      state = Object.assign(structuredClone(DEFAULT_STATE), { setupDone: true, name: state.name, prize: state.prize, goal: state.goal, sound: state.sound, voice: state.voice });
+      state = Object.assign(structuredClone(DEFAULT_STATE), { setupDone: true, name: state.name, prize: state.prize, goal: state.goal, sound: state.sound, voice: state.voice, waitRule: state.waitRule });
       save(); renderAll(); closeModal();
     };
     $('gLock').onclick = () => { unlocked = false; closeModal(); };
