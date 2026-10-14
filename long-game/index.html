@@ -22,22 +22,35 @@
 <div class="wrap">
   <header class="top">
     <h1>Long Game</h1>
-    <span class="label" id="weekRange">This week</span>
+    <div class="seg people" id="people" role="group" aria-label="Whose tracker"></div>
   </header>
 
+  <section class="panel pick" id="whoPick" hidden>
+    <h2>Whose phone is this?</h2>
+    <p class="hint">You each get your own list and log. Pick who uses this phone and it opens to your tracker. You can still tap the other name to see theirs.</p>
+    <div class="btns"><button class="btn" type="button" id="pickA">I’m Mom</button><button class="btn" type="button" id="pickB">I’m Dad</button></div>
+  </section>
+  <p class="viewing" id="viewingOther" hidden></p>
+
   <section class="hero" aria-live="polite">
-    <div class="score">
-      <span class="label">On track this week</span>
-      <span class="big"><span id="onTrack">0</span><span class="of"> of <span id="tracked">0</span></span></span>
-      <span class="sub" id="heroSub">Log a food each time you have one. Allowances reset every Monday.</span>
+    <div class="scores">
+      <div class="score">
+        <span class="label">Cut back · on track</span>
+        <span class="big"><span id="onTrack">0</span><span class="of"> of <span id="lessN">0</span></span></span>
+      </div>
+      <div class="score good">
+        <span class="label">Eat more · targets met</span>
+        <span class="big"><span id="met">0</span><span class="of"> of <span id="moreN">0</span></span></span>
+      </div>
     </div>
+    <div class="weekhead"><span class="label" id="weekRange">This week</span><span class="sub" id="heroSub"></span></div>
     <ol class="days" id="days" aria-label="This week, day by day"></ol>
     <div class="legend"><span><i class="dot clean"></i>Clean day</span><span><i class="dot slip"></i>Went over an allowance</span></div>
   </section>
 
   <div class="stats">
     <div class="stat"><span class="label">Clean-day streak</span><span id="sStreak" class="v pos">0</span></div>
-    <div class="stat"><span class="label">Logged this week</span><span id="sLogged" class="v">0</span></div>
+    <div class="stat"><span class="label">Good servings</span><span id="sGood" class="v pos">0</span></div>
     <div class="stat"><span class="label">Cut to zero</span><span id="sZero" class="v pos">0</span></div>
     <div class="stat"><span class="label">Over allowance</span><span id="sOver" class="v neg">0</span></div>
   </div>
@@ -53,26 +66,36 @@
         <button type="button" class="arrow" id="nextDay" aria-label="Next day">›</button>
       </div>
     </div>
-    <p class="hint">Tap <b>+</b> each time you have a serving. The bar shows this week’s allowance; red means over.</p>
+    <div class="seg kind" id="kind" role="group" aria-label="Which list">
+      <button type="button" data-k="less" aria-pressed="true">Cut back</button>
+      <button type="button" data-k="more" aria-pressed="false">Eat more</button>
+    </div>
+    <p class="hint">Tap <b>+</b> each time you have a serving. Cut-back foods have a weekly allowance (red means over). Eat-more foods have a weekly target.</p>
+    <p class="kitchen" id="kitchen" hidden></p>
     <div id="foodList"></div>
   </section>
 
   <section class="card stack" id="manage">
-    <div class="sechead"><h2>Your list</h2></div>
-    <p class="hint">Set how many servings a week each food gets. 0 means cut it completely. The suggested number comes from longevity guidance; change it to whatever works for you.</p>
-    <div id="editList"></div>
+    <div class="sechead"><h2 id="listOwner">Your list</h2></div>
+    <p class="hint">Set how many servings a week each food gets. The suggested numbers come from longevity guidance; change them to whatever works for you.</p>
 
-    <div class="sub-block">
-      <span class="label">Add from the guidance list</span>
-      <div class="chips" id="library"></div>
-      <p class="hint" id="libraryEmpty" hidden>Everything on the guidance list is already in your tracker.</p>
-    </div>
+    <h3>Cut back <small>· allowed per week, 0 = cut it</small></h3>
+    <div class="elist" id="editLess"></div>
+    <div class="chips" id="libLess" aria-label="Add cut-back foods from the guidance list"></div>
+
+    <h3>Eat more <small>· target per week</small></h3>
+    <div class="elist" id="editMore"></div>
+    <div class="chips" id="libMore" aria-label="Add eat-more foods from the guidance list"></div>
 
     <form id="addForm" autocomplete="off" class="sub-block">
       <span class="label">Add your own</span>
+      <div class="seg" id="newKind" role="group" aria-label="Which list">
+        <button type="button" data-k="less" aria-pressed="true">Cut back</button>
+        <button type="button" data-k="more" aria-pressed="false">Eat more</button>
+      </div>
       <div class="row">
         <div class="field grow"><label class="label" for="newName">Food</label><input id="newName" type="text" maxlength="40" placeholder="e.g. Granola bars" required></div>
-        <div class="field small"><label class="label" for="newLimit">Per week</label><input id="newLimit" type="number" min="0" max="21" value="1" inputmode="numeric"></div>
+        <div class="field small"><label class="label" for="newN" id="newNLabel">Allowed per week</label><input id="newN" type="number" min="0" max="35" value="1" inputmode="numeric"></div>
       </div>
       <div class="field"><label class="label" for="newEx">Examples or serving size (optional)</label><input id="newEx" type="text" maxlength="80" placeholder="e.g. 1 bar"></div>
       <div class="btns"><button class="btn" type="submit">Add to tracker</button></div>
@@ -86,14 +109,37 @@
   </section>
 
   <section class="panel">
+    <h2 id="setOwner">Settings</h2>
+    <div class="row">
+      <div class="field grow"><label class="label" for="bedtime">Bedtime</label><input id="bedtime" type="time" value="21:00"></div>
+      <div class="field grow"><label class="label" for="remindAt">Remind me to log at</label><input id="remindAt" type="time" value="20:30"></div>
+    </div>
+    <p class="hint"><span id="cutoffNote"></span> Guidance is to stop eating 2–3 hours before bed; this uses 3.</p>
+    <div class="sub-block">
+      <span class="label">Reminders</span>
+      <p class="hint">Adds two daily alarms to your phone’s calendar: 15 minutes before the kitchen closes, and a nudge to log your day. Change a time above, then tap again to update them.</p>
+      <div class="btns"><button class="btn" type="button" id="calBtn">Add reminders to my calendar</button></div>
+      <p class="fine">On iPhone, if nothing happens from the home-screen app, open this page in Safari and tap the button there.</p>
+    </div>
+    <div class="sub-block">
+      <span class="label">Names</span>
+      <div class="row">
+        <div class="field grow"><label class="label" for="nA">First</label><input id="nA" type="text" maxlength="14"></div>
+        <div class="field grow"><label class="label" for="nB">Second</label><input id="nB" type="text" maxlength="14"></div>
+      </div>
+      <p class="hint"><span id="thisPhone"></span> <button type="button" class="linkbtn" id="switchPhone">Switch</button></p>
+    </div>
+  </section>
+
+  <section class="panel">
     <h2>Family sync</h2>
-    <p class="hint">Sign in to keep your log on more than one phone.</p>
+    <p class="hint">Sign in on both phones to share. Each of you sees your own tracker and can peek at the other’s.</p>
     <div data-family-sync></div>
   </section>
 
   <section class="panel">
     <h2>Backup</h2>
-    <p class="hint">Everything is saved on this phone (and in the family database once you sign in). Download a backup now and then.</p>
+    <p class="hint">Everything is saved on this phone (and in the family database once you sign in). Download a backup now and then. It holds both trackers.</p>
     <div class="btns">
       <button class="btn ghost" type="button" id="bDown">Download backup</button>
       <label class="btn ghost" for="bUp">Restore backup</label><input type="file" id="bUp" accept="application/json,.json" hidden />

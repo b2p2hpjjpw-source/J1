@@ -78,4 +78,4 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 
 **Also in this repo:** [Our To-Do List](todo/), a shared to-do list for the two of us, in the same look as the Daily $80 Tracker. See [todo/README.md](todo/README.md).
 
-**Also in this repo:** [Long Game](long-game/), a weekly tracker for cutting refined carbs, processed food and other foods that shorten a long life, with a per-food weekly allowance. See [long-game/README.md](long-game/README.md).
+**Also in this repo:** [Long Game](long-game/), a weekly eating-for-longevity tracker for the two of us: allowances for foods to cut back, targets for foods to eat more. See [long-game/README.md](long-game/README.md).
