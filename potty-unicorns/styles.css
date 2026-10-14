@@ -16,6 +16,7 @@
   --brown-deep: #7b4520;
   --grass: #9be08a;
   --grass-deep: #6cc26a;
+  --display: 'Lilita One', 'Baloo 2', ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
   --font: 'Baloo 2', 'Nunito', ui-rounded, 'Arial Rounded MT Bold', system-ui, sans-serif;
   color-scheme: light;
 }
@@ -53,14 +54,26 @@ button:focus-visible, input:focus-visible { outline: 4px solid var(--gold); outl
 .topbar { display: flex; align-items: center; gap: 12px; padding-block: 14px 8px; }
 .hello { flex: 1; min-width: 0; }
 .hello-small { font-size: 18px; font-weight: 600; color: #fff; text-shadow: 0 1px 2px rgba(59, 36, 102, .35); }
-.hello-big {
-  font-size: clamp(28px, 8vw, 38px); font-weight: 800; line-height: 1; letter-spacing: .5px;
-  background: linear-gradient(90deg, #fff 0%, #fff3b0 30%, #ffd6f0 60%, #fff 100%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 2px 0 rgba(91, 52, 160, .45));
-  animation: shimmer 6s linear infinite;
+.logo {
+  width: clamp(52px, 15vw, 64px); height: clamp(52px, 15vw, 64px); flex: none; border-radius: 16px;
+  box-shadow: 0 4px 0 rgba(74, 42, 138, .45), 0 6px 16px rgba(59, 36, 102, .3);
+  animation: logo-bob 3s ease-in-out infinite;
 }
+@keyframes logo-bob { 50% { transform: translateY(-3px) rotate(-4deg); } }
+/* Rainbow title: every letter its own color, with a white outline and a little hop. */
+.wordmark { margin: 0; font-family: var(--display); font-weight: 400; line-height: .95; letter-spacing: .5px; display: flex; flex-direction: column; }
+.wordmark .line { display: block; white-space: nowrap; }
+.wordmark .line.small { font-size: clamp(18px, 5vw, 24px); }
+.wordmark .line.small .ch { -webkit-text-stroke-width: 4px; }
+.wordmark .line.big { font-size: clamp(26px, 7.4vw, 40px); }
+.wordmark .ch {
+  display: inline-block; color: var(--c);
+  -webkit-text-stroke: 5px #fff; paint-order: stroke fill;
+  text-shadow: 0 3px 0 #5b3f94;
+  animation: hop 2.4s ease-in-out infinite; animation-delay: calc(var(--i) * 70ms);
+}
+.wordmark .sp { display: inline-block; width: .28em; }
+@keyframes hop { 0%, 30%, 100% { transform: translateY(0); } 15% { transform: translateY(-5px) rotate(-4deg); } }
 @keyframes shimmer { to { background-position: -200% 0; } }
 .herd-pill {
   display: flex; align-items: center; gap: 6px; border: 0; border-radius: 999px;
@@ -248,5 +261,5 @@ input[type="text"] { font-size: 19px; text-align: left; }
 #glitter { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 40; }
 
 @media (prefers-reduced-motion: reduce) {
-  .hello-big, #stars-bg i, .scene .actor.bob, .scene .actor.wobble { animation: none; }
+  .wordmark .ch, .logo, #stars-bg i, .scene .actor.bob, .scene .actor.wobble { animation: none; }
 }

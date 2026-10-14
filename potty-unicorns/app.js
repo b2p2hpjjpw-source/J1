@@ -1,4 +1,4 @@
-/* Potty Unicorns — a potty training tracker for little kids.
+/* Unicorn Potty Party — a potty training tracker for little kids.
  * Every trip to the potty (pee or poop) grows a unicorn: egg, hatch, toddler, kid, grown-up.
  * Five trips make one grown-up unicorn; a set number of unicorns (5 to start) earns a prize.
  * Everything is stored on this phone: progress in localStorage, recorded voice lines in IndexedDB. */
@@ -857,7 +857,7 @@
   function firstRun() {
     openModal(`
       <div class="hero-pic">${unicornSVG('grown', MOM_LOOK, { flower: true })}</div>
-      <h2>Welcome to Potty Unicorns!</h2>
+      <h2>Welcome to Unicorn Potty Party!</h2>
       <p class="muted">Each time she goes in the potty, her unicorn grows: egg, hatch, toddler, kid, grown-up. Every 5 trips makes a grown-up unicorn. ${state.goal} unicorns earn a prize.</p>
       <input id="fName" type="text" maxlength="24" placeholder="Her name" aria-label="Her name" autocomplete="off" />
       <input id="fPrize" type="text" maxlength="40" placeholder="The prize (like: A trip for ice cream)" aria-label="The prize" autocomplete="off" />
@@ -874,6 +874,16 @@
       setTimeout(() => sayLine('start'), 500);
     };
   }
+
+  // ---------- Rainbow title ----------
+  (() => {
+    const RAINBOW = ['#ff4f8b', '#ff9a3c', '#ffc400', '#2fcf7f', '#3aa5ff', '#a35cff'];
+    let i = 0;
+    const line = (text, cls) => `<span class="line ${cls}" aria-hidden="true">${[...text].map(ch => ch === ' '
+      ? '<span class="sp"></span>'
+      : `<span class="ch" style="--c:${RAINBOW[i % RAINBOW.length]};--i:${i++}">${esc(ch)}</span>`).join('')}</span>`;
+    $('wordmark').innerHTML = line('Unicorn', 'small') + line('Potty Party!', 'big');
+  })();
 
   // ---------- Background stars ----------
   (() => {

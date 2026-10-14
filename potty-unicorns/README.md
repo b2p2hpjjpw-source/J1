@@ -1,4 +1,4 @@
-# Potty Unicorns 🦄✨
+# Unicorn Potty Party! 🦄✨
 
 A sparkly potty training app for a little girl. Every time she goes pee or poop in the potty, her baby unicorn grows. Every 5 trips makes one grown-up unicorn, and 5 grown-up unicorns earn a prize her mom picks.
 
@@ -32,5 +32,7 @@ It's a plain web app. With GitHub Pages on for this repo, it's at `https://<your
 It then opens full-screen with its own icon and works offline. Progress is saved only on that phone. Recording needs the microphone, so the phone will ask for permission the first time she records.
 
 To try it on a computer: `npx http-server .` from the repo root and open `/potty-unicorns/` at phone size.
+
+The home screen icon is a rainbow-maned unicorn and the name under it is "Potty Party".
 
 If you change files after installing, bump `CACHE` in `sw.js` so phones pick up the update.

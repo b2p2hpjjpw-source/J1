@@ -1,6 +1,6 @@
 {
-  "name": "Potty Unicorns",
-  "short_name": "Unicorns",
+  "name": "Unicorn Potty Party",
+  "short_name": "Potty Party",
   "description": "A sparkly potty training tracker: every potty trip grows a baby unicorn.",
   "start_url": "./",
   "scope": "./",

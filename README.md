@@ -80,4 +80,4 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 
 **Also in this repo:** [Long Game](long-game/), a weekly eating-for-longevity tracker for the two of us: allowances for foods to cut back, targets for foods to eat more. See [long-game/README.md](long-game/README.md).
 
-**Also in this repo:** [Potty Unicorns](potty-unicorns/), a sparkly potty training tracker where every potty trip grows a baby unicorn and 5 unicorns earn a prize. See [potty-unicorns/README.md](potty-unicorns/README.md).
+**Also in this repo:** [Unicorn Potty Party](potty-unicorns/), a sparkly potty training tracker where every potty trip grows a baby unicorn and 5 unicorns earn a prize. See [potty-unicorns/README.md](potty-unicorns/README.md).
