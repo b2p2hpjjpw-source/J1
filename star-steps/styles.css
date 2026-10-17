@@ -186,6 +186,14 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
 .gstep small { font-size: 11px; font-weight: 600; color: var(--ink-soft); }
 .gstep.on { background: #e8f9ee; opacity: 1; filter: none; }
 .gstep.now { box-shadow: inset 0 0 0 3px var(--green); }
+/* The grow-up show: an enormous roaring dino over the whole screen */
+.growup { position: fixed; inset: 0; z-index: 40; pointer-events: auto; overflow: hidden; }
+.growup-dim { position: absolute; inset: 0; background: radial-gradient(circle at 50% 60%, rgba(255, 236, 170, .55), rgba(30, 40, 60, .55)); opacity: 0; }
+.growup-dino { position: absolute; transform-origin: 50% 100%; }
+.growup-dino svg { width: 100%; height: auto; display: block; overflow: visible; }
+.roar-word { position: absolute; font-size: clamp(56px, 18vw, 110px); font-weight: 700; color: #ff7a1a; letter-spacing: 2px; opacity: 0;
+  -webkit-text-stroke: 5px #2f3b4d; paint-order: stroke fill; text-shadow: 0 6px 0 #2f3b4d; }
+.fam.new { animation: dpop .9s cubic-bezier(.2, 1.6, .4, 1); }
 .hero-dino { width: 190px; margin: 0 auto; }
 .hero-dino svg { width: 100%; height: auto; display: block; }
 /* Dino family (collection toward the prize) */

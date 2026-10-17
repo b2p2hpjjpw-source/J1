@@ -97,7 +97,11 @@
     const blinkAt = (1 + Math.random() * 4).toFixed(1);
     const blink = (attr, open, shut = 0.5) => live ? `<animate attributeName="${attr}" values="${open};${open};${shut};${open}" keyTimes="0;0.93;0.96;1" dur="5s" begin="${blinkAt}s" repeatCount="indefinite"/>` : '';
     let eye;
-    if (age === 'kid') {
+    if (o.roar) {
+      // Roaring: eyes squeezed shut with effort.
+      eye = `<path d="M${f1(ex - hr * 0.22)} ${f1(ey + hr * 0.04)} Q${f1(ex)} ${f1(ey - hr * 0.28)} ${f1(ex + hr * 0.22)} ${f1(ey + hr * 0.04)}" fill="none" stroke="#1d2433" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M${f1(ex - hr * 0.3)} ${f1(ey - hr * 0.32)} L${f1(ex + hr * 0.25)} ${f1(ey - hr * 0.22)}" stroke="#1d2433" stroke-width="4" stroke-linecap="round"/>`;
+    } else if (age === 'kid') {
       // Cool star sunglasses (too cool to blink).
       eye = `<path d="M${f1(ex - hr * 0.45)} ${f1(ey - hr * 0.12)} L${f1(hx - hr * 0.8)} ${f1(ey - hr * 0.3)}" stroke="${LINE}" stroke-width="5" stroke-linecap="round"/>
         <path d="${star(ex + hr * 0.05, ey, hr * 0.48)}" fill="#ffd23f" stroke="${LINE}" stroke-width="3.5" stroke-linejoin="round"/>
@@ -109,7 +113,11 @@
         <circle cx="${f1(ex - hr * 0.06)}" cy="${f1(ey + hr * 0.09)}" r="${f1(hr * 0.04)}" fill="#fff">${blink('r', f1(hr * 0.04), 0)}</circle>
         ${age === 'mom' ? `<path d="M${f1(ex - hr * 0.14)} ${f1(ey - hr * 0.24)} l-5 -6 M${f1(ex)} ${f1(ey - hr * 0.28)} l-1 -7 M${f1(ex + hr * 0.14)} ${f1(ey - hr * 0.24)} l3 -6" stroke="#1d2433" stroke-width="2.5" stroke-linecap="round"/>` : ''}`;
     }
-    const mouth = o.paci ? '' : `<path d="M${f1(hx + hr * 0.55)} ${f1(hy + hr * 0.55)} Q${f1(hx + hr * 0.95)} ${f1(hy + hr * 0.82)} ${f1(hx + hr * 1.3)} ${f1(hy + hr * 0.45)}" fill="none" stroke="${LINE}" stroke-width="3.5" stroke-linecap="round"/>`;
+    // A big open roaring mouth with little teeth.
+    const rmx = hx + hr * 0.95, rmy = hy + hr * 0.55;
+    const mouth = o.roar ? `<ellipse cx="${f1(rmx)}" cy="${f1(rmy)}" rx="${f1(hr * 0.42)}" ry="${f1(hr * 0.34)}" fill="#8a1f2f" stroke="${LINE}" stroke-width="3.5"/>
+      <ellipse cx="${f1(rmx)}" cy="${f1(rmy + hr * 0.15)}" rx="${f1(hr * 0.22)}" ry="${f1(hr * 0.12)}" fill="#ff7a8a"/>
+      <path d="M${f1(rmx - hr * 0.26)} ${f1(rmy - hr * 0.26)} l${f1(hr * 0.08)} ${f1(hr * 0.16)} l${f1(hr * 0.08)} ${f1(-hr * 0.17)} M${f1(rmx + hr * 0.04)} ${f1(rmy - hr * 0.32)} l${f1(hr * 0.08)} ${f1(hr * 0.16)} l${f1(hr * 0.08)} ${f1(-hr * 0.15)}" fill="#fff" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>` : o.paci ? '' : `<path d="M${f1(hx + hr * 0.55)} ${f1(hy + hr * 0.55)} Q${f1(hx + hr * 0.95)} ${f1(hy + hr * 0.82)} ${f1(hx + hr * 1.3)} ${f1(hy + hr * 0.45)}" fill="none" stroke="${LINE}" stroke-width="3.5" stroke-linecap="round"/>`;
     const face = `${eye}
       <circle cx="${f1(hx - hr * 0.08)}" cy="${f1(hy + hr * 0.42)}" r="${f1(hr * 0.17)}" fill="#ff8f8f" opacity=".55"/>
       <circle cx="${f1(hx + hr * 1.22)}" cy="${f1(hy + hr * 0.08)}" r="2.6" fill="${LINE}"/>

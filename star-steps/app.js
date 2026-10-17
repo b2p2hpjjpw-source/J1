@@ -136,6 +136,7 @@
   const bookSig = () => `${state.dinoPrize}|${state.dinoGoal}|${state.dinoSpent}`;
   // Each dino in the collection gets its own colors (see dinos.js); the one growing now is the next color.
   const Art = window.DinoArt;
+  const CALM_MOTION = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   const dinoLook = i => Art.lookFor(state.dinoSpent + i);
 
   const prizeSig = () => `${state.prize.name}|${state.prize.cost}|${state.spent}`;
@@ -212,6 +213,37 @@
       g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1);
       o.connect(f).connect(g).connect(ctx.destination);
       o.start(t0); lfo.start(t0); o.stop(t0 + 1.05); lfo.stop(t0 + 1.05);
+    } catch (e) { /* no audio */ }
+  }
+  // A BIG dino roar for the grown-up moment: two growling voices and a rumble of noise.
+  function bigRoar() {
+    if (!state.sound) return;
+    try {
+      const ctx = getCtx(), t0 = ctx.currentTime, dur = 1.7;
+      const out = ctx.createGain(), f = ctx.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.setValueAtTime(700, t0); f.frequency.linearRampToValueAtTime(1600, t0 + 0.4); f.frequency.linearRampToValueAtTime(500, t0 + dur);
+      out.gain.setValueAtTime(0.0001, t0);
+      out.gain.exponentialRampToValueAtTime(0.45, t0 + 0.12);
+      out.gain.setValueAtTime(0.45, t0 + 0.9);
+      out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      f.connect(out).connect(ctx.destination);
+      [[95, 1], [143, 0.6]].forEach(([base, v]) => {
+        const o = ctx.createOscillator(), g = ctx.createGain(), lfo = ctx.createOscillator(), lg = ctx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(base, t0);
+        o.frequency.linearRampToValueAtTime(base * 1.9, t0 + 0.35);
+        o.frequency.linearRampToValueAtTime(base * 1.5, t0 + 1);
+        o.frequency.linearRampToValueAtTime(base * 0.8, t0 + dur);
+        lfo.frequency.value = 22; lg.gain.value = base * 0.25;
+        lfo.connect(lg).connect(o.frequency);
+        g.gain.value = v;
+        o.connect(g).connect(f);
+        o.start(t0); lfo.start(t0); o.stop(t0 + dur); lfo.stop(t0 + dur);
+      });
+      const len = Math.floor(ctx.sampleRate * dur), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * 0.35;
+      const n = ctx.createBufferSource(); n.buffer = buf;
+      n.connect(f); n.start(t0);
     } catch (e) { /* no audio */ }
   }
   // A little horse whinny: a wobbly pitch that rises then falls.
@@ -613,15 +645,13 @@
     setTimeout(() => { if (currentView === 'potty' && modal.classList.contains('hidden')) renderPotty(); }, LOCK_MS + 500);
     const did = type === 'pee' ? 'You went pee in the potty!' : 'You went poop in the potty!';
     if (after.stage === 0) {
-      renderPotty();
-      setTimeout(() => flyStar(btn, '🦖'), 200);
-      celebrate([{
+      growUpShow(dinoLook(after.dinos - 1), () => celebrate([{
         emoji: `<div class="hero-dino">${Art.dinoSVG('grown', dinoLook(after.dinos - 1), { cls: 'dance big' })}</div>`,
         title: 'All grown up!',
         text: `${did} Your dino is a grown-up and joins your dino family! <b>+1 🦖</b>`,
         speak: `Roar! ${did} Your dino is all grown up! It joins your dino family!`,
-        slot: 'grown', confetti: 80, bits: DINO_BITS, sound: () => { sfx.roar(); sfx.fanfare(); },
-      }, ...extra]);
+        slot: 'grown', confetti: 80, bits: DINO_BITS, sound: () => sfx.fanfare(),
+      }, ...extra]));
     } else {
       const st = GROW_STAGES[after.stage - 1];
       sfx.grow(); buzz(60); confetti(25, after.stage === 1 ? ['🥚', '💚', '✨', '🌿'] : DINO_BITS);
@@ -631,6 +661,75 @@
       if (k) { k.classList.add('pop'); k.addEventListener('animationend', () => k.classList.remove('pop'), { once: true }); }
       if (extra.length) setTimeout(() => celebrate(extra), 1500);
     }
+  }
+
+  // The fifth potty trip: the kid dino grows ENORMOUS in three big stomps, ROARS, holds the pose,
+  // then shrinks away into the dino count. Then `done` runs (the "All grown up!" message).
+  function growUpShow(look, done) {
+    const kid = $('dinoScene') && $('dinoScene').querySelector('.actor.kid');
+    if (CALM_MOTION || !kid || !document.body.animate) { renderPotty(); done(); return; }
+    const r = kid.getBoundingClientRect();
+    const W = window.innerWidth, H = window.innerHeight;
+    // So big the tail runs off the left side, with the roaring head still on screen.
+    const bigW = Math.min(W * 1.25, H * 0.9, 760);
+    const big = { left: W - bigW * 0.96, top: H * 0.52 - bigW * 0.62, width: bigW };
+    const ov = document.createElement('div');
+    ov.className = 'growup';
+    ov.innerHTML = `<div class="growup-dim"></div><div class="growup-dino">${Art.dinoSVG('kid', look, { still: true })}</div><div class="roar-word" aria-hidden="true">ROAR!</div>`;
+    document.body.appendChild(ov);
+    const dino = ov.querySelector('.growup-dino'), word = ov.querySelector('.roar-word'), dim = ov.querySelector('.growup-dim');
+    kid.style.visibility = 'hidden';
+    const box = (b, extra = {}) => Object.assign({ left: b.left + 'px', top: b.top + 'px', width: b.width + 'px' }, extra);
+    const lerp = (a, b, t) => ({ left: a.left + (b.left - a.left) * t, top: a.top + (b.top - a.top) * t, width: a.width + (b.width - a.width) * t });
+    const from = { left: r.left, top: r.top, width: r.width };
+    Object.assign(dino.style, box(from));
+    dim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'forwards' });
+    say('Look! Your dino is growing up!');
+    // Three stomps: grow, squash, grow bigger...
+    setTimeout(() => { dino.innerHTML = Art.dinoSVG('grown', look, { still: true }); }, 450);
+    const steps = [];
+    [0.33, 0.66, 1].forEach((t, i) => {
+      const b = lerp(from, big, t);
+      steps.push(Object.assign(box(b), { offset: (i * 2 + 1) / 6, transform: 'scaleY(1.04)' }));
+      steps.push(Object.assign(box(b), { offset: (i * 2 + 2) / 6, transform: 'scaleY(.96)', easing: 'cubic-bezier(.3,1.7,.5,1)' }));
+    });
+    dino.animate([Object.assign(box(from), { transform: 'scaleY(1)' }), ...steps], { duration: 2100, fill: 'forwards', easing: 'ease-in-out' });
+    [0, 700, 1400].forEach((t, i) => setTimeout(() => {
+      tone(220 + i * 110, 0, 0.25, 'triangle', 0.25); tone(110 + i * 55, 0, 0.3, 'sine', 0.3);
+      buzz(60 + i * 30);
+      document.body.animate([{ transform: 'translate(0,0)' }, { transform: `translate(0,${4 + i * 3}px)` }, { transform: 'translate(0,0)' }], { duration: 220 });
+    }, t + 330));
+    // ROAR!
+    setTimeout(() => {
+      dino.innerHTML = Art.dinoSVG('grown', look, { still: true, roar: true });
+      bigRoar(); buzz([200, 60, 300]);
+      word.style.left = Math.max(8, Math.min(W - word.offsetWidth - 8, big.left + big.width * 0.3)) + 'px';
+      word.style.top = Math.max(10, big.top + big.width * 0.08) + 'px';
+      word.animate([{ transform: 'scale(0) rotate(-12deg)', opacity: 0 }, { transform: 'scale(1.25) rotate(4deg)', opacity: 1, offset: 0.3 }, { transform: 'scale(1) rotate(-4deg)', opacity: 1 }], { duration: 700, fill: 'forwards', easing: 'cubic-bezier(.2,1.6,.4,1)' });
+      ov.animate([0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => ({ transform: i % 8 ? `translate(${(i % 2 ? -1 : 1) * 9}px, ${(i % 3 - 1) * 6}px)` : 'none' })), { duration: 900 });
+      confetti(40, DINO_BITS);
+    }, 2300);
+    // Hold the pose... then close the mouth, smile, and shrink away into the dino count.
+    setTimeout(() => {
+      dino.innerHTML = Art.dinoSVG('grown', look, { still: true });
+      word.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(1.4)' }], { duration: 400, fill: 'forwards' });
+    }, 4300);
+    setTimeout(() => {
+      const pill = $('starPill').getBoundingClientRect();
+      const end = { left: pill.left + pill.width * 0.2, top: pill.top, width: 34 };
+      const a = dino.animate([Object.assign(box(big), { opacity: 1, transform: 'rotate(0)' }), Object.assign(box(end), { opacity: 0, transform: 'rotate(-20deg)' })], { duration: 900, fill: 'forwards', easing: 'cubic-bezier(.5,0,.75,0)' });
+      dim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, fill: 'forwards' });
+      sfx.star();
+      a.onfinish = () => {
+        ov.remove();
+        renderPotty(); renderTop();
+        const pillEl = $('starPill'); pillEl.classList.remove('bump'); void pillEl.offsetWidth; pillEl.classList.add('bump');
+        const fam = document.querySelectorAll('#view-potty .fam.filled');
+        const last = fam[fam.length - 1];
+        if (last) { last.classList.add('new'); }
+        setTimeout(done, 500);
+      };
+    }, 5000);
   }
 
   // Dino valley: Mommy dino and the dino growing up with each potty trip. stage = trips since the last grown-up (0–4).
