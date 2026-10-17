@@ -124,6 +124,23 @@
     { id: 'olive-oil', kind: 'more', name: 'Extra-virgin olive oil', n: 7, on: false,
       ex: '1 serving = 1 tablespoon',
       why: 'The main fat in the Mediterranean diet. More than half a tablespoon a day is linked to lower death rates.' },
+
+    // Move: `unit` 'min' counts minutes (vigorous minutes count double); 'times' counts sessions or days.
+    { id: 'active-min', kind: 'move', unit: 'min', name: 'Active minutes', n: 150, on: true,
+      ex: 'Brisk walking, cycling, swimming, dancing, yard work. Vigorous minutes (running, HIIT, hard cycling: too puffed to talk in full sentences) count double',
+      why: 'The WHO recommends 150–300 minutes of moderate activity a week. People who reach 150 have about 30% lower death rates than inactive people, and the benefit keeps growing up to about 300.' },
+    { id: 'strength', kind: 'move', unit: 'times', name: 'Strength training', n: 2, on: true,
+      ex: 'Weights, bands, bodyweight moves (squats, push-ups, lunges), Pilates. 1 session = about 20+ minutes working the major muscles',
+      why: 'The WHO recommends muscle strengthening on 2 or more days a week. Strength is one of the best predictors of healthy aging, and 30–60 minutes a week is linked to 10–20% lower death rates.' },
+    { id: 'steps', kind: 'move', unit: 'times', name: '7,000-step days', n: 5, on: true,
+      ex: 'Log a day once your phone’s Health app shows 7,000 steps or more',
+      why: 'Large studies find death rates fall steeply as daily steps rise to about 7,000–8,000, then level off.' },
+    { id: 'after-dinner-walk', kind: 'move', unit: 'times', name: 'Walk after dinner', n: 4, on: false,
+      ex: '10–15 minutes, within an hour of eating',
+      why: 'A short walk after a meal blunts the rise in blood sugar, and it fits nicely before the kitchen closes.' },
+    { id: 'mobility', kind: 'move', unit: 'times', name: 'Stretching, yoga or balance', n: 2, on: false,
+      ex: '10+ minutes of stretching, yoga, tai chi or balance work',
+      why: 'Keeps joints mobile and lowers the risk of falls later in life. The WHO adds balance training for adults over 65.' },
   ];
   const GUIDE_BY_ID = Object.fromEntries(GUIDE.map(g => [g.id, g]));
 
@@ -139,6 +156,8 @@
   const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
   const fmt = (s, o) => parse(s).toLocaleDateString('en-US', o);
   const clamp = n => Math.max(0, Math.min(MAX_N, Number(n) || 0));
+  const MAX_MIN = 600, MIN_STEP = 10; // limits for a weekly minutes goal
+  const clampFor = (f, n) => f.unit === 'min' ? Math.max(0, Math.min(MAX_MIN, Math.round((Number(n) || 0) / MIN_STEP) * MIN_STEP)) : clamp(n);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
   const flag = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
   const toMin = t => { const [h, m] = (t || '21:00').split(':').map(Number); return h * 60 + m; };
@@ -146,7 +165,7 @@
   const fmtTime = t => { const m = toMin(t), h = Math.floor(m / 60); return `${(h + 11) % 12 + 1}:${pad(m % 60)} ${h < 12 ? 'am' : 'pm'}`; };
 
   // ---------- State ----------
-  const fromGuide = g => ({ id: g.id, kind: g.kind, name: g.name, cat: g.cat || '', n: g.n, ex: g.ex });
+  const fromGuide = g => Object.assign({ id: g.id, kind: g.kind, name: g.name, cat: g.cat || '', n: g.n, ex: g.ex }, g.unit ? { unit: g.unit } : {});
   const newPerson = (id, name) => ({ id, name, started: today(), kitchen: '19:00', remindAt: '20:30', foods: [], log: [], seen: [] });
   const freshState = () => ({ version: 3, people: [newPerson('a', 'Mom'), newPerson('b', 'Dad')] });
 
@@ -164,8 +183,9 @@
     p.seen = Array.isArray(p.seen) ? p.seen : [];
     p.foods.forEach(f => {
       if ('limit' in f) { f.n = f.limit; delete f.limit; } // version 1 field name
-      f.n = clamp(f.n);
-      if (f.kind !== 'more') { f.kind = 'less'; if (!LESS_CATS.includes(f.cat)) f.cat = 'Your own'; }
+      if (f.kind === 'move' && f.unit !== 'min') f.unit = 'times';
+      f.n = clampFor(f, f.n);
+      if (f.kind !== 'more' && f.kind !== 'move') { f.kind = 'less'; if (!LESS_CATS.includes(f.cat)) f.cat = 'Your own'; }
       const g = GUIDE_BY_ID[f.id];
       if (g && f.id === 'ready-meals' && f.name === 'Ready meals & instant noodles') { f.name = g.name; f.ex = g.ex; }
     });
@@ -218,16 +238,19 @@
       .sort((a, b) => a.d.localeCompare(b.d) || a.at - b.at);
     const count = {}, slipDays = new Set();
     entries.forEach(x => {
-      count[x.f] = (count[x.f] || 0) + 1;
+      count[x.f] = (count[x.f] || 0) + (foods[x.f].unit === 'min' ? (x.m || 0) * (x.v ? 2 : 1) : 1);
       if (foods[x.f].kind === 'less' && count[x.f] > foods[x.f].n) slipDays.add(x.d);
     });
-    const less = p.foods.filter(f => f.kind === 'less'), more = p.foods.filter(f => f.kind === 'more');
+    const less = p.foods.filter(f => f.kind === 'less'), more = p.foods.filter(f => f.kind === 'more'), move = p.foods.filter(f => f.kind === 'move');
+    const minutes = move.filter(f => f.unit === 'min').reduce((n, f) => n + (count[f.id] || 0), 0);
+    const minGoal = move.filter(f => f.unit === 'min').reduce((n, f) => n + f.n, 0);
     return {
       count, slipDays,
       over: less.reduce((n, f) => n + Math.max(0, (count[f.id] || 0) - f.n), 0),
       onTrack: less.filter(f => (count[f.id] || 0) <= f.n).length, lessN: less.length,
       met: more.filter(f => (count[f.id] || 0) >= f.n).length, moreN: more.length,
       good: more.reduce((n, f) => n + (count[f.id] || 0), 0),
+      moveMet: move.filter(f => (count[f.id] || 0) >= f.n).length, moveN: move.length, minutes, minGoal,
     };
   }
 
@@ -245,9 +268,10 @@
 
   // ---------- Rendering ----------
   function statusOf(f, c) {
-    if (f.kind === 'more') {
+    if (f.kind === 'more' || f.kind === 'move') {
+      const u = f.unit === 'min' ? ' min' : '';
       if (!f.n) return { cls: 'ok', text: 'No target' };
-      return c >= f.n ? { cls: 'met', text: c > f.n ? `Target met +${c - f.n}` : 'Target met' } : { cls: 'togo', text: `${f.n - c} to go` };
+      return c >= f.n ? { cls: 'met', text: c > f.n ? `Goal met +${c - f.n}${u}` : 'Goal met' } : { cls: 'togo', text: `${f.n - c}${u} to go` };
     }
     if (c > f.n) return { cls: 'over', text: `${c - f.n} over` };
     if (f.n === 0) return { cls: 'cut', text: 'Cut' };
@@ -257,10 +281,10 @@
 
   function meter(f, c) {
     const m = el('span', 'meter');
-    if (f.kind === 'more' || Math.max(f.n, c) > 10) { // a bar for big numbers
+    if (f.kind !== 'less' || Math.max(f.n, c) > 10) { // a bar for targets and big numbers
       m.classList.add('bar');
       const top = Math.max(f.n, c, 1);
-      const fill = el('i', 'fill' + (f.kind === 'less' && c > f.n ? ' over' : f.kind === 'more' && c >= f.n ? ' met' : ''));
+      const fill = el('i', 'fill' + (f.kind === 'less' && c > f.n ? ' over' : f.kind !== 'less' && c >= f.n ? ' met' : ''));
       fill.style.width = `${Math.min(100, Math.round(100 * c / top))}%`;
       m.append(fill);
       if (f.kind === 'less' && c > f.n && f.n) { const mark = el('i', 'mark'); mark.style.left = `${Math.round(100 * f.n / top)}%`; m.append(mark); }
@@ -284,6 +308,9 @@
     { key: 'more', title: 'Eat more', sub: 'Aim to hit these every week', test: f => f.kind === 'more',
       score: (fs, w) => `${fs.filter(f => (w.count[f.id] || 0) >= f.n).length}/${fs.length} met`,
       icon: '<path d="M12 19V6M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { key: 'move', title: 'Move', sub: 'Exercise goals for the week', test: f => f.kind === 'move',
+      score: (fs, w) => `${fs.filter(f => (w.count[f.id] || 0) >= f.n).length}/${fs.length} met`,
+      icon: '<path d="M3 12h4l2.5-6 5 12 2.5-6h4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>' },
     { key: 'limit', title: 'Limit', sub: 'OK a few times a week, up to the allowance', test: f => f.kind === 'less' && f.n > 0,
       score: (fs, w) => `${fs.filter(f => (w.count[f.id] || 0) <= f.n).length}/${fs.length} on track`,
       icon: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/>' },
@@ -312,6 +339,7 @@
     if (more.children.length) info.append(more);
     name.onclick = () => { more.hidden = !more.hidden; name.setAttribute('aria-expanded', String(!more.hidden)); };
 
+    if (f.unit === 'min') { row.classList.add('minutes'); row.append(info, minutesCtl(f, nm, onDay)); return row; }
     const ctr = el('div', 'ctr');
     const minus = el('button', 'cbtn minus', '−');
     minus.type = 'button'; minus.disabled = !onDay;
@@ -326,6 +354,32 @@
     ctr.append(minus, shown, plus);
     row.append(info, ctr);
     return row;
+  }
+
+  // Logging minutes: quick-add buttons, a "vigorous" switch (counts double) and an undo for the last entry.
+  let vigorous = false;
+  function minutesCtl(f, nm, onDay) {
+    const box = el('div', 'minctl');
+    const mins = P().log.filter(x => x.f === f.id && x.d === day);
+    const total = mins.reduce((n, x) => n + (x.m || 0) * (x.v ? 2 : 1), 0);
+    const top = el('div', 'minrow');
+    const dayTxt = el('span', 'mintoday', onDay ? `${dayName(day).replace(/^./, c => c.toUpperCase())}: ${total} min` : `Nothing logged ${dayName(day)}`);
+    const undo = el('button', 'linkbtn', 'Undo last'); undo.type = 'button'; undo.hidden = !onDay;
+    undo.onclick = () => unlog(f.id);
+    top.append(dayTxt, undo);
+    const quick = el('div', 'quick');
+    [10, 20, 30, 45, 60].forEach(m => {
+      const b = el('button', 'qbtn num', `+${m}`); b.type = 'button';
+      b.setAttribute('aria-label', `Log ${m} ${vigorous ? 'vigorous ' : ''}minutes ${dayName(day)}`);
+      b.onclick = () => logMinutes(f.id, m);
+      quick.append(b);
+    });
+    const vg = el('label', 'vig');
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.id = 'vigorous'; cb.checked = vigorous;
+    cb.onchange = () => { vigorous = cb.checked; render(); };
+    vg.append(cb, document.createTextNode(' Vigorous (counts double)'));
+    box.append(top, quick, vg);
+    return box;
   }
 
   function render() {
@@ -349,6 +403,8 @@
     $('weekRange').textContent = `Week of ${fmt(mon, { month: 'short', day: 'numeric' })}`;
     $('onTrack').textContent = w.onTrack; $('lessN').textContent = w.lessN;
     $('met').textContent = w.met; $('moreN').textContent = w.moreN;
+    $('minutes').textContent = w.minutes; $('minGoal').textContent = w.minGoal;
+    $('moveScore').hidden = !w.minGoal;
     const late = p.log.filter(x => x.d >= mon).length === 0;
     $('heroSub').textContent = late ? 'Nothing logged yet this week. Log each serving as you have it.'
       : w.over ? `${plural(w.over, 'serving')} over on the cut-back list. Monday is a fresh start.`
@@ -371,7 +427,7 @@
 
     $('sStreak').textContent = plural(streak(p), 'day');
     $('sGood').textContent = w.good;
-    $('sZero').textContent = p.foods.filter(f => f.kind === 'less' && f.n === 0 && !w.count[f.id]).length;
+    $('sStrength').textContent = w.count.strength || 0;
     $('sOver').textContent = w.over;
 
     // Logging list
@@ -383,7 +439,7 @@
     const onDay = f => p.log.filter(x => x.f === f.id && x.d === day).length;
     ZONES.forEach(z => {
       const fs = p.foods.filter(z.test);
-      if (z.key !== 'more') fs.sort((a, b) => (ORDER[a.cat] ?? 99) - (ORDER[b.cat] ?? 99));
+      if (z.key === 'limit' || z.key === 'avoid') fs.sort((a, b) => (ORDER[a.cat] ?? 99) - (ORDER[b.cat] ?? 99));
       const sec = el('section', 'zone z-' + z.key);
       const head = el('div', 'zhead');
       const ic = el('span', 'zicon'); ic.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${z.icon}</svg>`;
@@ -405,8 +461,9 @@
 
   function renderEdit(p) {
     $('listOwner').textContent = `${p.name}’s list`;
-    $('listSum').textContent = `${p.foods.filter(f => f.kind === 'less').length} to cut back · ${p.foods.filter(f => f.kind === 'more').length} to eat more · tap to change numbers`;
-    [['less', 'editLess', 'libLess'], ['more', 'editMore', 'libMore']].forEach(([k, listId, libId]) => {
+    const cnt = k => p.foods.filter(f => f.kind === k).length;
+    $('listSum').textContent = `${cnt('less')} to cut back · ${cnt('more')} to eat more · ${cnt('move')} exercise goals · tap to change`;
+    [['less', 'editLess', 'libLess'], ['more', 'editMore', 'libMore'], ['move', 'editMove', 'libMove']].forEach(([k, listId, libId]) => {
       const E = $(listId); E.innerHTML = '';
       p.foods.filter(f => f.kind === k).forEach(f => {
         const g = GUIDE_BY_ID[f.id], nm = nameOf(f, p);
@@ -416,7 +473,7 @@
         const sub = el('span', 'meta');
         if (k === 'less') sub.append(el('span', '', f.cat));
         if (g) {
-          sub.append(el('span', '', `${k === 'less' ? '· ' : ''}suggested ${k === 'less' && g.n === 0 ? 'cut' : g.n + ' a week'}`));
+          sub.append(el('span', '', `${k === 'less' ? '· ' : ''}suggested ${k === 'less' && g.n === 0 ? 'cut' : g.n + (g.unit === 'min' ? ' min' : '') + ' a week'}`));
           if (f.n !== g.n) {
             const r = el('button', 'linkbtn', 'Use suggested');
             r.type = 'button'; r.onclick = () => setN(f.id, g.n);
@@ -429,11 +486,12 @@
         const step = el('div', 'stepper');
         const dn = el('button', 'cbtn', '−'); dn.type = 'button'; dn.disabled = f.n <= 0;
         dn.setAttribute('aria-label', `Lower ${nm} ${k === 'less' ? 'allowance' : 'target'}`);
-        dn.onclick = () => setN(f.id, f.n - 1);
-        const v = el('span', 'lim num'); v.append(el('b', '', String(f.n)), el('small', '', '/wk'));
-        const up = el('button', 'cbtn', '+'); up.type = 'button'; up.disabled = f.n >= MAX_N;
+        const stepBy = f.unit === 'min' ? MIN_STEP : 1;
+        dn.onclick = () => setN(f.id, f.n - stepBy);
+        const v = el('span', 'lim num'); v.append(el('b', '', String(f.n)), el('small', '', f.unit === 'min' ? 'min/wk' : '/wk'));
+        const up = el('button', 'cbtn', '+'); up.type = 'button'; up.disabled = f.n >= (f.unit === 'min' ? MAX_MIN : MAX_N);
         up.setAttribute('aria-label', `Raise ${nm} ${k === 'less' ? 'allowance' : 'target'}`);
-        up.onclick = () => setN(f.id, f.n + 1);
+        up.onclick = () => setN(f.id, f.n + stepBy);
         step.append(dn, v, up);
 
         const x = el('button', 'del', 'Remove'); x.type = 'button';
@@ -455,7 +513,7 @@
       const Lb = $(libId); Lb.innerHTML = '';
       const have = new Set(p.foods.map(f => f.id));
       GUIDE.filter(g => g.kind === k && !have.has(g.id)).forEach(g => {
-        const b = el('button', 'chip', `+ ${g.name} · ${k === 'less' && g.n === 0 ? 'cut' : g.n + '/wk'}`);
+        const b = el('button', 'chip', `+ ${g.name} · ${k === 'less' && g.n === 0 ? 'cut' : g.n + (g.unit === 'min' ? ' min' : '') + '/wk'}`);
         b.type = 'button';
         b.onclick = () => { p.foods.push(fromGuide(g)); if (!p.seen.includes(g.id)) p.seen.push(g.id); save(); render(); toast(`${g.name} added.`); };
         Lb.append(b);
@@ -479,7 +537,8 @@
         el('span', 'wk', fmt(mon, { month: 'short', day: 'numeric' })),
         el('span', 'num', `${clean}/${days.length} clean`),
         el('span', 'num' + (w.over ? ' neg' : ' pos'), w.over ? `${w.over} over` : 'None over'),
-        el('span', 'num' + (w.moreN && w.met === w.moreN ? ' pos' : ''), `${w.met}/${w.moreN} targets`));
+        el('span', 'num' + (w.moreN && w.met === w.moreN ? ' pos' : ''), `${w.met}/${w.moreN} eat`),
+        el('span', 'num' + (w.minGoal && w.minutes >= w.minGoal ? ' pos' : ''), `${w.minutes} min`));
       g.append(row);
     }
     if (!g.children.length) H.append(el('div', 'empty', 'Finished weeks show up here, starting next Monday.'));
@@ -502,10 +561,18 @@
     p.log.push({ id: uid(), f: fid, d: day, at: Date.now() });
     save(); render();
     const c = weekStats(p, mondayOf(day)).count[fid] || 0, nm = nameOf(f, p);
-    if (f.kind === 'more') toast(c === f.n ? `${nm}: target met for the week.` : c > f.n ? `${nm} logged. Past this week’s target.` : `${nm} logged. ${f.n - c} to go this week.`);
+    if (f.kind === 'move') toast(c === f.n ? `${nm}: goal met for the week.` : c > f.n ? `${nm} logged. Past this week’s goal.` : `${nm} logged. ${f.n - c} to go this week.`);
+    else if (f.kind === 'more') toast(c === f.n ? `${nm}: target met for the week.` : c > f.n ? `${nm} logged. Past this week’s target.` : `${nm} logged. ${f.n - c} to go this week.`);
     else if (c > f.n) toast(f.n === 0 ? `${nm} logged. It’s on your cut list.` : `${nm}: ${c - f.n} over this week.`);
     else if (c === f.n) toast(`${nm}: that’s this week’s allowance used up.`);
     else toast(`${nm} logged. ${f.n - c} left this week.`);
+  }
+  function logMinutes(fid, m) {
+    const p = P(), f = p.foods.find(x => x.id === fid); if (!f) return;
+    p.log.push(Object.assign({ id: uid(), f: fid, d: day, at: Date.now(), m }, vigorous ? { v: 1 } : {}));
+    save(); render();
+    const c = weekStats(p, mondayOf(day)).count[fid] || 0;
+    toast(`${m}${vigorous ? ' vigorous' : ''} min logged${vigorous ? ` (counts as ${m * 2})` : ''}. ${c >= f.n ? 'Weekly goal met!' : `${f.n - c} min to go this week.`}`);
   }
   function unlog(fid) {
     const p = P();
@@ -516,7 +583,7 @@
   }
   function setN(fid, n) {
     const f = P().foods.find(x => x.id === fid); if (!f) return;
-    f.n = clamp(n); save(); render();
+    f.n = clampFor(f, n); save(); render();
   }
 
   $('closeList').onclick = () => { $('manage').open = false; $('manage').scrollIntoView({ block: 'nearest' }); };
@@ -528,17 +595,17 @@
     const b = e.target.closest('button'); if (!b) return;
     newKind = b.dataset.k;
     [...$('newKind').children].forEach(x => x.setAttribute('aria-pressed', x === b));
-    $('newNLabel').textContent = newKind === 'less' ? 'Allowed per week' : 'Target per week';
+    $('newNLabel').textContent = newKind === 'less' ? 'Allowed per week' : newKind === 'move' ? 'Times per week' : 'Target per week';
   };
   $('addForm').addEventListener('submit', ev => {
     ev.preventDefault();
     const p = P(), name = $('newName').value.trim();
-    if (!name) { $('msg').textContent = 'Type the food’s name first.'; return; }
+    if (!name) { $('msg').textContent = 'Type a name first.'; return; }
     if (p.foods.some(f => f.name.toLowerCase() === name.toLowerCase())) { $('msg').textContent = `${name} is already on the list.`; return; }
     const n = clamp(parseInt($('newN').value, 10));
-    p.foods.push({ id: 'c-' + uid(), kind: newKind, name, cat: newKind === 'less' ? 'Your own' : '', n, ex: $('newEx').value.trim() });
+    p.foods.push(Object.assign({ id: 'c-' + uid(), kind: newKind, name, cat: newKind === 'less' ? 'Your own' : '', n, ex: $('newEx').value.trim() }, newKind === 'move' ? { unit: 'times' } : {}));
     $('newName').value = ''; $('newEx').value = ''; $('newN').value = 1;
-    $('msg').textContent = `${name} added to ${p.name}’s ${newKind === 'less' ? 'cut-back' : 'eat-more'} list.`;
+    $('msg').textContent = `${name} added to ${p.name}’s ${newKind === 'less' ? 'cut-back' : newKind === 'move' ? 'exercise' : 'eat-more'} list.`;
     save(); render();
   });
 
