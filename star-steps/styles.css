@@ -145,26 +145,62 @@ main { position: relative; z-index: 1; padding: 16px 16px calc(var(--tabbar-h) +
 .slot.dino:not(.on) { filter: grayscale(1); opacity: .25; color: inherit; background: none; }
 .pcal { font-size: 22px; }
 
-/* ---------- Dino nursery (potty trips) ---------- */
-.nursery-card { background: linear-gradient(180deg, #fff 0%, #fff 55%, #e9f9df 100%); }
-.nursery { height: 140px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
-.nursery-mom { font-size: 92px; line-height: 1; }
-.nursery-mom.faded { opacity: .35; }
-.nest-wrap { position: relative; display: inline-flex; flex-direction: column; align-items: center; }
-.nest { font-size: 64px; line-height: 1; }
-.egg { font-size: 40px; line-height: 1; position: absolute; bottom: 30px; animation: wobble 1.6s ease-in-out infinite; }
-@keyframes wobble { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
-.baby { font-size: 40px; line-height: 1; position: absolute; bottom: 52px; animation: bob 1.4s ease-in-out infinite; }
-.shell { position: absolute; bottom: 26px; width: 58px; }
-.grow-dino { line-height: 1; display: inline-block; animation: bob 1.6s ease-in-out infinite; }
-.grow-pop { animation: grow-pop .7s cubic-bezier(.2, 1.6, .5, 1); }
-@keyframes grow-pop { from { transform: scale(.4); } }
-.nursery-cap { text-align: center; font-size: 20px; font-weight: 700; margin: 6px 0 8px; }
-.gsteps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 14px; }
-.gstep { text-align: center; border-radius: 14px; padding: 6px 2px; background: #f3ecf8; opacity: .45; filter: grayscale(1); }
-.gstep span { font-size: 24px; display: block; }
+/* ---------- Dino valley (potty trips) ---------- */
+.nursery-card { padding: 12px; }
+.dino-scene {
+  position: relative; display: block; width: 100%; aspect-ratio: 16 / 11; padding: 0; border-radius: 22px; overflow: hidden;
+  background: linear-gradient(180deg, #b8e4ff 0%, #e4f4ff 60%); touch-action: manipulation;
+}
+.dino-scene svg.bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dino-scene .actors { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 0; padding: 0 3% 6%; }
+.dino-scene .actor { display: block; height: auto; }
+.dino-scene .actor.mom { width: 50%; }
+.dino-scene .actor.kid { width: 38%; }
+.dino-scene .actor.kid.rock { width: 46%; }
+.dino-scene .tap-hint { position: absolute; top: 8px; right: 8px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; background: rgba(255,255,255,.85); }
+.actor.pop { animation: dpop .9s cubic-bezier(.2, 1.6, .4, 1); transform-origin: 50% 100%; }
+@keyframes dpop { 0% { transform: scale(.3); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.actor.bob { animation: dbob 2.8s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes dbob { 50% { transform: translateY(-2%); } }
+.actor.wobble { animation: dwobble 2.2s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes dwobble { 0%, 60%, 100% { transform: rotate(0); } 70% { transform: rotate(-8deg); } 80% { transform: rotate(7deg); } 90% { transform: rotate(-4deg); } }
+.actor.rock .paci { animation: suck .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 30% 50%; }
+@keyframes suck { 50% { transform: translateX(-4%) scale(.93); } }
+/* Dino dance: two stompy hops with a wiggle, then a rest */
+.dance { animation: ddance 4.2s ease-in-out infinite; animation-delay: var(--d, 0s); transform-origin: 50% 96%; }
+.dance.big { animation-duration: 2s; }
+@keyframes ddance {
+  0%, 36%, 100% { transform: translateY(0) scaleY(1) rotate(0); }
+  4% { transform: translateY(0) scaleY(.94); }
+  11% { transform: translateY(-8%) scaleY(1.03) rotate(-3deg); }
+  18% { transform: translateY(0) scaleY(.95) rotate(0); }
+  25% { transform: translateY(-5%) scaleY(1.02) rotate(3deg); }
+  31% { transform: translateY(0) scaleY(.97) rotate(0); }
+}
+.jump { animation: djump .55s cubic-bezier(.3, 1.6, .5, 1) var(--jd, 0s) 1 both !important; transform-origin: 50% 96%; }
+@keyframes djump { 0% { transform: translateY(0) scaleY(.9); } 45% { transform: translateY(-16%) scaleY(1.05); } 100% { transform: translateY(0); } }
+.nursery-cap { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0; }
+.gsteps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; }
+.gstep { text-align: center; border-radius: 14px; padding: 4px 2px 3px; background: #f3ecf8; opacity: .4; filter: grayscale(1); }
+.gstep svg { width: 100%; height: auto; aspect-ratio: 1; display: block; }
 .gstep small { font-size: 11px; font-weight: 600; color: var(--ink-soft); }
-.gstep.on { background: #e8f9ee; opacity: 1; filter: none; box-shadow: inset 0 0 0 3px var(--green); }
+.gstep.on { background: #e8f9ee; opacity: 1; filter: none; }
+.gstep.now { box-shadow: inset 0 0 0 3px var(--green); }
+.hero-dino { width: 190px; margin: 0 auto; }
+.hero-dino svg { width: 100%; height: auto; display: block; }
+/* Dino family (collection toward the prize) */
+.family-card { cursor: pointer; }
+.fam-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.fam-head h3 { margin: 0; }
+.prize-chip { background: #fff3c4; border: 2px dashed #e6b400; border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: 16px; }
+.dino-family { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0 6px; }
+.fam { aspect-ratio: 1; border-radius: 18px; border: 3px dashed #cfe6c4; background: #f5fbf1; display: grid; place-items: center; overflow: hidden; }
+.fam svg { width: 94%; height: 94%; }
+.fam svg.ghost { width: 54%; opacity: .25; filter: grayscale(1); }
+.fam.filled { border: 3px solid #bfe8a8; background: radial-gradient(circle at 50% 30%, #fff 0%, #eafbe0 70%); }
+.family-card.ready { box-shadow: 0 6px 0 #e6b400, 0 0 0 4px #ffd23f, 0 0 26px rgba(255, 207, 61, .9); }
+.pday svg { width: 34px; height: 34px; }
+@media (prefers-reduced-motion: reduce) { .dance, .jump, .actor.bob, .actor.wobble, .actor.rock .paci { animation: none !important; } }
 .dose-btn.pee { background: #4fb8e6; box-shadow: 0 8px 0 #2f93c0; }
 .dose-btn.poop { background: #b07a4f; box-shadow: 0 8px 0 #8a5a33; }
 .dose-btn.locked { opacity: .45; }
