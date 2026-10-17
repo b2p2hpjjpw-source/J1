@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#ff8fd0"/><stop offset=".55" stop-color="#c46bff"/><stop offset="1" stop-color="#6a3fd8"/>
+    </radialGradient>
+    <linearGradient id="horn" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffb300"/><stop offset=".5" stop-color="#ffe45c"/><stop offset="1" stop-color="#fff6b8"/>
+    </linearGradient>
+    <radialGradient id="cheek" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ff6fb5" stop-opacity=".9"/><stop offset="1" stop-color="#ff6fb5" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- rainbow -->
+  <g fill="none" stroke-width="26" stroke-linecap="round">
+    <path d="M40 330 A216 216 0 0 1 472 330" stroke="#ff4f8b"/>
+    <path d="M66 330 A190 190 0 0 1 446 330" stroke="#ff9a3c"/>
+    <path d="M92 330 A164 164 0 0 1 420 330" stroke="#ffe03c"/>
+    <path d="M118 330 A138 138 0 0 1 394 330" stroke="#5fe39a"/>
+    <path d="M144 330 A112 112 0 0 1 368 330" stroke="#4fb3ff"/>
+  </g>
+  <!-- glitter -->
+  <g fill="#fff">
+    <circle cx="60" cy="90" r="5"/><circle cx="452" cy="70" r="6"/><circle cx="470" cy="420" r="5"/><circle cx="40" cy="420" r="4"/>
+    <circle cx="120" cy="40" r="4"/><circle cx="400" cy="140" r="4"/><circle cx="96" cy="200" r="3"/><circle cx="430" cy="250" r="3"/>
+  </g>
+  <!-- neck -->
+  <path d="M150 512 C150 430 170 380 200 340 L330 380 C330 430 345 470 370 512 Z" fill="#ffffff" stroke="#4a2a8a" stroke-width="10" stroke-linejoin="round"/>
+  <!-- mane -->
+  <g stroke="#4a2a8a" stroke-width="9">
+    <circle cx="160" cy="470" r="44" fill="#5fb8ff"/>
+    <circle cx="136" cy="402" r="46" fill="#5fe39a"/>
+    <circle cx="140" cy="330" r="48" fill="#ffe03c"/>
+    <circle cx="158" cy="258" r="48" fill="#ff9a3c"/>
+    <circle cx="190" cy="196" r="46" fill="#ff4f8b"/>
+    <circle cx="238" cy="160" r="40" fill="#c46bff"/>
+  </g>
+  <!-- head + snout share one outline -->
+  <g stroke="#4a2a8a" stroke-width="20" stroke-linejoin="round">
+    <circle cx="262" cy="282" r="104" fill="#4a2a8a"/>
+    <ellipse cx="346" cy="344" rx="96" ry="72" fill="#4a2a8a"/>
+    <path d="M196 214 L184 108 L262 190 Z" fill="#4a2a8a"/>
+  </g>
+  <path d="M196 214 L184 108 L262 190 Z" fill="#ffffff"/>
+  <path d="M206 196 L198 140 L240 186 Z" fill="#ffb3d9"/>
+  <circle cx="262" cy="282" r="104" fill="#ffffff"/>
+  <ellipse cx="346" cy="344" rx="96" ry="72" fill="#ffe3f1"/>
+  <!-- forelock -->
+  <g stroke="#4a2a8a" stroke-width="9">
+    <circle cx="232" cy="196" r="36" fill="#ff9a3c"/>
+    <circle cx="276" cy="182" r="30" fill="#ffe03c"/>
+  </g>
+  <!-- horn -->
+  <path d="M262 186 L352 28 L320 200 Z" fill="url(#horn)" stroke="#4a2a8a" stroke-width="10" stroke-linejoin="round"/>
+  <g stroke="#e08a00" stroke-width="8" stroke-linecap="round">
+    <path d="M276 160 L322 168"/><path d="M290 126 L328 134"/><path d="M304 92 L334 100"/><path d="M318 60 L340 66"/>
+  </g>
+  <!-- eye -->
+  <ellipse cx="292" cy="272" rx="34" ry="42" fill="#2a1450"/>
+  <ellipse cx="292" cy="290" rx="24" ry="20" fill="#7a4fe0"/>
+  <circle cx="304" cy="254" r="13" fill="#fff"/>
+  <circle cx="280" cy="292" r="6" fill="#fff"/>
+  <g stroke="#2a1450" stroke-width="8" stroke-linecap="round">
+    <path d="M262 244 L246 230"/><path d="M276 232 L268 214"/><path d="M294 228 L294 208"/>
+  </g>
+  <!-- cheek, nostril, smile -->
+  <circle cx="262" cy="346" r="34" fill="url(#cheek)"/>
+  <ellipse cx="408" cy="322" rx="9" ry="12" fill="#4a2a8a"/>
+  <path d="M322 372 Q366 418 414 374 Q380 402 322 372 Z" fill="#ff5f9e" stroke="#4a2a8a" stroke-width="9" stroke-linejoin="round"/>
+  <!-- big sparkles -->
+  <path d="M420 190 l12 30 30 12 -30 12 -12 30 -12 -30 -30 -12 30 -12z" fill="#fff6b8"/>
+  <path d="M84 120 l9 22 22 9 -22 9 -9 22 -9 -22 -22 -9 22 -9z" fill="#fff"/>
+  <path d="M452 360 l7 16 16 7 -16 7 -7 16 -7 -16 -16 -7 16 -7z" fill="#fff"/>
+</svg>

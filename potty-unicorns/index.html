@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Unicorn Potty Party</title>
+  <meta name="description" content="A sparkly potty training tracker: every trip to the potty grows a baby unicorn, and five grown-up unicorns earn a prize." />
+  <meta name="theme-color" content="#b9a2ff" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Potty Party" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="stars-bg" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <img class="logo" src="icons/icon.svg" alt="" />
+    <div class="hello">
+      <div class="hello-small" id="helloSmall">Hi there!</div>
+      <h1 class="wordmark" id="wordmark" aria-label="Unicorn Potty Party!"></h1>
+    </div>
+    <button class="herd-pill" id="herdPill" aria-label="My unicorns"><span>🦄</span><b id="herdCount">0</b></button>
+  </header>
+
+  <main id="app">
+    <section class="scene-card" aria-label="My unicorn">
+      <button class="scene" id="scene" aria-label="Hear about my unicorn"></button>
+      <div class="caption" id="caption"></div>
+      <ol class="pips" id="pips" aria-label="Unicorn growing steps"></ol>
+    </section>
+
+    <section class="potty-btns" aria-label="I went in the potty">
+      <button class="potty-btn pee" id="btnPee" data-kind="pee">
+        <span class="pb-ico" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M50 8 C50 8 18 48 18 66 a32 32 0 0 0 64 0 C82 48 50 8 50 8Z" fill="#ffd84d" stroke="#e0a800" stroke-width="5"/><ellipse cx="38" cy="62" rx="7" ry="11" fill="#fff6c4"/></svg></span>
+        <span class="pb-word">PEE</span>
+      </button>
+      <button class="potty-btn poop" id="btnPoop" data-kind="poop">
+        <span class="pb-ico" aria-hidden="true">💩</span>
+        <span class="pb-word">POOP</span>
+      </button>
+    </section>
+    <p class="today-line" id="todayLine"></p>
+    <div class="nudge" id="nudge" role="status" aria-live="polite" hidden></div>
+
+    <section class="herd-card" id="herdCard" aria-label="My unicorn family and prize">
+      <div class="herd-head">
+        <h2>My unicorn family</h2>
+        <div class="prize-chip" id="prizeChip"></div>
+      </div>
+      <div class="herd" id="herd"></div>
+      <p class="herd-note" id="herdNote"></p>
+    </section>
+
+    <button class="grownup-link" id="grownupBtn">🔒 Grown-ups</button>
+  </main>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+
+  <canvas id="glitter" aria-hidden="true"></canvas>
+
+  <script src="app.js"></script>
+</body>
+</html>
