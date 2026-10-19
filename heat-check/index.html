@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <title>Heat Check</title>
+  <meta name="description" content="A behavior thermometer for two brothers: good choices heat it up, bad ones freeze it, and points bank toward prizes." />
+  <meta name="theme-color" content="#1b1446" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Heat Check" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="frost" aria-hidden="true"></div>
+  <div id="heat" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <img class="logo" src="icons/icon.svg" alt="" />
+    <div class="hello">
+      <div class="hello-small" id="helloSmall">Today's temperature</div>
+      <h1 class="wordmark">HEAT CHECK</h1>
+    </div>
+    <button class="lock-pill" id="lockPill" aria-label="Grown-up lock"></button>
+  </header>
+
+  <main id="app">
+    <section id="view-today" class="view active" aria-label="Today"></section>
+    <section id="view-prizes" class="view" aria-label="Prizes"></section>
+    <section id="view-history" class="view" aria-label="History"></section>
+    <section id="view-grownups" class="view" aria-label="Grown-ups"></section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-view="today"><span class="tab-ico">🌡️</span><span>Today</span></button>
+    <button class="tab" data-view="prizes"><span class="tab-ico">🎁</span><span>Prizes</span></button>
+    <button class="tab" data-view="history"><span class="tab-ico">📅</span><span>Forecast</span></button>
+    <button class="tab" data-view="grownups"><span class="tab-ico">🔒</span><span>Grown-ups</span></button>
+  </nav>
+
+  <div id="alert" class="alert hidden" aria-live="assertive"></div>
+  <div id="snack" class="snack hidden" role="status"></div>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+
+  <div id="fx" aria-hidden="true"></div>
+
+  <script src="../family-sync.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

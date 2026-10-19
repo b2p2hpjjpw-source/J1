@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2a5bd9"/><stop offset=".48" stop-color="#1b1446"/><stop offset=".52" stop-color="#1b1446"/><stop offset="1" stop-color="#ff4d1a"/>
+    </linearGradient>
+    <linearGradient id="merc" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#4fb6ff"/><stop offset=".45" stop-color="#ffcc33"/><stop offset="1" stop-color="#ff2d1a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(96 130)" stroke="#e4f8ff" stroke-width="6" stroke-linecap="round"><line x1="0" y1="-32" x2="0" y2="32" transform="rotate(0)"/><line x1="0" y1="-32" x2="0" y2="32" transform="rotate(60)"/><line x1="0" y1="-32" x2="0" y2="32" transform="rotate(120)"/></g><g transform="translate(126 300)" stroke="#e4f8ff" stroke-width="7" stroke-linecap="round"><line x1="0" y1="-36" x2="0" y2="36" transform="rotate(0)"/><line x1="0" y1="-36" x2="0" y2="36" transform="rotate(60)"/><line x1="0" y1="-36" x2="0" y2="36" transform="rotate(120)"/></g><g transform="translate(76 420)" stroke="#e4f8ff" stroke-width="5" stroke-linecap="round"><line x1="0" y1="-24" x2="0" y2="24" transform="rotate(0)"/><line x1="0" y1="-24" x2="0" y2="24" transform="rotate(60)"/><line x1="0" y1="-24" x2="0" y2="24" transform="rotate(120)"/></g>
+  <g fill="#ffcc33">
+    <path d="M420 120c-30 40-10 60-30 90 40-10 60-40 30-90z"/>
+    <path d="M430 300c-40 50-14 80-40 116 54-12 80-52 40-116z" fill="#ff8a1a"/>
+    <path d="M440 380c-20 30-6 44-20 64 28-6 40-30 20-64z"/>
+  </g>
+  <rect x="216" y="56" width="80" height="300" rx="40" fill="#ffffff" stroke="#0b0a24" stroke-width="10"/>
+  <circle cx="256" cy="380" r="80" fill="#ffffff" stroke="#0b0a24" stroke-width="10"/>
+  <rect x="216" y="300" width="80" height="60" fill="#ffffff"/>
+  <rect x="236" y="120" width="40" height="270" rx="20" fill="url(#merc)"/>
+  <circle cx="256" cy="380" r="60" fill="#ff3b1a"/>
+  <ellipse cx="232" cy="358" rx="14" ry="20" fill="#fff" opacity=".6"/>
+  <g stroke="#0b0a24" stroke-width="8" stroke-linecap="round">
+    <line x1="296" y1="110" x2="320" y2="110"/><line x1="296" y1="170" x2="312" y2="170"/><line x1="296" y1="230" x2="320" y2="230"/><line x1="296" y1="290" x2="312" y2="290"/>
+  </g>
+</svg>

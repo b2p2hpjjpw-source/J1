@@ -81,3 +81,5 @@ If you change any files after the app is installed, bump `CACHE` in `sw.js` (e.g
 **Also in this repo:** [Long Game](long-game/), a weekly eating-for-longevity tracker for the two of us: allowances for foods to cut back, targets for foods to eat more. See [long-game/README.md](long-game/README.md).
 
 **Also in this repo:** [Unicorn Potty Party](potty-unicorns/), a sparkly potty training tracker where every potty trip grows a baby unicorn and 5 unicorns earn a prize. See [potty-unicorns/README.md](potty-unicorns/README.md).
+
+**Also in this repo:** [Heat Check](heat-check/), a behavior thermometer for two brothers: good choices heat it up, bad ones freeze it (with alarms and deep freeze sirens), and each day's temperature banks points toward prizes. See [heat-check/README.md](heat-check/README.md).
