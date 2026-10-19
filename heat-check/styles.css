@@ -382,3 +382,19 @@ input.bad { border-color: var(--danger); }
   .temp-num { font-size: 28px; }
   .acts { grid-template-columns: 1fr; }
 }
+
+/* ---------- Your voice ---------- */
+.voice-seg { margin: 4px 0 10px; }
+.voice-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.voice-list li { background: rgba(0, 0, 30, .3); border: 1px solid var(--card-line); border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.vl-head { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.vl-head .badge { margin-left: auto; font-size: 12px; padding: 2px 10px; border-radius: 999px; background: rgba(255, 255, 255, .1); color: var(--ink-soft); white-space: nowrap; }
+.vl-head .badge.mine { background: rgba(255, 170, 60, .3); color: #ffd9a8; }
+.vl-script { font-size: 14px; color: var(--ink-soft); font-style: italic; }
+.voice-list .row { gap: 6px; flex-wrap: nowrap; }
+.voice-list .small-btn { margin-top: 2px; padding: 8px 10px; white-space: nowrap; }
+.voice-list [data-unrec] { flex: 0 0 auto; }
+.voice-list .small-btn:disabled { opacity: .4; }
+.rec-dot { width: 54px; height: 54px; margin: 6px auto; border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 0 rgba(255, 77, 94, .7); animation: recpulse 1.2s ease-out infinite; }
+@keyframes recpulse { to { box-shadow: 0 0 0 22px rgba(255, 77, 94, 0); } }
+.rec-script { font-size: 22px; font-weight: 700; }

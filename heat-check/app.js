@@ -278,6 +278,151 @@
     }, delay);
   }
 
+  // Every line the announcer says. A grown-up can record each one in their own voice, once for both boys
+  // or separately for each boy (to say his name). His own recording wins, then the shared one, then the phone's voice.
+  const w = n => n ? `, ${n}` : '';
+  const LINES = {
+    good: { label: 'Any good choice', mood: 'cheer', text: n => pick(['Sizzling', 'Hotter', 'Heating up', 'Nice', 'Toasty', 'Turn up the heat']) + `${w(n)}!`, script: n => `Sizzling${w(n)}!` },
+    hot: { label: 'Heats up to 40°', mood: 'cheer', text: n => `Heating up! ${n || 'You'} ${n ? 'is' : 'are'} getting hot!` },
+    fire: { label: 'On fire at 75°', mood: 'cheer', text: n => `${n || 'You'} ${n ? 'is' : 'are'} on fire!` },
+    max: { label: 'Maximum heat at 100°', mood: 'cheer', text: n => `Maximum heat! ${n || 'You'} hit one hundred degrees! Unstoppable!` },
+    maxed: { label: 'Already at 100°', mood: 'cheer', text: n => `${n || 'You'} ${n ? 'is' : 'are'} maxed out! Extra points go straight to the bank!` },
+    thaw: { label: 'Warms back above 0°', mood: 'cheer', text: n => `Thawing out! Great comeback${w(n)}!` },
+    wave: { label: 'Heat Wave (both boys hot)', mood: 'cheer', text: () => `Heat wave! You're both on fire! Ten bonus points each!`, shared: true },
+    bad: { label: 'Any bad choice', mood: 'alarm', text: n => pick(['Brrr', 'Getting colder', 'Chilly', 'Uh oh, cooling down', 'Cold front coming']) + `${w(n)}!`, script: n => `Brrr! Getting colder${w(n)}!` },
+    warn: { label: 'Drops below 0°', mood: 'alarm', text: n => `Warning! Warning! It's getting colder${w(n)}!` },
+    freeze: { label: 'Freezing at −40°', mood: 'alarm', text: n => `Freeze warning! ${n || 'You'} ${n ? 'is' : 'are'} freezing up! Turn it around!` },
+    deep: { label: 'Deep freeze at −75°', mood: 'alarm', text: n => `Deep freeze alert! Deep freeze alert!${n ? ` ${n},` : ''} your points are disappearing!` },
+    ice: { label: 'Ice Age at −100°', mood: 'alarm', text: n => `Ice age! Ice age! ${n || 'You'} ${n ? 'is' : 'are'} frozen solid! Points are disappearing!` },
+    stillIce: { label: 'Bad choice while at −100°', mood: 'alarm', text: n => `Ice age!${n ? ` ${n},` : ''} it can't get any colder!` },
+    prize: { label: 'Cashes in a prize', mood: 'cheer', text: (n, prize) => `Prize unlocked! ${n || 'You'} ${n ? 'gets' : 'get'} ${prize || 'a prize'}!`, script: n => `Prize unlocked! Great job${w(n)}!` },
+  };
+  const scriptOf = (id, n) => (LINES[id].script || LINES[id].text)(n);
+  // Which recording plays for this boy, if any.
+  const clipFor = (id, kid) => (kid && clips[`${id}:${kid.id}`]) ? `${id}:${kid.id}` : clips[id] ? id : null;
+  function sayLine(id, kid, delay = 0, extra) {
+    if (!state.voice) return;
+    const clip = clipFor(id, kid);
+    if (clip) { setTimeout(() => playClip(clip), delay); return; }
+    say(LINES[id].text(kid ? nameOf(kid) : '', extra), LINES[id].mood, delay);
+  }
+
+  // ---------- Recorded voice (IndexedDB, stays on this phone) ----------
+  const clips = {}; // slot ("deep" or "deep:k1") -> { buffer, start, end, gain }
+  let clipPlaying = null;
+  function idb() {
+    return new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) return reject(new Error('no indexedDB'));
+      const r = indexedDB.open('heat-check-voice', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('clips');
+      r.onsuccess = () => resolve(r.result);
+      r.onerror = () => reject(r.error);
+    });
+  }
+  async function idbDo(mode, fn) {
+    const db = await idb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('clips', mode), req = fn(tx.objectStore('clips'));
+      tx.oncomplete = () => resolve(req && req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const clipSave = (id, blob) => idbDo('readwrite', st => st.put(blob, id));
+  const clipDelete = id => idbDo('readwrite', st => st.delete(id));
+
+  // Decode a recording and trim the silence before and after the talking.
+  async function loadClip(id, blob) {
+    const buf = await new Promise((resolve, reject) => {
+      blob.arrayBuffer().then(ab => {
+        const p = getCtx().decodeAudioData(ab, resolve, reject);
+        if (p && p.then) p.then(resolve, reject);
+      }, reject);
+    });
+    const data = buf.getChannelData(0), rate = buf.sampleRate;
+    let peak = 0;
+    for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+    const th = Math.max(0.01, peak * 0.08);
+    let a = 0, b = data.length - 1;
+    while (a < b && Math.abs(data[a]) < th) a++;
+    while (b > a && Math.abs(data[b]) < th) b--;
+    clips[id] = { buffer: buf, start: Math.max(0, a / rate - 0.12), end: Math.min(buf.duration, b / rate + 0.25), gain: peak > 0 ? Math.min(4, 0.9 / peak) : 1 };
+  }
+  async function loadAllClips() {
+    try {
+      const keys = await idbDo('readonly', st => st.getAllKeys());
+      for (const id of keys || []) {
+        const blob = await idbDo('readonly', st => st.get(id));
+        if (blob) await loadClip(id, blob).catch(() => { /* unreadable clip; phone voice instead */ });
+      }
+      if (view === 'grownups') renderGrownups();
+    } catch (e) { /* no IndexedDB; phone voice only */ }
+  }
+  function playClip(id) {
+    const c = clips[id];
+    if (!c) return false;
+    try {
+      const ctx = getCtx();
+      if (ctx.state === 'suspended') ctx.resume();
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      if (clipPlaying) { try { clipPlaying.stop(); } catch (e) { /* already stopped */ } }
+      const src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = c.buffer; g.gain.value = c.gain;
+      src.connect(g).connect(ctx.destination);
+      src.start(0, c.start, Math.max(0.1, c.end - c.start));
+      clipPlaying = src;
+      return true;
+    } catch (e) { return false; }
+  }
+
+  const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  async function recordLine(slot, script) {
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    } catch (e) {
+      snack('The microphone is blocked. Allow microphone access for this app in your phone’s Settings, then try again.');
+      return;
+    }
+    const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+    const mr = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    let secs = 12, timer = null, cancelled = false;
+    mr.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+    mr.onstop = async () => {
+      clearInterval(timer);
+      stream.getTracks().forEach(t => t.stop());
+      if (cancelled || !chunks.length) return;
+      const blob = new Blob(chunks, { type: mr.mimeType || type || 'audio/mp4' });
+      try {
+        await loadClip(slot, blob);
+        await clipSave(slot, blob);
+        if (view === 'grownups') renderGrownups();
+        setTimeout(() => playClip(slot), 150);
+      } catch (e) {
+        snack('That recording couldn’t be saved. Please try again.');
+      }
+    };
+    openModal(`
+      <div class="center">
+        <div class="rec-dot"></div>
+        <h2>Recording…</h2>
+        <p class="muted">${esc(LINES[slot.split(':')[0]].label)}. Say something like:</p>
+        <p class="rec-script">“${esc(script)}”</p>
+        <p class="muted" id="recLeft">Stops by itself in ${secs} seconds</p>
+        <button class="big-btn hot" id="recStop">■ Done</button>
+        <button class="link-btn" id="recCancel">Cancel</button>
+      </div>`, () => { if (mr.state !== 'inactive') { cancelled = true; mr.stop(); } });
+    $('recStop').onclick = () => { if (mr.state !== 'inactive') mr.stop(); closeModal(); };
+    $('recCancel').onclick = () => { cancelled = true; closeModal(); };
+    mr.start();
+    timer = setInterval(() => {
+      secs--;
+      const el = $('recLeft');
+      if (el) el.textContent = `Stops by itself in ${secs} second${secs === 1 ? '' : 's'}`;
+      if (secs <= 0 && mr.state !== 'inactive') { mr.stop(); closeModal(); }
+    }, 1000);
+  }
+
   // ---------- Effects ----------
   const fxBox = $('fx');
   // Emoji particles flying out from a point.
@@ -611,34 +756,34 @@
       if (bankDelta) setTimeout(() => floater(bankEl, `+${bankDelta} pts`, 'hot small', -1), 300);
       burst(cx, cy + 60, ['🔥', '✨', '🔥', '⭐'], 10, { rise: -140, fall: 120 });
       buzz(30);
-      if (before >= MAX) { sfx.heat(); say(`${name} is maxed out! Extra points go straight to the bank!`); return; }
+      if (before >= MAX) { sfx.heat(); sayLine('maxed', k); return; }
       if (after >= MAX && before < MAX) {
         sfx.fanfare(); buzz([60, 40, 60, 40, 120]);
         burst(innerWidth / 2, innerHeight * 0.45, ['🔥', '🌋', '💥', '⭐', '🏆'], 36, { spread: innerWidth / 1.6, rise: -260, fall: 500, size: 40 });
         bigAlert('fire', '🌋', 'MAXIMUM HEAT!', `${name} hit +100°! The thermometer is about to explode!`, 4000);
-        say(`Maximum heat! ${name} hit one hundred degrees! Unstoppable!`, 'cheer', 300);
+        sayLine('max', k, 300);
       } else if (before < 0 && after >= 0) {
         sfx.thaw();
         bigAlert('thaw', '💧', 'THAWING OUT!', `${name} is warming back up. Great comeback!`);
-        say(`Thawing out! Great comeback, ${name}!`, 'cheer', 400);
+        sayLine('thaw', k, 400);
       } else if (za < zb && ZONES[za].min >= 75) {
         sfx.fire();
         burst(cx, cy, ['🔥', '🔥', '💥'], 24, { rise: -220, fall: 300, size: 36 });
         bigAlert('fire', '🔥', 'ON FIRE!', `${name} is red hot. Keep it burning!`);
-        say(`${name} is on fire!`, 'cheer', 300);
+        sayLine('fire', k, 300);
       } else if (za < zb && ZONES[za].min >= 40) {
         sfx.heat(); sfx.fire();
         bigAlert('hot', '🌶️', 'HEATING UP!', `${name} is getting HOT!`);
-        say(`Heating up! ${name} is getting hot!`, 'cheer', 300);
+        sayLine('hot', k, 300);
       } else {
         sfx.heat();
-        say(pick(['Sizzling!', 'Hotter!', 'Heating up!', 'Nice!', 'Toasty!', 'Turn up the heat!']) + ` ${name}!`);
+        sayLine('good', k);
       }
       if (hw1 && !hw0) setTimeout(() => {
         sfx.fanfare();
         burst(innerWidth / 2, innerHeight * 0.4, ['🌊', '🔥', '☀️', '🎉'], 30, { spread: innerWidth / 1.8, rise: -240, fall: 480, size: 38 });
         bigAlert('wave', '🌊🔥', 'HEAT WAVE!', `You're BOTH ${HOT_DAY}°+! That's +${HEATWAVE_BONUS} bonus points each!`, 4200);
-        say(`Heat wave! You're both on fire! Ten bonus points each!`, 'cheer', 200);
+        sayLine('wave', null, 200);
       }, 2200);
       return;
     }
@@ -652,30 +797,30 @@
     if (before <= MIN) {
       sfx.shatter(); sfx.drain(0.4);
       bigAlert('deep', '🦣', 'STILL IN THE ICE AGE', `${name}, it can't get colder, so the points come straight out of the bank!`);
-      say(`Ice age! ${name}, it can't get any colder!`, 'alarm', 300);
+      sayLine('stillIce', k, 300);
     } else if (after <= MIN) {
       sfx.siren(); sfx.shatter(); sfx.drain(1.6);
       shake(document.body, true);
       burst(innerWidth / 2, innerHeight * 0.4, ['🧊', '❄️', '💎', '🥶'], 34, { spread: innerWidth / 1.6, rise: -200, fall: 520, size: 38 });
       bigAlert('deep', '🦣', 'ICE AGE!', `${name} is frozen solid at −100°. Points are disappearing!`, 4200);
-      say(`Ice age! Ice age! ${name} is frozen solid! Points are disappearing!`, 'alarm', 400);
+      sayLine('ice', k, 400);
     } else if (za > zb && ZONES[za].min <= -99) {
       sfx.siren(); sfx.drain(2.2);
       shake(document.body, true); buzz([200, 100, 200, 100, 200]);
       burst(innerWidth / 2, innerHeight * 0.4, ['🧊', '❄️', '🥶'], 26, { spread: innerWidth / 1.8, rise: -160, fall: 480, size: 34 });
       bigAlert('deep', '🚨', 'DEEP FREEZE ALERT!', `${name} is in a deep freeze. Points are disappearing!`, 4000);
-      say(`Deep freeze alert! Deep freeze alert! ${name}, your points are disappearing!`, 'alarm', 500);
+      sayLine('deep', k, 500);
     } else if (za > zb && ZONES[za].min <= -74) {
       sfx.wind(); sfx.crack(0.4); sfx.alarm();
       bigAlert('freeze', '❄️', 'FREEZE WARNING!', `Brrr! ${name} is freezing up. Turn it around!`);
-      say(`Freeze warning! ${name} is freezing up! Turn it around!`, 'alarm', 400);
+      sayLine('freeze', k, 400);
     } else if (before >= 0 && after < 0) {
       sfx.alarm(); sfx.cold();
       bigAlert('warn', '⚠️', 'WARNING!', `It's getting colder, ${name}…`);
-      say(`Warning! Warning! It's getting colder, ${name}!`, 'alarm', 300);
+      sayLine('warn', k, 300);
     } else {
       sfx.cold();
-      say(pick(['Brrr!', 'Getting colder!', 'Chilly!', 'Uh oh, cooling down!', 'Cold front coming!']) + ` ${name}!`, 'alarm');
+      sayLine('bad', k);
     }
     if (hw0 && !hw1) setTimeout(() => {
       sfx.drain();
@@ -734,7 +879,7 @@
         sfx.cash(); buzz([60, 40, 60, 40, 160]);
         burst(innerWidth / 2, innerHeight * 0.4, [p.emoji, '🎉', '⭐', '🔥', '🪙'], 36, { spread: innerWidth / 1.6, rise: -260, fall: 520, size: 40 });
         bigAlert('fire', esc(p.emoji), 'PRIZE UNLOCKED!', `${nameOf(k)} gets: ${p.name}!`, 4000);
-        say(`Prize unlocked! ${nameOf(k)} gets ${p.name}!`, 'cheer', 300);
+        sayLine('prize', k, 300, p.name);
         };
       });
     });
@@ -791,8 +936,10 @@
 
   // ----- Grown-ups -----
   let confirmErase = false;
+  let voiceFor = ''; // '' = recordings for both boys, or a boy's id
   function renderGrownups() {
     if (!isUnlocked()) { showView('today'); return; }
+    if (voiceFor && !state.kids.some(k => k.id === voiceFor)) voiceFor = '';
     unlockedUntil = Date.now() + UNLOCK_MS; // working in here keeps it unlocked
     const t = tally();
     const actRow = a => `<li data-aid="${a.id}">
@@ -821,6 +968,26 @@
         ${toggle('sound', 'Sound effects', 'Sizzles, alarms, sirens and cracking ice.')}
         ${toggle('voice', 'Announcer voice', 'The phone says "Warning! It\'s getting colder!" and so on.')}
         ${toggle('heatwave', 'Heat Wave bonus', `+${HEATWAVE_BONUS} each when both end the day at ${HOT_DAY}°+.`)}
+      </section>
+      <section class="card" id="voiceCard">
+        <h2>🎙️ Your voice</h2>
+        <p class="fine">Record yourself saying any line, and the boys hear you instead of the phone's voice. Record once for both boys, or pick a boy to record his own version with his name in it.</p>
+        <div class="seg voice-seg">${[{ id: '', label: '👦👦 Both' }, ...state.kids.map(k => ({ id: k.id, label: `${k.avatar} ${nameOf(k)}` }))].map(o => `<button class="${o.id === voiceFor ? 'on' : ''}" data-vfor="${o.id}">${esc(o.label)}</button>`).join('')}</div>
+        ${canRecord() ? '' : '<p class="fine">This phone’s browser can’t record. Try Safari on iPhone or Chrome on Android.</p>'}
+        <ul class="voice-list">${Object.entries(LINES).filter(([, l]) => !(voiceFor && l.shared)).map(([id, l]) => {
+          const kid = voiceFor ? kidById(voiceFor) : null, slot = voiceFor ? `${id}:${voiceFor}` : id;
+          const mine = !!clips[slot], fallback = !mine && voiceFor && clips[id];
+          return `<li>
+            <div class="vl-head"><span>${esc(l.label)}</span><span class="badge ${mine || fallback ? 'mine' : ''}">${mine ? 'Your voice' : fallback ? 'Your voice (both)' : 'Phone voice'}</span></div>
+            <div class="vl-script">“${esc(scriptOf(id, kid ? nameOf(kid) : ''))}”</div>
+            <div class="row">
+              <button class="small-btn hot" data-rec="${id}" ${canRecord() ? '' : 'disabled'}>🎙️ ${mine ? 'Re-record' : 'Record'}</button>
+              <button class="small-btn" data-play="${id}">▶ Play</button>
+              ${mine ? `<button class="small-btn" data-unrec="${id}">🗑️</button>` : ''}
+            </div>
+          </li>`;
+        }).join('')}</ul>
+        <p class="fine">Recordings stay on this phone. They aren’t shared by family sync or saved in the backup file, so record on each phone you use.</p>
       </section>
       <section class="card">
         <h2>🔥 Good choices</h2>
@@ -861,6 +1028,21 @@
     const root = $('view-grownups');
     root.querySelectorAll('[data-name]').forEach(inp => inp.onchange = () => { state.kids[+inp.dataset.name].name = inp.value.trim(); save(); });
     root.querySelectorAll('[data-av]').forEach(b => b.onclick = () => pickAvatar(+b.dataset.av));
+    root.querySelectorAll('[data-vfor]').forEach(b => b.onclick = () => { sfx.tap(); voiceFor = b.dataset.vfor; renderGrownups(); });
+    const vKid = () => voiceFor ? kidById(voiceFor) : null;
+    const vSlot = id => voiceFor ? `${id}:${voiceFor}` : id;
+    root.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => recordLine(vSlot(b.dataset.rec), scriptOf(b.dataset.rec, vKid() ? nameOf(vKid()) : '')));
+    root.querySelectorAll('[data-play]').forEach(b => b.onclick = () => {
+      const id = b.dataset.play, clip = clips[vSlot(id)] ? vSlot(id) : clipFor(id, vKid());
+      if (clip) playClip(clip);
+      else say(scriptOf(id, vKid() ? nameOf(vKid()) : ''), LINES[id].mood);
+    });
+    root.querySelectorAll('[data-unrec]').forEach(b => b.onclick = async () => {
+      const slot = vSlot(b.dataset.unrec);
+      delete clips[slot];
+      try { await clipDelete(slot); } catch (e) { /* already gone */ }
+      renderGrownups();
+    });
     root.querySelectorAll('[data-toggle]').forEach(c => c.onchange = () => { state[c.dataset.toggle] = c.checked; save(); });
     root.querySelectorAll('[data-aid] input').forEach(inp => inp.onchange = () => {
       const a = state.actions.find(x => x.id === inp.closest('[data-aid]').dataset.aid);
@@ -960,6 +1142,7 @@
 
   // ---------- Start ----------
   render();
+  loadAllClips();
   if (!state.setupDone) firstRun();
   // A new day while the app sits open: the thermometers drop back to 0°.
   let lastDay = today();

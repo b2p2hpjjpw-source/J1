@@ -23,7 +23,13 @@ A behavior thermometer for two brothers. Each boy has his own thermometer, side 
 | Hits −100 | Siren and shattering ice | "Ice age! Points are disappearing!" |
 | Points leave the bank | Coins drain away, sad "wah-wah", 🪙 fly off | |
 
-Sounds are made by the phone (no files to download). The announcer uses the phone's voice: low and robotic for alarms, excited for cheers.
+Sounds are made by the phone (no files to download). The announcer uses the phone's voice (low and robotic for alarms, excited for cheers) unless you record your own.
+
+### 🎙️ Your voice
+In *Grown-ups → Your voice*, record yourself saying any of the 14 announcer lines (every row in the table above, plus "already maxed out", "bad choice while at −100°" and "cashes in a prize"). The boys then hear you instead of the phone.
+- **👦👦 Both** records one version for both boys. Pick a boy's name to record his own version, so you can say his name ("Deep freeze alert! Jack, your points are disappearing!"). His own recording plays first, then the one for both, then the phone's voice.
+- Each line shows a script to read, a ▶ Play button to hear what plays now, and 🗑️ to go back to the phone's voice. Recording stops by itself after 12 seconds, and silence at the start and end is trimmed off.
+- Recordings stay on the phone they were made on. They aren't shared by family sync or saved in the backup file, so record on each phone. The phone asks for microphone permission the first time.
 
 ## Points and the bank 🔥
 - Each day's final temperature is added to (or taken from) the bank. A +60° day adds 60 points. A −30° day takes 30 away.
@@ -43,6 +49,7 @@ Unlocked by a multiplication question (like 47 × 8). The unlock lasts 15 minute
 - The boys' names and pictures.
 - **Lock giving points** (on by default): the boys can look, but only a grown-up can give or take points.
 - Sound effects, announcer voice and Heat Wave bonus on/off.
+- **🎙️ Your voice:** record the announcer lines yourself (see above).
 - Edit, add or remove good choices, bad choices and prizes (emoji, words, points).
 - **Adjust a bank:** add or take points without moving today's thermometer (a starting balance, or a fix).
 - **Family sync**, backup download/restore, erase everything.

@@ -9,7 +9,7 @@ All nine apps (Homework Hero, Star Steps, Build-a-Plate, Clean Sheet, Utopia, th
 - **Edits made on both phones combine.** Each phone keeps its own changes. Lists of items (postings, menu items, kids) combine item by item. Only when both phones changed the very same thing does one version win.
 - **The first time a phone syncs an app** that already has a shared copy, it asks which copy to keep: *Use the shared copy* (pick this on a new phone) or *Use this phone's copy*.
 - **"Erase everything" in an app now erases it on both phones.** The backup files still work as before.
-- **Not synced:** the voice recordings in Star Steps and Build-a-Plate. They stay on the phone they were recorded on.
+- **Not synced:** the voice recordings in Star Steps, Build-a-Plate and Heat Check. They stay on the phone they were recorded on.
 - **Sign-in and status** are in each app's settings / grown-ups screen, under **Family sync**.
 - **Sign in once per app on each phone.** On iPhone, each app added to the Home Screen has its own separate storage, so each one asks once.
 
