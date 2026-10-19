@@ -166,10 +166,26 @@
   let audioCtx = null;
   function getCtx() {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    // Paused by the phone (another app, a call, the screen locking)? Try to start again.
+    if (audioCtx.state !== 'running' && audioCtx.state !== 'closed') { const r = audioCtx.resume(); if (r && r.catch) r.catch(() => {}); }
     return audioCtx;
   }
-  // Phones only allow sound after a tap; wake the audio up on the first touch.
-  document.addEventListener('pointerdown', () => { try { const c = getCtx(); if (c.state === 'suspended') c.resume(); } catch (e) { /* no audio */ } }, true);
+  // Phones only let sound start during a real tap: the finger lifting (touchend / click), not touching down.
+  // So wake the audio on taps until it's running. A tiny silent sound started inside the tap is what
+  // finally unlocks older iPhones. Also ask iPhones to play through the ring/silent switch, like a video app.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older phone */ }
+  function unlockAudio() {
+    try {
+      const c = getCtx();
+      if (c.state === 'running' && audioUnlocked) return;
+      c.resume();
+      const s = c.createBufferSource();
+      s.buffer = c.createBuffer(1, 1, 22050); s.connect(c.destination); s.start(0);
+      if (c.state === 'running') audioUnlocked = true;
+    } catch (e) { /* no audio */ }
+  }
+  let audioUnlocked = false;
+  ['touchend', 'pointerup', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, unlockAudio, true));
   function tone(freq, start, dur, type = 'sine', vol = 0.18) {
     if (!state.sound) return;
     try {
