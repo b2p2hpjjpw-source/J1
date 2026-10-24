@@ -8,6 +8,7 @@
   // ---------- Config ----------
   const STORE_KEY = 'daily-80-v1'; // kept from the daily version so saved and synced expenses carry over
   const WEEKLY_BUDGET = 750;
+  const START_DATE = '2026-10-24'; // net saved counts from this Saturday; earlier weeks are listed but not counted
   const CATS = ['Groceries', 'Dining out', 'Coffee & snacks', 'Transport', 'Kids & childcare', 'Household', 'Shopping', 'Health & beauty', 'Entertainment', 'Subscriptions', 'Gifts', 'Other'];
   const FULL_GROVE = 12; // weeks under budget until the grove is fully grown
 
@@ -29,6 +30,7 @@
   const DEFAULT_STATE = {
     version: 2,
     budget: WEEKLY_BUDGET,
+    startDate: START_DATE,
     names: { b1: 'Miles', b3: 'Lucas', b7: 'Julien' },
     entries: [], // [{ id, amount, category, note, date: 'YYYY-MM-DD', createdAt }]
   };
@@ -41,6 +43,7 @@
         // The daily version stored a per-day allowance; switch it to the weekly budget.
         if (!(raw.version >= 2)) { s.version = 2; s.budget = WEEKLY_BUDGET; }
         delete s.allowance;
+        if (!s.startDate) s.startDate = START_DATE;
         return s;
       }
     } catch (e) { /* start fresh */ }
@@ -80,10 +83,11 @@
     const weeks = byWeek(); const keys = [...weeks.keys()].sort().reverse();
     const rows = keys.map(k => {
       const list = weeks.get(k); const spent = list.reduce((a, e) => a + e.amount, 0);
-      return { k, list, spent, diff: budget - spent, live: k >= thisWeek };
+      return { k, list, spent, diff: budget - spent, live: k >= thisWeek, counted: k >= weekOf(state.startDate) };
     });
     // Only finished weeks count toward the totals; this week is still in progress until Friday ends.
-    const done = rows.filter(r => !r.live);
+    // Weeks before the start date are history only (tracking wasn't consistent then).
+    const done = rows.filter(r => !r.live && r.counted);
     let saved = 0, over = 0, under = 0;
     for (const r of done) { if (r.diff >= 0) { saved += r.diff; under++; } else over += -r.diff; }
     // Streak: consecutive finished weeks (most recent first) at or under the budget.
@@ -101,7 +105,7 @@
     $('netBig').textContent = (net < 0 ? '−' : '') + fmt(net);
     $('netBig').className = 'big num ' + (net > 0 ? 'pos' : net < 0 ? 'neg' : '');
     $('netSub').textContent = done.length ? `Across ${done.length} finished week${done.length > 1 ? 's' : ''} at ${fmt(budget)} a week.`
-      : rows.length ? 'Your first week counts once it ends on Friday night.' : 'Log your first expense below to start the count.';
+      : `Counting from ${short(parse(weekOf(state.startDate)))}. Your first week counts once it ends on Friday night.`;
     $('sSaved').textContent = fmt(saved); $('sOver').textContent = fmt(over);
     $('sUnder').textContent = `${under} / ${done.length}`; $('sStreak').textContent = `${streak} week${streak === 1 ? '' : 's'}`;
 
@@ -126,8 +130,8 @@
       L.innerHTML = '';
       rows.forEach(r => {
         const d = document.createElement('details'); d.className = 'day'; d.dataset.k = r.k; if (open.has(r.k)) d.open = true;
-        const cls = r.diff < 0 ? 'neg' : r.live ? 'even' : r.diff > 0 ? 'pos' : 'even';
-        const label = r.diff < 0 ? '−' + fmt(r.diff) + ' over' : r.live ? fmt(r.diff) + ' left' : r.diff > 0 ? '+' + fmt(r.diff) + ' saved' : 'even';
+        const cls = !r.counted ? 'even' : r.diff < 0 ? 'neg' : r.live ? 'even' : r.diff > 0 ? 'pos' : 'even';
+        const label = !r.counted ? 'not counted' : r.diff < 0 ? '−' + fmt(r.diff) + ' over' : r.live ? fmt(r.diff) + ' left' : r.diff > 0 ? '+' + fmt(r.diff) + ' saved' : 'even';
         d.innerHTML = `<summary><span class="date">${short(parse(r.k))}<small>${r.k === thisWeek ? 'This week' : r.live ? 'Upcoming' : 'to ' + short(parse(weekEnd(r.k)))} · <span class="num">${fmt2(r.spent)}</span></small></span>
           <span class="bar${r.diff < 0 ? ' over' : ''}"><i style="width:${Math.max(r.spent ? 2 : 0, r.spent / maxSpent * 100)}%"></i><b style="left:${budget / maxSpent * 100}%"></b></span>
           <span class="pill ${cls}">${label}</span></summary>`;
@@ -265,7 +269,7 @@
   };
   $('bErase').onclick = () => {
     if (!confirm('Erase every expense? This can’t be undone (and erases it on both phones if you’re signed in).')) return;
-    state = structuredClone(DEFAULT_STATE); save(); render(); toast('All expenses erased.');
+    state = structuredClone(DEFAULT_STATE); state.startDate = weekOf(today()); save(); render(); toast('All expenses erased.');
   };
 
   // Roll over to a new day (and a new week on Saturday) while the app stays open.

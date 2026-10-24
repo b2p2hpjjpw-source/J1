@@ -1,6 +1,6 @@
 # Weekly $750 Tracker
 
-A weekly spending budget tracker. Weeks run Saturday to Friday and the budget ($750 by default) resets every Saturday. Every finished week at or under the budget banks the difference; a week over it subtracts. A hillside grove of three trees, one for each of the boys (Miles, Lucas and Julien, ages 1, 3 and 7), grows with every week under budget. Surprise fruit and flowers appear along the way, and the grove is fully grown at 12 weeks.
+A weekly spending budget tracker. Weeks run Saturday to Friday and the budget ($750 by default) resets every Saturday. Every finished week at or under the budget banks the difference; a week over it subtracts. Net saved counts from Saturday, October 24, 2026 (`START_DATE` in `app.js`); weeks before that are still listed but marked "not counted". A hillside grove of three trees, one for each of the boys (Miles, Lucas and Julien, ages 1, 3 and 7), grows with every week under budget. Surprise fruit and flowers appear along the way, and the grove is fully grown at 12 weeks.
 
 - **Add an expense** with an amount, date, category and note, or **log a no-spend day**.
 - **This week:** what's spent and left of the budget, and how many days until it resets on Saturday.
