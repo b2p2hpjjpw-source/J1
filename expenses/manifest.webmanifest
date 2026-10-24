@@ -1,7 +1,7 @@
 {
-  "name": "Daily $80 Tracker",
-  "short_name": "$80 a Day",
-  "description": "A daily spending allowance tracker with a grove of three trees that grows as you save.",
+  "name": "Weekly $750 Tracker",
+  "short_name": "$750 a Week",
+  "description": "A weekly spending budget tracker with a grove of three trees that grows as you save.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

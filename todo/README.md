@@ -1,6 +1,6 @@
 # Our To-Do List
 
-A shared to-do list for the two of us, in the same look as the [Daily $80 Tracker](../expenses/). A tree on the hillside grows a piece of fruit for every task finished this week, and starts fresh each Monday.
+A shared to-do list for the two of us, in the same look as the [Weekly $750 Tracker](../expenses/). A tree on the hillside grows a piece of fruit for every task finished this week, and starts fresh each Monday.
 
 - **Add a task** with who's handling it (either of us, or one of us by name), a priority (High, Normal or Low), a list (Home, Kids, Errands, Groceries, Money, Work, Other), an optional deadline and a note.
 - **To do** can be sorted **by deadline** (Overdue, Today, Coming up, No deadline, with high priority first in each) or **by priority** (High, Normal, Low, soonest deadline first in each). Each task shows who's handling it and when it's due ("Due today", "2 days overdue"). Filter to one person's tasks (which also shows the "either of us" ones).

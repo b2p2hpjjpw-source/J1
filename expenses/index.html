@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Daily $80 Tracker</title>
-  <meta name="description" content="A daily spending allowance tracker with a grove of three trees that grows as you save." />
+  <title>Weekly $750 Tracker</title>
+  <meta name="description" content="A weekly spending budget tracker with a grove of three trees that grows as you save." />
   <meta name="theme-color" content="#EEF2EA" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="$80 a Day" />
+  <meta name="apple-mobile-web-app-title" content="$750 a Week" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -21,8 +21,8 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <h1 id="title">Daily $80 Tracker</h1>
-    <label class="allow" for="allowance">Daily allowance $<input id="allowance" type="number" min="1" step="1" value="80" inputmode="decimal"></label>
+    <h1 id="title">Weekly $750 Tracker</h1>
+    <label class="allow" for="allowance">Weekly budget $<input id="allowance" type="number" min="1" step="1" value="750" inputmode="decimal"></label>
   </div>
 
   <figure class="grove" aria-label="Three trees for three boys, aged 1, 3 and 7, that grow as you save">
@@ -57,7 +57,7 @@
       <text id="l7" x="386" y="216" text-anchor="middle" font-family="Nunito Sans, sans-serif" font-weight="700" font-size="13" fill="var(--ink)" opacity=".7">7</text>
     </svg>
   </figure>
-  <div class="grove-cap"><span>One tree for each of the boys · <button type="button" class="linkbtn" id="nameBtn">Name the trees</button></span><span id="growCap">Every day under budget helps them grow</span></div>
+  <div class="grove-cap"><span>One tree for each of the boys · <button type="button" class="linkbtn" id="nameBtn">Name the trees</button></span><span id="growCap">Every week under budget helps them grow</span></div>
 
   <div id="namePanel" class="names" hidden>
     <span class="label">Tree names</span>
@@ -86,10 +86,10 @@
 
   <section class="today">
     <div class="today-row">
-      <span class="label" id="todayLabel">Today</span>
+      <span class="label" id="todayLabel">This week</span>
       <span class="num" id="todaySpent" style="color:var(--muted);font-size:13px">$0 spent</span>
     </div>
-    <div class="today-row"><span class="left num" id="todayLeft">$80.00 left</span></div>
+    <div class="today-row"><span class="left num" id="todayLeft">$750.00 left</span><span id="todayReset" style="color:var(--muted);font-size:13px">Resets Saturday</span></div>
     <div class="meter" id="meter"><i id="meterFill" style="width:0%"></i></div>
 
     <form id="form" autocomplete="off">
@@ -108,7 +108,7 @@
   </section>
 
   <section style="display:flex;flex-direction:column;gap:10px">
-    <div class="sechead"><h2>Day by day</h2><span class="label">Line marks the allowance</span></div>
+    <div class="sechead"><h2>Week by week</h2><span class="label">Sat–Fri · line marks the budget</span></div>
     <div class="ledger" id="ledger"></div>
   </section>
 
@@ -116,7 +116,7 @@
     <div class="sechead">
       <h2>Where it goes</h2>
       <div class="seg" id="range">
-        <button type="button" data-r="7" aria-pressed="false">7 days</button>
+        <button type="button" data-r="week" aria-pressed="false">This week</button>
         <button type="button" data-r="month" aria-pressed="true">This month</button>
         <button type="button" data-r="all" aria-pressed="false">All</button>
       </div>

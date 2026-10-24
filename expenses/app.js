@@ -1,13 +1,15 @@
-/* Daily $80 Tracker — a daily spending allowance with a grove of three trees (one per boy) that grows as you save.
- * Every day logged at or under the allowance banks the difference; days over it subtract.
+/* Weekly $750 Tracker — a weekly spending budget with a grove of three trees (one per boy) that grows as you save.
+ * Weeks run Saturday to Friday and reset every Saturday. Every finished week at or under the budget banks the
+ * difference; weeks over it subtract.
  * Saved on this phone in localStorage, and shared between our phones by family-sync.js once signed in. */
 (() => {
   'use strict';
 
   // ---------- Config ----------
-  const STORE_KEY = 'daily-80-v1';
+  const STORE_KEY = 'daily-80-v1'; // kept from the daily version so saved and synced expenses carry over
+  const WEEKLY_BUDGET = 750;
   const CATS = ['Groceries', 'Dining out', 'Coffee & snacks', 'Transport', 'Kids & childcare', 'Household', 'Shopping', 'Health & beauty', 'Entertainment', 'Subscriptions', 'Gifts', 'Other'];
-  const FULL_GROVE = 30; // days under budget until the grove is fully grown
+  const FULL_GROVE = 12; // weeks under budget until the grove is fully grown
 
   // ---------- Helpers ----------
   const $ = id => document.getElementById(id);
@@ -17,12 +19,16 @@
   const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const today = () => ymd(new Date());
   const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+  // Weeks start on Saturday: the Saturday on or before a date.
+  const weekOf = s => { const d = parse(s); d.setDate(d.getDate() - (d.getDay() + 1) % 7); return ymd(d); };
+  const weekEnd = k => { const d = parse(k); d.setDate(d.getDate() + 6); return ymd(d); };
+  const short = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
   // ---------- State ----------
   const DEFAULT_STATE = {
-    version: 1,
-    allowance: 80,
+    version: 2,
+    budget: WEEKLY_BUDGET,
     names: { b1: 'Miles', b3: 'Lucas', b7: 'Julien' },
     entries: [], // [{ id, amount, category, note, date: 'YYYY-MM-DD', createdAt }]
   };
@@ -32,6 +38,9 @@
       if (raw && Array.isArray(raw.entries)) {
         const s = Object.assign(structuredClone(DEFAULT_STATE), raw);
         s.names = Object.assign({ b1: '', b3: '', b7: '' }, raw.names || {});
+        // The daily version stored a per-day allowance; switch it to the weekly budget.
+        if (!(raw.version >= 2)) { s.version = 2; s.budget = WEEKLY_BUDGET; }
+        delete s.allowance;
         return s;
       }
     } catch (e) { /* start fresh */ }
@@ -58,69 +67,75 @@
     });
   }
 
-  function byDay() {
+  function byWeek() {
     const m = new Map();
-    for (const e of state.entries) { if (!m.has(e.date)) m.set(e.date, []); m.get(e.date).push(e); }
+    for (const e of state.entries) { const k = weekOf(e.date); if (!m.has(k)) m.set(k, []); m.get(k).push(e); }
     return m;
   }
 
   // ---------- Rendering ----------
   function render() {
-    const allowance = state.allowance;
-    const days = byDay(); const keys = [...days.keys()].sort().reverse();
-    let saved = 0, over = 0, under = 0;
+    const budget = state.budget;
+    const thisWeek = weekOf(today());
+    const weeks = byWeek(); const keys = [...weeks.keys()].sort().reverse();
     const rows = keys.map(k => {
-      const list = days.get(k); const spent = list.reduce((a, e) => a + e.amount, 0); const diff = allowance - spent;
-      if (diff >= 0) { saved += diff; under++; } else over += -diff;
-      return { k, list, spent, diff };
+      const list = weeks.get(k); const spent = list.reduce((a, e) => a + e.amount, 0);
+      return { k, list, spent, diff: budget - spent, live: k >= thisWeek };
     });
-    // Streak: consecutive logged days (most recent first) at or under the allowance.
-    let streak = 0; for (const r of rows) { if (r.diff >= 0) streak++; else break; }
+    // Only finished weeks count toward the totals; this week is still in progress until Friday ends.
+    const done = rows.filter(r => !r.live);
+    let saved = 0, over = 0, under = 0;
+    for (const r of done) { if (r.diff >= 0) { saved += r.diff; under++; } else over += -r.diff; }
+    // Streak: consecutive finished weeks (most recent first) at or under the budget.
+    let streak = 0; for (const r of done) { if (r.diff >= 0) streak++; else break; }
     const net = saved - over;
 
-    // The grove grows with days kept under budget: full size at 30.
+    // The grove grows with weeks kept under budget: full size at 12.
     const g = Math.min(1, 0.55 + under / FULL_GROVE * 0.45);
     ['t1', 't3', 't7'].forEach(id => { $(id).style.transform = `scale(${g})`; });
-    $('growCap').textContent = under >= FULL_GROVE ? 'The grove is fully grown' : `${under} of ${FULL_GROVE} days under budget to full grove`;
+    $('growCap').textContent = under >= FULL_GROVE ? 'The grove is fully grown' : `${under} of ${FULL_GROVE} weeks under budget to full grove`;
     renderBlooms(under);
 
-    $('title').textContent = `Daily ${fmt(allowance)} Tracker`;
-    if (document.activeElement !== $('allowance')) $('allowance').value = allowance;
+    $('title').textContent = `Weekly ${fmt(budget)} Tracker`;
+    if (document.activeElement !== $('allowance')) $('allowance').value = budget;
     $('netBig').textContent = (net < 0 ? '−' : '') + fmt(net);
     $('netBig').className = 'big num ' + (net > 0 ? 'pos' : net < 0 ? 'neg' : '');
-    $('netSub').textContent = rows.length ? `Across ${rows.length} logged day${rows.length > 1 ? 's' : ''} at ${fmt(allowance)} a day.` : 'Log your first expense below to start the count.';
+    $('netSub').textContent = done.length ? `Across ${done.length} finished week${done.length > 1 ? 's' : ''} at ${fmt(budget)} a week.`
+      : rows.length ? 'Your first week counts once it ends on Friday night.' : 'Log your first expense below to start the count.';
     $('sSaved').textContent = fmt(saved); $('sOver').textContent = fmt(over);
-    $('sUnder').textContent = `${under} / ${rows.length}`; $('sStreak').textContent = `${streak} day${streak === 1 ? '' : 's'}`;
+    $('sUnder').textContent = `${under} / ${done.length}`; $('sStreak').textContent = `${streak} week${streak === 1 ? '' : 's'}`;
 
-    // Today
-    const tl = days.get(today()) || []; const ts = tl.reduce((a, e) => a + e.amount, 0); const left = allowance - ts;
-    $('todayLabel').textContent = 'Today · ' + new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-    $('todaySpent').textContent = fmt2(ts) + ' spent of ' + fmt(allowance);
+    // This week (Saturday to Friday)
+    const tl = weeks.get(thisWeek) || []; const ts = tl.reduce((a, e) => a + e.amount, 0); const left = budget - ts;
+    const daysLeft = 7 - Math.round((parse(today()) - parse(thisWeek)) / 864e5);
+    $('todayLabel').textContent = `This week · ${short(parse(thisWeek))} – ${short(parse(weekEnd(thisWeek)))}`;
+    $('todaySpent').textContent = fmt2(ts) + ' spent of ' + fmt(budget);
     $('todayLeft').textContent = left >= 0 ? fmt2(left) + ' left' : fmt2(left) + ' over';
     $('todayLeft').style.color = left >= 0 ? 'var(--ink)' : 'var(--over)';
+    $('todayReset').textContent = daysLeft === 1 ? 'Last day · resets tomorrow (Saturday)' : `${daysLeft} days left · resets Saturday`;
     $('meter').className = 'meter' + (left < 0 ? ' over' : '');
-    $('meterFill').style.width = Math.min(100, ts / allowance * 100) + '%';
+    $('meterFill').style.width = Math.min(100, ts / budget * 100) + '%';
 
     // Ledger
     const L = $('ledger');
     if (!rows.length) {
-      L.innerHTML = '<div class="empty">No days logged yet. Add an expense or log a no-spend day, and each day shows up here with what it saved or cost you.</div>';
+      L.innerHTML = '<div class="empty">No weeks logged yet. Add an expense or log a no-spend day, and each week shows up here with what it saved or cost you.</div>';
     } else {
-      const maxSpent = Math.max(allowance * 1.5, ...rows.map(r => r.spent));
+      const maxSpent = Math.max(budget * 1.5, ...rows.map(r => r.spent));
       const open = new Set([...L.querySelectorAll('details[open]')].map(d => d.dataset.k));
       L.innerHTML = '';
       rows.forEach(r => {
         const d = document.createElement('details'); d.className = 'day'; d.dataset.k = r.k; if (open.has(r.k)) d.open = true;
-        const dt = parse(r.k);
-        const cls = r.diff > 0 ? 'pos' : r.diff < 0 ? 'neg' : 'even';
-        const label = r.diff > 0 ? '+' + fmt(r.diff) + ' saved' : r.diff < 0 ? '−' + fmt(r.diff) + ' over' : 'even';
-        d.innerHTML = `<summary><span class="date">${dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}<small>${dt.toLocaleDateString('en-US', { weekday: 'short' })} · <span class="num">${fmt2(r.spent)}</span></small></span>
-          <span class="bar${r.diff < 0 ? ' over' : ''}"><i style="width:${Math.max(r.spent ? 2 : 0, r.spent / maxSpent * 100)}%"></i><b style="left:${allowance / maxSpent * 100}%"></b></span>
+        const cls = r.diff < 0 ? 'neg' : r.live ? 'even' : r.diff > 0 ? 'pos' : 'even';
+        const label = r.diff < 0 ? '−' + fmt(r.diff) + ' over' : r.live ? fmt(r.diff) + ' left' : r.diff > 0 ? '+' + fmt(r.diff) + ' saved' : 'even';
+        d.innerHTML = `<summary><span class="date">${short(parse(r.k))}<small>${r.k === thisWeek ? 'This week' : r.live ? 'Upcoming' : 'to ' + short(parse(weekEnd(r.k)))} · <span class="num">${fmt2(r.spent)}</span></small></span>
+          <span class="bar${r.diff < 0 ? ' over' : ''}"><i style="width:${Math.max(r.spent ? 2 : 0, r.spent / maxSpent * 100)}%"></i><b style="left:${budget / maxSpent * 100}%"></b></span>
           <span class="pill ${cls}">${label}</span></summary>`;
         const ul = document.createElement('ul'); ul.className = 'entries';
-        [...r.list].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach(e => {
+        [...r.list].sort((a, b) => a.date.localeCompare(b.date) || (a.createdAt || 0) - (b.createdAt || 0)).forEach(e => {
           const li = document.createElement('li'); li.className = 'entry';
-          const w = document.createElement('span'); w.className = 'what'; w.textContent = e.category;
+          const w = document.createElement('span'); w.className = 'what';
+          w.textContent = parse(e.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + e.category;
           if (e.note) { const s = document.createElement('small'); s.textContent = ' · ' + e.note; w.appendChild(s); }
           const a = document.createElement('span'); a.className = 'num'; a.textContent = fmt2(e.amount);
           const x = document.createElement('button'); x.type = 'button'; x.className = 'del'; x.textContent = 'Remove';
@@ -140,7 +155,7 @@
 
     // Categories
     const now = new Date(); let from = null;
-    if (range === '7') { const f = new Date(); f.setDate(f.getDate() - 6); from = ymd(f); }
+    if (range === 'week') from = thisWeek;
     else if (range === 'month') from = ymd(new Date(now.getFullYear(), now.getMonth(), 1));
     const tot = {}; let sum = 0;
     for (const e of state.entries) { if (from && e.date < from) continue; if (e.amount <= 0) continue; tot[e.category] = (tot[e.category] || 0) + e.amount; sum += e.amount; }
@@ -162,7 +177,7 @@
   // ---------- Names & surprise blooms ----------
   const AGE = { b1: 1, b3: 3, b7: 7 };
   const SPOTS = { b1: [[200, 160], [214, 155]], b3: [[273, 128], [292, 135], [265, 147], [298, 149]], b7: [[371, 90], [403, 86], [381, 121], [414, 113], [357, 114], [392, 68]] };
-  const ORDER = ['b1', 'b3', 'b7', 'b3', 'b7', 'b1', 'b7', 'b3', 'b7', 'b3', 'b7', 'b7']; // 12 blooms over 30 under-budget days
+  const ORDER = ['b1', 'b3', 'b7', 'b3', 'b7', 'b1', 'b7', 'b3', 'b7', 'b3', 'b7', 'b7']; // 12 blooms over 12 under-budget weeks
   const KINDS = ['apple', 'cherries', 'blossom', 'lemon', 'daisy', 'plum'];
   const KIND_LABEL = { apple: 'An apple', cherries: 'Cherries', blossom: 'A blossom', lemon: 'A lemon', daisy: 'A daisy', plum: 'A plum' };
   const kindAt = i => KINDS[(i * 5 + 2) % KINDS.length];
@@ -181,7 +196,7 @@
   }
   let shownBlooms = null; // blooms already drawn on this screen, so only new ones pop
   function renderBlooms(under) {
-    const count = Math.min(ORDER.length, Math.floor(under / 2.5));
+    const count = Math.min(ORDER.length, Math.floor(under * ORDER.length / FULL_GROVE));
     const used = { b1: 0, b3: 0, b7: 0 }, html = { b1: '', b3: '', b7: '' };
     const announce = shownBlooms !== null && count > shownBlooms;
     for (let i = 0; i < count; i++) { const g = ORDER[i]; const [x, y] = SPOTS[g][used[g]++]; html[g] += bloomSVG(kindAt(i), x, y, announce && i >= shownBlooms); }
@@ -230,7 +245,7 @@
   let allowT;
   $('allowance').addEventListener('input', () => {
     const v = parseFloat($('allowance').value); if (!(v > 0)) return;
-    state.allowance = v; render();
+    state.budget = v; render();
     clearTimeout(allowT); allowT = setTimeout(save, 800);
   });
 
@@ -238,14 +253,14 @@
   $('bDown').onclick = () => {
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `daily-80-backup-${today()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    a.download = `weekly-budget-backup-${today()}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   };
   $('bUp').onchange = e => {
     const f = e.target.files[0]; if (!f) return;
     f.text().then(t => {
       const s = JSON.parse(t); if (!s || !Array.isArray(s.entries)) throw new Error('bad');
       localStorage.setItem(STORE_KEY, JSON.stringify(s)); state = load(); save(); render(); toast('Backup restored.');
-    }).catch(() => toast('That file isn’t a Daily $80 Tracker backup.'));
+    }).catch(() => toast('That file isn’t a Weekly Tracker backup.'));
     e.target.value = '';
   };
   $('bErase').onclick = () => {
@@ -253,7 +268,7 @@
     state = structuredClone(DEFAULT_STATE); save(); render(); toast('All expenses erased.');
   };
 
-  // Roll over to a new day while the app stays open.
+  // Roll over to a new day (and a new week on Saturday) while the app stays open.
   let dayKey = today();
   setInterval(() => { if (today() !== dayKey) { dayKey = today(); $('date').value = dayKey; render(); } }, 60000);
 
@@ -271,7 +286,7 @@
   // ---------- Family sync ----------
   // Shares this app's data between our phones once someone signs in (see ../family-sync.js).
   if (window.FamilySync) FamilySync.attach(STORE_KEY, {
-    label: 'Daily $80 Tracker',
+    label: 'Weekly $750 Tracker',
     get: () => state,
     apply: json => {
       localStorage.setItem(STORE_KEY, json); state = load();

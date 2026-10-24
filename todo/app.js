@@ -1,4 +1,4 @@
-/* Our To-Do List — a shared list for the two of us, in the same look as the Daily $80 Tracker.
+/* Our To-Do List — a shared list for the two of us, in the same look as the Weekly $750 Tracker.
  * Each task can be for one of us or either of us, sit on a list, and have a due date.
  * Every task finished this week adds a piece of fruit to the tree; it starts fresh each Monday.
  * Saved on this phone in localStorage, and shared between our phones by family-sync.js once signed in. */
