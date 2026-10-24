@@ -147,10 +147,35 @@
   let audioCtx = null, noiseBuf = null;
   function getCtx() {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    // Paused by the phone (another app, a call, the screen locking)? Try to start again.
+    if (audioCtx.state !== 'running' && audioCtx.state !== 'closed') { const r = audioCtx.resume(); if (r && r.catch) r.catch(() => {}); }
     return audioCtx;
   }
-  // Phones only allow sound after a tap; wake the audio up on the first touch.
-  document.addEventListener('pointerdown', () => { try { const c = getCtx(); if (c.state === 'suspended') c.resume(); } catch (e) { /* no audio */ } }, true);
+  // Phones only let sound start during a real tap: the finger lifting (touchend / click), not touching down.
+  // So wake the audio on taps until it's running. A tiny silent sound started inside the tap is what
+  // finally unlocks older iPhones. Also ask iPhones to play through the ring/silent switch, like a video app.
+  // The phone's voice gets a silent first word inside a tap too, or iPhones won't let it talk later.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older phone */ }
+  let audioUnlocked = false, voiceUnlocked = false;
+  function unlockAudio() {
+    try {
+      if (!voiceUnlocked && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(' '); u.volume = 0;
+        speechSynthesis.speak(u); voiceUnlocked = true;
+      }
+    } catch (e) { /* no voice */ }
+    try {
+      const c = getCtx();
+      if (c.state === 'running' && audioUnlocked) return;
+      c.resume();
+      const src = c.createBufferSource();
+      src.buffer = c.createBuffer(1, 1, 22050); src.connect(c.destination); src.start(0);
+      if (c.state === 'running') audioUnlocked = true;
+    } catch (e) { /* no audio */ }
+  }
+  ['touchend', 'pointerup', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, unlockAudio, true));
+  // Back from the background: wake the audio again (iPhones pause it).
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) audioUnlocked = false; });
   function tone(freq, start, dur, type = 'sine', vol = 0.15, toFreq) {
     if (!state.sound) return;
     try {
@@ -266,16 +291,18 @@
   // Alarms talk low and steady like a weather-station robot; cheers talk high and excited.
   function say(text, mood = 'cheer', delay = 0) {
     if (!state.voice || !('speechSynthesis' in window)) return;
-    setTimeout(() => {
+    const go = () => {
       try {
-        speechSynthesis.cancel();
+        if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text.replace(/[^\p{L}\p{N}\s.,!?'-]/gu, ''));
         const v = pickVoice();
         if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-US';
         if (mood === 'alarm') { u.rate = 0.95; u.pitch = 0.55; } else { u.rate = 1.02; u.pitch = 1.15; }
         speechSynthesis.speak(u);
       } catch (e) { /* no voice */ }
-    }, delay);
+    };
+    // Right away when there's no wait, so the line starts inside the tap (iPhones are pickiest about that).
+    if (delay) setTimeout(go, delay); else go();
   }
 
   // Every line the announcer says. A grown-up can record each one in their own voice, once for both boys
@@ -289,6 +316,7 @@
     maxed: { label: 'Already at 100°', mood: 'cheer', text: n => `${n || 'You'} ${n ? 'is' : 'are'} maxed out! Extra points go straight to the bank!` },
     thaw: { label: 'Warms back above 0°', mood: 'cheer', text: n => `Thawing out! Great comeback${w(n)}!` },
     wave: { label: 'Heat Wave (both boys hot)', mood: 'cheer', text: () => `Heat wave! You're both on fire! Ten bonus points each!`, shared: true },
+    room: { label: 'Tapping the thermometer at room temp', mood: 'cheer', text: n => `${n || 'You'} ${n ? 'is' : 'are'} at room temperature. Let's heat it up!` },
     bad: { label: 'Any bad choice', mood: 'alarm', text: n => pick(['Brrr', 'Getting colder', 'Chilly', 'Uh oh, cooling down', 'Cold front coming']) + `${w(n)}!`, script: n => `Brrr! Getting colder${w(n)}!` },
     warn: { label: 'Drops below 0°', mood: 'alarm', text: n => `Warning! Warning! It's getting colder${w(n)}!` },
     freeze: { label: 'Freezing at −40°', mood: 'alarm', text: n => `Freeze warning! ${n || 'You'} ${n ? 'is' : 'are'} freezing up! Turn it around!` },
@@ -656,7 +684,7 @@
         <div class="snow">${SNOW}</div>${ICICLES}
         <div class="kid-head"><span class="kid-avatar">${esc(k.avatar)}</span><span class="kid-name">${esc(nameOf(k))}</span></div>
         <div class="kid-face" aria-hidden="true">😐</div>
-        <button class="thermo" data-give="${k.id}" aria-label="Give ${esc(nameOf(k))} points">${thermoSVG(k)}<div class="flames">${FLAMES}</div><div class="ice-block"></div></button>
+        <button class="thermo" data-replay="${k.id}" aria-label="Hear ${esc(nameOf(k))}'s temperature">${thermoSVG(k)}<div class="flames">${FLAMES}</div><div class="ice-block"></div></button>
         <div class="temp-read"><b class="temp-num">0°</b><span class="zone"></span></div>
         <div class="bank-pill ${bank < 0 ? 'neg' : ''}" data-bank="${k.id}"><span class="bank-ico">${bank < 0 ? '🧊' : '🔥'}</span><b>${bank}</b><small>pts</small></div>
         ${streak > 1 ? `<div class="streak">🔥 ${streak}-day heat streak</div>` : ''}
@@ -680,6 +708,7 @@
 
     state.kids.slice(0, 2).forEach(k => { paintThermo(k.id, shown[k.id] ?? 0); moveThermo(k.id, tempOf(t, k.id, d)); });
     $('view-today').querySelectorAll('[data-give]').forEach(b => b.onclick = () => { sfx.tap(); guarded(() => openPad(b.dataset.give)); });
+    $('view-today').querySelectorAll('[data-replay]').forEach(b => b.onclick = () => replay(b.dataset.replay));
   }
   const timeStr = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   function logRow(e, del) {
@@ -827,6 +856,26 @@
       bigAlert('warn', '🌊💨', 'HEAT WAVE OVER', `The bonus melted away. Heat back up to ${HOT_DAY}° to get it back!`);
     }, 2400);
   }
+  // Tapping a thermometer plays its sounds again: the alarm or celebration for the zone he's in now,
+  // with the banner and the announcer (or your recorded voice). Anyone can tap; it changes nothing.
+  function replay(kidId) {
+    const k = kidById(kidId), v = tempOf(tally(), k.id, today()), z = zoneOf(v), name = nameOf(k);
+    const col = document.querySelector(`.kid-col[data-kid="${k.id}"]`), thermo = col && col.querySelector('.thermo');
+    const [cx, cy] = thermo ? centerOf(thermo) : [innerWidth / 2, innerHeight / 2];
+    const hot = ['🔥', '✨', '🔥'], cold = ['❄️', '🧊', '❄️'];
+    buzz(30);
+    switch (z.cls) {
+      case 'z-max': sfx.fanfare(); burst(cx, cy, ['🔥', '🌋', '💥'], 20, { rise: -200, fall: 300, size: 34 }); bigAlert('fire', '🌋', 'MAXIMUM HEAT!', `${name} is at +100°!`); sayLine('max', k, 300); break;
+      case 'z-fire': sfx.fire(); burst(cx, cy, hot, 16, { rise: -200, fall: 300, size: 32 }); bigAlert('fire', '🔥', 'ON FIRE!', `${name} is red hot at ${signed(v)}°!`); sayLine('fire', k, 300); break;
+      case 'z-hot': sfx.heat(); sfx.fire(); burst(cx, cy, hot, 12); bigAlert('hot', '🌶️', 'HOT!', `${name} is at ${signed(v)}°!`); sayLine('hot', k, 300); break;
+      case 'z-warm': sfx.heat(); burst(cx, cy, hot, 8); sayLine('good', k, 200); break;
+      case 'z-mild': sfx.heat(); sayLine('room', k, 200); break;
+      case 'z-chilly': sfx.alarm(); sfx.cold(); burst(cx, cy, cold, 8, { rise: -60 }); shake(col); bigAlert('warn', '⚠️', 'WARNING!', `It's getting colder, ${name}… ${signed(v)}°`); sayLine('warn', k, 300); break;
+      case 'z-freeze': sfx.wind(); sfx.crack(0.4); sfx.alarm(); burst(cx, cy, cold, 12, { rise: -60 }); shake(col); bigAlert('freeze', '❄️', 'FREEZE WARNING!', `Brrr! ${name} is at ${signed(v)}°.`); sayLine('freeze', k, 400); break;
+      case 'z-deep': sfx.siren(); sfx.drain(2.2); shake(document.body, true); burst(cx, cy, cold, 16, { rise: -60 }); bigAlert('deep', '🚨', 'DEEP FREEZE ALERT!', `${name} is at ${signed(v)}°. Points are disappearing!`); sayLine('deep', k, 500); break;
+      default: sfx.siren(); sfx.shatter(); shake(document.body, true); burst(cx, cy, cold, 20, { rise: -60, size: 34 }); bigAlert('deep', '🦣', 'ICE AGE!', `${name} is frozen solid at −100°!`); sayLine('ice', k, 400);
+    }
+  }
   // Little coins flying off the bank and fading into snow.
   function pointsVanish(el) {
     if (!el) return;
@@ -967,6 +1016,8 @@
         ${toggle('lock', 'Lock giving points', 'Ask a grown-up question first, so the boys can look but not touch. Stays unlocked 15 minutes.')}
         ${toggle('sound', 'Sound effects', 'Sizzles, alarms, sirens and cracking ice.')}
         ${toggle('voice', 'Announcer voice', 'The phone says "Warning! It\'s getting colder!" and so on.')}
+        <div class="row sound-test"><button class="small-btn hot" id="testSound">🔊 Test sound</button><button class="small-btn" id="testVoice">🗣️ Test voice</button></div>
+        <p class="fine">No sound? Turn the volume up with the side buttons while the app is open. On an iPhone, also flip the ring/silent switch to ring if you still hear nothing.</p>
         ${toggle('heatwave', 'Heat Wave bonus', `+${HEATWAVE_BONUS} each when both end the day at ${HOT_DAY}°+.`)}
       </section>
       <section class="card" id="voiceCard">
@@ -1044,6 +1095,8 @@
       renderGrownups();
     });
     root.querySelectorAll('[data-toggle]').forEach(c => c.onchange = () => { state[c.dataset.toggle] = c.checked; save(); });
+    $('testSound').onclick = () => { if (!state.sound) { snack('Sound effects are off. Turn them on above.'); return; } sfx.heat(); setTimeout(sfx.cold, 900); };
+    $('testVoice').onclick = () => { if (!state.voice) { snack('The announcer voice is off. Turn it on above.'); return; } say('Testing! Heat Check is ready to go!'); };
     root.querySelectorAll('[data-aid] input').forEach(inp => inp.onchange = () => {
       const a = state.actions.find(x => x.id === inp.closest('[data-aid]').dataset.aid);
       if (!a) return;

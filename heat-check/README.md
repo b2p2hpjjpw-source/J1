@@ -6,7 +6,8 @@ A behavior thermometer for two brothers. Each boy has his own thermometer, side 
 - Two thermometers side by side. The mercury glides up or down and changes color, from icy blue through silver to orange and fire red.
 - **Zones:** 🌋 MAX HEAT (100) · 🔥 ON FIRE (75+) · 🌶️ HOT (40+) · ☀️ WARM (10+) · 🌤️ ROOM TEMP · 🌬️ CHILLY · ❄️ FREEZING (−40) · 🧊 DEEP FREEZE (−75) · 🦣 ICE AGE (−100).
 - Hot zones get flames at the bulb, a glowing pulsing card and a rattling thermometer at 100. Cold zones get falling snow, icicles dropping from the top, a shivering face, and at −100 the whole thermometer is frozen in an ice block. When someone is on fire the screen glows orange from below. When someone is in a deep freeze, frost creeps in from the screen edges.
-- Tap a thermometer or **🌡️ Points** to open the points pad: big **🔥 Heat it up** and **❄️ Cool it down** buttons, plus "Something else…" for any amount and reason. Every tap shows an **Undo** for a few seconds.
+- **Tap a thermometer to hear it again:** it replays the sound, banner and announcement for the zone he's in now (the deep freeze siren, the ON FIRE roar…). Anyone can tap it, and it doesn't change the score.
+- Tap **🌡️ Points** to open the points pad: big **🔥 Heat it up** and **❄️ Cool it down** buttons, plus "Something else…" for any amount and reason. Every tap shows an **Undo** for a few seconds.
 
 ### Sounds and announcements
 | What happens | Sound | Announcer says |
@@ -23,10 +24,10 @@ A behavior thermometer for two brothers. Each boy has his own thermometer, side 
 | Hits −100 | Siren and shattering ice | "Ice age! Points are disappearing!" |
 | Points leave the bank | Coins drain away, sad "wah-wah", 🪙 fly off | |
 
-Sounds are made by the phone (no files to download). The announcer uses the phone's voice (low and robotic for alarms, excited for cheers) unless you record your own.
+Sounds are made by the phone (no files to download). On iPhones they play even with the ring/silent switch on silent (iOS 17 and newer). *Grown-ups → Settings* has 🔊 **Test sound** and 🗣️ **Test voice** buttons. The announcer uses the phone's voice (low and robotic for alarms, excited for cheers) unless you record your own.
 
 ### 🎙️ Your voice
-In *Grown-ups → Your voice*, record yourself saying any of the 14 announcer lines (every row in the table above, plus "already maxed out", "bad choice while at −100°" and "cashes in a prize"). The boys then hear you instead of the phone.
+In *Grown-ups → Your voice*, record yourself saying any of the 15 announcer lines (every row in the table above, plus "already maxed out", "bad choice while at −100°", "cashes in a prize" and "tapping the thermometer at room temp"). The boys then hear you instead of the phone.
 - **👦👦 Both** records one version for both boys. Pick a boy's name to record his own version, so you can say his name ("Deep freeze alert! Jack, your points are disappearing!"). His own recording plays first, then the one for both, then the phone's voice.
 - Each line shows a script to read, a ▶ Play button to hear what plays now, and 🗑️ to go back to the phone's voice. Recording stops by itself after 12 seconds, and silence at the start and end is trimmed off.
 - Recordings stay on the phone they were made on. They aren't shared by family sync or saved in the backup file, so record on each phone. The phone asks for microphone permission the first time.
