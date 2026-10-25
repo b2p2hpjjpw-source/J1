@@ -9,7 +9,7 @@
   const STORE_KEY = 'daily-80-v1'; // kept from the daily version so saved and synced expenses carry over
   const WEEKLY_BUDGET = 750;
   const START_DATE = '2026-10-24'; // net saved counts from this Saturday; earlier weeks are listed but not counted
-  const CATS = ['Groceries', 'Dining out', 'Coffee & snacks', 'Transport', 'Kids & childcare', 'Household', 'Shopping', 'Health & beauty', 'Entertainment', 'Subscriptions', 'Gifts', 'Other'];
+  const CATS = ['Groceries', 'Dining out', 'Alcohol', 'Coffee & snacks', 'Transport', 'Kids & childcare', 'Household', 'Shopping', 'Health & beauty', 'Entertainment', 'Subscriptions', 'Gifts', 'Other'];
   const FULL_GROVE = 12; // weeks under budget until the grove is fully grown
 
   // ---------- Helpers ----------
