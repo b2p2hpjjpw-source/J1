@@ -246,9 +246,37 @@
 
   // ---------- Sound ----------
   let audioCtx = null;
-  const getCtx = () => (audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)());
-  // Phones only allow sound after a tap; wake the audio up on the first touch.
-  document.addEventListener('pointerdown', () => { try { const c = getCtx(); if (c.state === 'suspended') c.resume(); } catch (e) { /* no audio */ } }, true);
+  function getCtx() {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    // Paused by the phone (another app, a call, the screen locking)? Try to start again.
+    if (audioCtx.state !== 'running' && audioCtx.state !== 'closed') { const r = audioCtx.resume(); if (r && r.catch) r.catch(() => {}); }
+    return audioCtx;
+  }
+  // Phones only let sound start during a real tap: the finger lifting (touchend / click), not touching down.
+  // So wake the audio on taps until it's running. A tiny silent sound started inside the tap is what
+  // finally unlocks older iPhones. Also ask iPhones to play through the ring/silent switch, like a video app.
+  // The phone's voice gets a silent first word inside a tap too, or iPhones won't let it talk later.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older phone */ }
+  let audioUnlocked = false, voiceUnlocked = false;
+  function unlockAudio() {
+    try {
+      if (!voiceUnlocked && 'speechSynthesis' in window) {
+        const u = new SpeechSynthesisUtterance(' '); u.volume = 0;
+        speechSynthesis.speak(u); voiceUnlocked = true;
+      }
+    } catch (e) { /* no voice */ }
+    try {
+      const c = getCtx();
+      if (c.state === 'running' && audioUnlocked) return;
+      c.resume();
+      const src = c.createBufferSource();
+      src.buffer = c.createBuffer(1, 1, 22050); src.connect(c.destination); src.start(0);
+      if (c.state === 'running') audioUnlocked = true;
+    } catch (e) { /* no audio */ }
+  }
+  ['touchend', 'pointerup', 'click', 'keydown'].forEach(ev => document.addEventListener(ev, unlockAudio, true));
+  // Back from the background: wake the audio again (iPhones pause it).
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) audioUnlocked = false; });
   function tone(freq, start, dur, type = 'sine', vol = 0.16, endFreq) {
     if (!state.sound) return;
     try {
@@ -436,7 +464,6 @@
     if (!c) return false;
     try {
       const ctx = getCtx();
-      if (ctx.state === 'suspended') ctx.resume();
       stopClip();
       const src = ctx.createBufferSource(), g = ctx.createGain();
       src.buffer = c.buffer; g.gain.value = c.gain;
