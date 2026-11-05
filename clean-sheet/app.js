@@ -8,7 +8,12 @@
   const STORE_KEY = 'clean-sheet-v1';
   const MAX_TESTS = 3;
   const NIGHT_ENDS_AT = 6; // a reading before 6 a.m. belongs to the night before
-  const DATE_NIGHT_EVERY = 500; // every $500 saved earns a date night
+  // Saved money fills a date-night fund. Redeem whichever option it covers; the cost comes out of the fund, not the kitty.
+  const DATE_NIGHTS = [
+    { id: 'bites', name: 'Light Bites', cost: 240 },
+    { id: 'dinner', name: 'Dinner', cost: 500 },
+  ];
+  const dnOption = id => DATE_NIGHTS.find(o => o.id === id) || DATE_NIGHTS[DATE_NIGHTS.length - 1];
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -75,8 +80,8 @@
     goal: { name: 'Trip to London for a match at the Emirates', cost: 3000 },
     rewards: [],       // [{ name, cost, date }] goals he cashed in
     seenTrophies: [],
-    dateNightsSeen: 0, // date nights already celebrated
-    dateNights: [],    // ['YYYY-MM-DD'] nights the date night was enjoyed
+    dnLevelSeen: null, // how many date-night options the fund covered when last celebrated
+    dateNights: [],    // [{ date: 'YYYY-MM-DD', kind: 'bites' | 'dinner' }] date nights redeemed
   };
   let state = load();
 
@@ -86,10 +91,15 @@
       if (raw) {
         const s = Object.assign(structuredClone(DEFAULT_STATE), JSON.parse(raw));
         s.goal = Object.assign(structuredClone(DEFAULT_STATE.goal), s.goal);
+        s.dateNights = normDateNights(s.dateNights);
         return s;
       }
     } catch (e) { /* fall through */ }
     return structuredClone(DEFAULT_STATE);
+  }
+  // Older versions stored date nights as plain dates, one per $500, so those count as dinners.
+  function normDateNights(list) {
+    return (Array.isArray(list) ? list : []).map(d => typeof d === 'string' ? { date: d, kind: 'dinner' } : { date: d.date, kind: dnOption(d.kind).id });
   }
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
@@ -124,9 +134,10 @@
     s.run = run; // a pending tonight doesn't break the run
     s.spent = state.rewards.reduce((a, r) => a + r.cost, 0);
     s.bank = s.saved - s.spent;
-    s.dnEarned = Math.floor(s.saved / DATE_NIGHT_EVERY);
-    s.dnReady = Math.max(0, s.dnEarned - state.dateNights.length);
-    s.dnToNext = DATE_NIGHT_EVERY - (s.saved % DATE_NIGHT_EVERY);
+    s.dnUsed = state.dateNights.reduce((a, d) => a + dnOption(d.kind).cost, 0);
+    s.dnFund = Math.max(0, s.saved - s.dnUsed);
+    s.dnAfford = DATE_NIGHTS.filter(o => s.dnFund >= o.cost);
+    s.dnLevel = s.dnAfford.length;
     return s;
   }
 
@@ -240,18 +251,19 @@
   function checkTrophies() {
     const s = stats();
     const fresh = TROPHIES.filter(t => trophyProgress(t, s).won && !state.seenTrophies.includes(t.id));
-    const newDates = s.dnEarned - state.dateNightsSeen;
-    if (!fresh.length && newDates <= 0) return;
+    const newDate = s.dnLevel > state.dnLevelSeen;
+    if (!fresh.length && !newDate) return;
     state.seenTrophies.push(...fresh.map(t => t.id));
-    state.dateNightsSeen = Math.max(state.dateNightsSeen, s.dnEarned);
+    state.dnLevelSeen = s.dnLevel;
     save();
+    const top = s.dnAfford[s.dnAfford.length - 1], next = DATE_NIGHTS[s.dnLevel];
     setTimeout(() => { $('toast').classList.add('hidden'); openModal(`
-      ${newDates > 0 ? `
+      ${newDate ? `
       <div class="date-night">
         <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg>
-        <div class="eyebrow">${money(s.dnEarned * DATE_NIGHT_EVERY)} saved</div>
-        <h2>Date night earned!</h2>
-        <p>Every ${money(DATE_NIGHT_EVERY)} saved buys a night out together. Time to pick the restaurant.</p>
+        <div class="eyebrow">${money(s.dnFund)} in the date-night fund</div>
+        <h2>${esc(top.name)} unlocked!</h2>
+        <p>${next ? `Redeem a ${esc(top.name)} date night now (${money(top.cost)}), or keep saving for ${esc(next.name)} at ${money(next.cost)}. Your choice.` : `Enough for ${esc(top.name)} (${money(top.cost)})${DATE_NIGHTS.length > 1 ? ' or anything smaller' : ''}. Time to pick the restaurant.`}</p>
       </div>` : ''}
       ${fresh.length ? `<div class="close-row"><h2>Trophy unlocked</h2></div>
       ${fresh.map(t => `<div class="trophy won"><svg viewBox="0 0 24 24"><use href="#i-cup"/></svg><b>${esc(t.name)}</b><span>${esc(t.desc)}</span></div>`).join('')}` : ''}
@@ -272,7 +284,7 @@
         <div class="row"><div><div class="eyebrow">Tonight · Matchday ${s.matchday}</div><h2>${niceDate(k)}</h2></div><div class="spacer"></div><span class="muted num">${money(amtOf(k))} on the line</span></div>
         <div id="tonightPanel">${nightPanel(k)}</div>
       </div>
-      ${s.dnReady ? `<div class="nudge date"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg><p><b>${s.dnReady === 1 ? 'A date night is' : `${s.dnReady} date nights are`} ready.</b> You earned ${s.dnReady === 1 ? 'it' : 'them'}. Book a table.</p><button class="btn small" data-tab="savings">See</button></div>` : ''}
+      ${s.dnLevel ? `<div class="nudge date"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg><p><b>A date night is ready.</b> ${money(s.dnFund)} in the fund: enough for ${s.dnAfford.map(o => esc(o.name)).join(' or ')}.</p><button class="btn small" data-tab="savings">Choose</button></div>` : ''}
       ${state.why ? `<div class="why"><div class="eyebrow">Why I’m doing this</div><q>${esc(state.why)}</q></div>` : ''}
       <div class="card">
         <div class="eyebrow">Team talk</div>
@@ -379,12 +391,18 @@
         ${need ? '' : '<button class="btn gold block" id="cashIn">Cash it in</button>'}
       </div>
       <div class="card date-card">
-        <div class="row"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg><div><div class="eyebrow">Date nights</div><div class="goal-name">One for every ${money(DATE_NIGHT_EVERY)} saved</div></div></div>
-        <div class="bar" role="progressbar" aria-label="Progress to next date night" aria-valuenow="${DATE_NIGHT_EVERY - s.dnToNext}" aria-valuemin="0" aria-valuemax="${DATE_NIGHT_EVERY}"><div style="width:${100 * (DATE_NIGHT_EVERY - s.dnToNext) / DATE_NIGHT_EVERY}%"></div></div>
-        <div class="row"><span class="num">${money(s.dnToNext)} to the next one</span><div class="spacer"></div><span class="muted">${Math.ceil(s.dnToNext / state.nightly)} clean sheet${Math.ceil(s.dnToNext / state.nightly) === 1 ? '' : 's'}</span></div>
-        <div class="row"><span><b class="num">${s.dnEarned}</b> earned · <b class="num">${state.dateNights.length}</b> enjoyed${s.dnReady ? ` · <b class="num">${s.dnReady}</b> ready` : ''}</span></div>
-        ${s.dnReady ? '<button class="btn gold block" id="dnHad">We had our date night</button>' : ''}
-        ${state.dateNights.length ? `<p class="hint">Enjoyed: ${state.dateNights.slice(-5).reverse().map(niceDate).join(' · ')}${state.dateNights.length > 5 ? ' …' : ''}</p>` : ''}
+        <div class="row"><svg class="heart" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-heart"/></svg><div><div class="eyebrow">Date-night fund</div><div class="goal-name">${money(s.dnFund)} to spend</div></div></div>
+        ${DATE_NIGHTS.map(o => {
+          const left = Math.max(0, o.cost - s.dnFund), n = Math.ceil(left / state.nightly);
+          return `<div class="dn-option">
+          <div class="row"><b>${esc(o.name)}</b><div class="spacer"></div><span class="num">${money(o.cost)}</span></div>
+          <div class="bar" role="progressbar" aria-label="Progress to ${esc(o.name)}" aria-valuenow="${Math.min(s.dnFund, o.cost)}" aria-valuemin="0" aria-valuemax="${o.cost}"><div style="width:${100 * Math.min(1, s.dnFund / o.cost)}%"></div></div>
+          ${left ? `<div class="row"><span class="num">${money(left)} to go</span><div class="spacer"></div><span class="muted">${n} clean sheet${n === 1 ? '' : 's'}</span></div>`
+            : `<button class="btn gold block" data-dn="${o.id}">Redeem ${esc(o.name)}</button>`}
+        </div>`;
+        }).join('')}
+        <p class="hint">Saved money fills this fund. Redeem ${DATE_NIGHTS.map(o => esc(o.name)).join(' or ')} once there's enough. It comes out of this fund, not the kitty.</p>
+        ${state.dateNights.length ? `<p class="hint">Enjoyed: ${state.dateNights.slice(-5).reverse().map(d => `${esc(dnOption(d.kind).name)} ${niceDate(d.date)}`).join(' · ')}${state.dateNights.length > 5 ? ' …' : ''}</p>` : ''}
       </div>
       <div class="card chart">
         <div class="eyebrow">Money saved, night by night</div>
@@ -401,9 +419,12 @@
       </div>
       ${state.rewards.length ? `<div class="card"><div class="eyebrow">Rewards earned</div><ul class="rewards">${state.rewards.slice().reverse().map(r => `<li><span>${esc(r.name)} <span class="muted">· ${niceDate(r.date)}</span></span><b class="num">${money(r.cost)}</b></li>`).join('')}</ul></div>` : ''}`;
     $('editGoal').onclick = editGoal;
-    const dn = $('dnHad');
-    if (dn) dn.onclick = () => confirmBox('Mark a date night as enjoyed?', `Logged for ${niceDate(nightKeyNow())}. Date nights are a bonus and don’t come out of the kitty.`, 'Yes, we went', () => {
-      state.dateNights.push(nightKeyNow()); save(); confetti(); toast('Hope it was a great night.');
+    el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => {
+      const o = dnOption(b.dataset.dn);
+      confirmBox(`Redeem ${o.name}?`, `${money(o.cost)} comes out of the date-night fund, logged for ${niceDate(nightKeyNow())}. It doesn’t touch the kitty.`, 'Yes, we went', () => {
+        state.dateNights.push({ date: nightKeyNow(), kind: o.id });
+        state.dnLevelSeen = stats().dnLevel; save(); confetti(); toast('Hope it was a great night.');
+      });
     });
     const c = $('cashIn');
     if (c) c.onclick = () => confirmBox('Cash in this reward?', `${g.name} for ${money(g.cost)}. It comes out of the kitty, and you can pick the next goal.`, 'Cash it in', () => {
@@ -626,6 +647,8 @@
   setInterval(checkNight, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkNight(); });
 
+  // Existing users: don't re-announce date nights they already knew about.
+  if (state.dnLevelSeen == null && state.start) { state.dnLevelSeen = stats().dnLevel; }
   renderAll();
   if (!state.start) openSettings(true);
 
