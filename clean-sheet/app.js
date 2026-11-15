@@ -81,7 +81,7 @@
     rewards: [],       // [{ name, cost, date }] goals he cashed in
     seenTrophies: [],
     dnLevelSeen: null, // how many date-night options the fund covered when last celebrated
-    dateNights: [],    // [{ date: 'YYYY-MM-DD', kind: 'bites' | 'dinner' }] date nights redeemed
+    dateNights: [],    // [{ date: 'YYYY-MM-DD', kind: 'bites' | 'dinner', spent }] date nights redeemed; anything spent over the option's price comes out of the kitty
   };
   let state = load();
 
@@ -99,8 +99,10 @@
   }
   // Older versions stored date nights as plain dates, one per $500, so those count as dinners.
   function normDateNights(list) {
-    return (Array.isArray(list) ? list : []).map(d => typeof d === 'string' ? { date: d, kind: 'dinner' } : { date: d.date, kind: dnOption(d.kind).id });
+    return (Array.isArray(list) ? list : []).map(d => typeof d === 'string' ? { date: d, kind: 'dinner' } : Object.assign({}, d, { kind: dnOption(d.kind).id }));
   }
+  // What a date night cost beyond its option's price. That part comes out of the kitty.
+  const dnOver = d => Math.max(0, (Number(d.spent) || 0) - dnOption(d.kind).cost);
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
     catch (e) { toast('Couldn’t save on this phone. Is storage full?'); }
@@ -133,7 +135,8 @@
     }
     s.run = run; // a pending tonight doesn't break the run
     s.spent = state.rewards.reduce((a, r) => a + r.cost, 0);
-    s.bank = s.saved - s.spent;
+    s.dnOver = state.dateNights.reduce((a, d) => a + dnOver(d), 0);
+    s.bank = s.saved - s.spent - s.dnOver;
     s.dnUsed = state.dateNights.reduce((a, d) => a + dnOption(d.kind).cost, 0);
     s.dnFund = Math.max(0, s.saved - s.dnUsed);
     s.dnAfford = DATE_NIGHTS.filter(o => s.dnFund >= o.cost);
@@ -380,7 +383,7 @@
       <div class="card bank">
         <div class="eyebrow">In the transfer kitty</div>
         <div class="bank-amt">${money(s.bank)}</div>
-        <div class="bank-sub">${s.wins} clean sheet${s.wins === 1 ? '' : 's'} × ${money(state.nightly)} not spent on whiskey${s.spent ? ` · ${money(s.spent)} spent on rewards` : ''}</div>
+        <div class="bank-sub">${s.wins} clean sheet${s.wins === 1 ? '' : 's'} × ${money(state.nightly)} not spent on whiskey${s.spent ? ` · ${money(s.spent)} spent on rewards` : ''}${s.dnOver ? ` · ${money(s.dnOver)} over on date nights` : ''}</div>
       </div>
       <div class="card">
         <div class="row"><div class="eyebrow">Saving for</div><div class="spacer"></div><button class="btn small ghost" id="editGoal">Change</button></div>
@@ -401,8 +404,8 @@
             : `<button class="btn gold block" data-dn="${o.id}">Redeem ${esc(o.name)}</button>`}
         </div>`;
         }).join('')}
-        <p class="hint">Saved money fills this fund. Redeem ${DATE_NIGHTS.map(o => esc(o.name)).join(' or ')} once there's enough. It comes out of this fund, not the kitty.</p>
-        ${state.dateNights.length ? `<p class="hint">Enjoyed: ${state.dateNights.slice(-5).reverse().map(d => `${esc(dnOption(d.kind).name)} ${niceDate(d.date)}`).join(' · ')}${state.dateNights.length > 5 ? ' …' : ''}</p>` : ''}
+        <p class="hint">Saved money fills this fund. Redeem ${DATE_NIGHTS.map(o => esc(o.name)).join(' or ')} once there's enough. The fund pays up to the option's price; anything you spend over that comes out of the kitty.</p>
+        ${state.dateNights.length ? `<p class="hint">Enjoyed: ${state.dateNights.slice(-5).reverse().map(d => `${esc(dnOption(d.kind).name)} ${niceDate(d.date)}${d.spent ? ` (${money(d.spent)}${dnOver(d) ? `, ${money(dnOver(d))} from kitty` : ''})` : ''}`).join(' · ')}${state.dateNights.length > 5 ? ' …' : ''}</p>` : ''}
       </div>
       <div class="card chart">
         <div class="eyebrow">Money saved, night by night</div>
@@ -419,18 +422,41 @@
       </div>
       ${state.rewards.length ? `<div class="card"><div class="eyebrow">Rewards earned</div><ul class="rewards">${state.rewards.slice().reverse().map(r => `<li><span>${esc(r.name)} <span class="muted">· ${niceDate(r.date)}</span></span><b class="num">${money(r.cost)}</b></li>`).join('')}</ul></div>` : ''}`;
     $('editGoal').onclick = editGoal;
-    el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => {
-      const o = dnOption(b.dataset.dn);
-      confirmBox(`Redeem ${o.name}?`, `${money(o.cost)} comes out of the date-night fund, logged for ${niceDate(nightKeyNow())}. It doesn’t touch the kitty.`, 'Yes, we went', () => {
-        state.dateNights.push({ date: nightKeyNow(), kind: o.id });
-        state.dnLevelSeen = stats().dnLevel; save(); confetti(); toast('Hope it was a great night.');
-      });
-    });
+    el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => redeemDateNight(dnOption(b.dataset.dn), s.bank));
     const c = $('cashIn');
     if (c) c.onclick = () => confirmBox('Cash in this reward?', `${g.name} for ${money(g.cost)}. It comes out of the kitty, and you can pick the next goal.`, 'Cash it in', () => {
       state.rewards.push({ name: g.name, cost: g.cost, date: nightKeyNow() }); save();
       whistle(); confetti(); renderAll(); setTimeout(editGoal, 900);
     });
+  }
+
+  // Ask what the night actually cost. Up to the option's price comes from the date-night fund; anything over comes out of the kitty.
+  function redeemDateNight(o, bank) {
+    openModal(`
+      <div class="close-row"><h2>Redeem ${esc(o.name)}</h2><button class="btn small ghost" data-close>Cancel</button></div>
+      <p class="hint" style="margin:0">The date-night fund covers up to ${money(o.cost)}. Anything over that comes out of the kitty (${money(bank)} now).</p>
+      <div class="field"><label for="dnSpent">How much did you actually spend? ($)</label><input id="dnSpent" inputmode="decimal" autocomplete="off" value="${o.cost}" /></div>
+      <p class="hint" id="dnNote"></p>
+      <button class="btn gold block" id="dnSave">Yes, we went</button>`);
+    const input = $('dnSpent'), note = $('dnNote');
+    const read = () => { const raw = input.value.trim().replace(/[$,]/g, ''); return raw === '' ? NaN : Math.round(Number(raw) * 100) / 100; };
+    const update = () => {
+      const v = read();
+      if (!(v >= 0)) { note.textContent = ''; return; }
+      const over = Math.max(0, v - o.cost);
+      note.textContent = over
+        ? `${money(o.cost)} from the date-night fund + ${money(over)} from the kitty (leaves ${money(bank - over)}).`
+        : `All covered by the date-night fund. The kitty isn’t touched.`;
+    };
+    input.oninput = update; update(); input.focus(); input.select();
+    $('dnSave').onclick = () => {
+      const v = read();
+      if (!(v >= 0) || v > 100000) { toast('Type what the night cost, like 265.'); return; }
+      state.dateNights.push({ date: nightKeyNow(), kind: o.id, spent: v });
+      state.dnLevelSeen = stats().dnLevel; save(); closeModal(); confetti();
+      const over = Math.max(0, v - o.cost);
+      toast(over ? `Hope it was a great night. ${money(over)} came out of the kitty.` : 'Hope it was a great night.');
+    };
   }
 
   function renderTrophies() {
